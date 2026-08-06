@@ -1,0 +1,217 @@
+{
+  "$objects": [
+    {
+      "$bc": "ENGINE.DirectionalLightComponent",
+      "$id": 1,
+      "$value": {
+        "castShadow": true,
+        "children": [
+          {
+            "$ref": 2
+          }
+        ],
+        "isSunLight": true,
+        "light": {
+          "$ref": 2
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            10,
+            50,
+            -10
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            1.919862,
+            0,
+            0
+          ]
+        },
+        "shadowBias": -0.001,
+        "shadowCameraBottom": -200,
+        "shadowCameraLeft": -200,
+        "shadowCameraRight": 200,
+        "shadowCameraTop": 200,
+        "shadowFar": 250,
+        "userData": {
+          "objectFlags": 1
+        },
+        "uuid": "ec2790ca7f877ad3"
+      }
+    },
+    {
+      "$bc": "THREE.DirectionalLight",
+      "$id": 2,
+      "$value": {
+        "_": [
+          {
+            "$bc": "c",
+            "_": [
+              1,
+              0.930111,
+              0.83077
+            ]
+          },
+          10
+        ]
+      }
+    },
+    {
+      "$bc": "ENGINE.MeshComponent",
+      "$id": 3,
+      "$value": {
+        "children": {
+          "$length": 1
+        },
+        "geometry": {
+          "$bc": "THREE.BoxGeometry",
+          "_": [
+            500,
+            0.1,
+            500
+          ]
+        },
+        "material": {
+          "$bc": "THREE.MeshStandardMaterial",
+          "color": {
+            "$bc": "c",
+            "_": [
+              0.85,
+              0.85,
+              0.85
+            ]
+          },
+          "map": {
+            "$bc": "$global",
+            "name": "DefaultTexture"
+          },
+          "name": "GroundMaterial",
+          "roughness": 0.95,
+          "uuid": "c2790ca7f877ad39"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            0,
+            -0.9,
+            0
+          ]
+        },
+        "receiveShadow": true,
+        "userData": {
+          "objectFlags": 1
+        },
+        "uuid": "2790ca7f877ad393",
+        "uvScaleTilesPerUnit": 0.2
+      }
+    },
+    {
+      "$bc": "ENGINE.SkyComponent",
+      "$id": 4,
+      "$value": {
+        "cloudDensity": 0.7,
+        "cloudElevation": 0.42,
+        "cloudSpeed": 0.00005,
+        "generateEnvironmentMap": true,
+        "mieDirectionalG": 0.85,
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            10000,
+            10000,
+            10000
+          ]
+        },
+        "userData": {
+          "objectFlags": 1
+        },
+        "uuid": "790ca7f877ad3935"
+      }
+    }
+  ],
+  "$root": {
+    "$bc": "ENGINE.World",
+    "$uuid": "98aed4ec2790ca7f",
+    "actors": {
+      "1": {
+        "$bc": "ENGINE.Actor",
+        "$initOptions": {
+          "rootComponent": {
+            "$ref": 1
+          }
+        },
+        "name": "Directional Light",
+        "rootComponent": {
+          "$ref": 1
+        },
+        "uuid": "90ca7f877ad3935f"
+      },
+      "2": {
+        "$bc": "ENGINE.PlayerStart",
+        "$initOptions": {},
+        "name": "Player Start",
+        "rootComponent": {
+          "$bc": "ENGINE.SceneComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0,
+              0.9,
+              0
+            ]
+          },
+          "userData": {
+            "objectFlags": 1
+          },
+          "uuid": "0ca7f877ad3935ff"
+        },
+        "uuid": "ca7f877ad3935ff9"
+      },
+      "3": {
+        "$bc": "ENGINE.Actor",
+        "$initOptions": {
+          "rootComponent": {
+            "$ref": 3
+          }
+        },
+        "name": "Ground",
+        "rootComponent": {
+          "$ref": 3
+        },
+        "uuid": "a7f877ad3935ff9c"
+      },
+      "4": {
+        "$bc": "ENGINE.Actor",
+        "$initOptions": {
+          "rootComponent": {
+            "$ref": 4
+          }
+        },
+        "name": "Sky",
+        "rootComponent": {
+          "$ref": 4
+        },
+        "uuid": "7f877ad3935ff9cb"
+      },
+      "$length": 5
+    },
+    "editorData": {},
+    "gameModeClass": null,
+    "postProcessConfiguration": {
+      "effects": [
+        {
+          "enabled": true,
+          "exposure": 0.5,
+          "mode": 4,
+          "type": "toneMapping"
+        }
+      ]
+    },
+    "resources": null,
+    "settings": {}
+  },
+  "$version": 2
+}
