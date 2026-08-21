@@ -1,0 +1,64 @@
+{
+  "$root": {
+    "$bc": "ENGINE.Prefab",
+    "$uuid": "2094ae54f52c3ed1",
+    "rootNode": {
+      "$bc": "ENGINE.SceneNode",
+      "children": [
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Crates",
+              "nodeId": 20553,
+              "prefabId": "e6426d6402c06d76",
+              "throwDistanceOverride": 5
+            }
+          ],
+          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Crates.glb",
+          "name": "Crates Fallen Mesh",
+          "nodeId": 34331,
+          "physicsOptions": {
+            "collisionMeshType": "convexHull",
+            "density": 2000,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0,
+              0.2,
+              0
+            ]
+          },
+          "prefabId": "ea725cefa6b711d5",
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0.35,
+              0.1,
+              0
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "name": "Crates Fallen",
+      "nodeId": 59342,
+      "prefabId": "0ebce5a3b80b03cd"
+    }
+  },
+  "$version": 3
+}

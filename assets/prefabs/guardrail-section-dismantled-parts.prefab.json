@@ -1,0 +1,93 @@
+{
+  "$root": {
+    "$bc": "ENGINE.Prefab",
+    "$uuid": "3f81029acfefb45e",
+    "rootNode": {
+      "$bc": "ENGINE.SceneNode",
+      "children": [
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryHeightOverride": 1.15,
+              "children": [],
+              "name": "Carryable Crate Guardrail 1",
+              "nodeId": 13517,
+              "prefabId": "c16775b3b4f3be51",
+              "throwDistanceOverride": 5
+            }
+          ],
+          "modelUrl": "@project/assets/PolyforkAssets/guardrail2.glb",
+          "name": "Guardrail 2",
+          "nodeId": 45621,
+          "physicsOptions": {
+            "density": 2000,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              1,
+              0.3,
+              0
+            ]
+          },
+          "prefabId": "0d33b2bca6157e63",
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1.5,
+              1.5,
+              1.5
+            ]
+          }
+        },
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryHeightOverride": 1.15,
+              "children": [],
+              "name": "Carryable Crate Guardrail 2",
+              "nodeId": 64300,
+              "prefabId": "1cee0323844b9870",
+              "throwDistanceOverride": 5
+            }
+          ],
+          "modelUrl": "@project/assets/PolyforkAssets/guardrail1.glb",
+          "name": "Guardrail 1",
+          "nodeId": 15576,
+          "physicsOptions": {
+            "density": 2000,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -0.7,
+              0.55,
+              0.2
+            ]
+          },
+          "prefabId": "93de20ec55f50ae5",
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1.5,
+              1.5,
+              1.5
+            ]
+          }
+        }
+      ],
+      "name": "Guardrail Section Dismantled Parts",
+      "nodeId": 2756,
+      "prefabId": "3d6052e7eb335757"
+    }
+  },
+  "$version": 3
+}

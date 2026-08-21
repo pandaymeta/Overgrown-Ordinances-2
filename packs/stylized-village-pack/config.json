@@ -1,0 +1,10 @@
+{
+  "type": "asset-pack",
+  "id": "stylized-village-pack",
+  "name": "stylized-village-pack",
+  "description": "This stylized fantasy village pack offers a charming collection of medieval architecture, ancient stone ruins, and rustic props perfect for constructing vibrant settlements in any kind of game project.",
+  "version": "1.0.1",
+  "minEngineVersion": "0.0.0",
+  "author": "directivegames",
+  "thumbnail": "Preview.png"
+}

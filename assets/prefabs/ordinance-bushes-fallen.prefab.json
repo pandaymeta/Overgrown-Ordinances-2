@@ -1,0 +1,64 @@
+{
+  "$root": {
+    "$bc": "ENGINE.Prefab",
+    "$uuid": "dfd1af4ae1c566a4",
+    "rootNode": {
+      "$bc": "ENGINE.SceneNode",
+      "children": [
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Bushes",
+              "nodeId": 23654,
+              "prefabId": "3f2ae244ec5b9440",
+              "throwDistanceOverride": 5
+            }
+          ],
+          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Bushes.glb",
+          "name": "Bushes Fallen Mesh",
+          "nodeId": 17930,
+          "physicsOptions": {
+            "collisionMeshType": "convexHull",
+            "density": 2000,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0,
+              0.2,
+              0
+            ]
+          },
+          "prefabId": "855f8e377e1630a0",
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0.35,
+              0.1,
+              0
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "name": "Bushes Fallen",
+      "nodeId": 27115,
+      "prefabId": "08bbb70739f8129e"
+    }
+  },
+  "$version": 3
+}

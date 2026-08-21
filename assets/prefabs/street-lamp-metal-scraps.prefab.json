@@ -1,0 +1,152 @@
+{
+  "$root": {
+    "$bc": "ENGINE.Prefab",
+    "$uuid": "1a5556d184898011",
+    "rootNode": {
+      "$bc": "ENGINE.SceneNode",
+      "children": [
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Crate 09",
+              "nodeId": 63775,
+              "prefabId": "323b1cfa1ac2dd4f",
+              "throwDistanceOverride": 5
+            }
+          ],
+          "modelUrl": "@project/assets/PolyforkAssets/metal_scrapt3-centered.glb",
+          "name": "Metal Scrapt 3",
+          "nodeId": 44502,
+          "physicsOptions": {
+            "collisionMeshType": "boundingBox",
+            "density": 2000,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -0.4,
+              0.2,
+              0
+            ]
+          },
+          "prefabId": "8190e80b88416868",
+          "receiveShadow": true,
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1.5,
+              1.5,
+              1.5
+            ]
+          }
+        },
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryRotationOffset": {
+                "$bc": "e",
+                "_": [
+                  0,
+                  1.570796,
+                  0
+                ]
+              },
+              "children": [],
+              "name": "Carryable Crate 10",
+              "nodeId": 13160,
+              "prefabId": "20777afe98880a21",
+              "throwDistanceOverride": 5
+            }
+          ],
+          "modelUrl": "@project/assets/PolyforkAssets/metal_scrapt2-centered.glb",
+          "name": "Metal Scrapt 2",
+          "nodeId": 18469,
+          "physicsOptions": {
+            "collisionMeshType": "trimesh",
+            "density": 2000,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0.4,
+              0.4,
+              0.15
+            ]
+          },
+          "prefabId": "0b0e80b2a3f8e072b",
+          "receiveShadow": true,
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1.5,
+              1.5,
+              1.5
+            ]
+          }
+        },
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryRotationOffset": {
+                "$bc": "e",
+                "_": [
+                  0,
+                  1.570796,
+                  0
+                ]
+              },
+              "children": [],
+              "name": "Carryable Crate 11",
+              "nodeId": 32744,
+              "prefabId": "f3c3fc4c5adb95d6",
+              "throwDistanceOverride": 5
+            }
+          ],
+          "modelUrl": "@project/assets/PolyforkAssets/metal_scrapt1.glb",
+          "name": "Metal Scrapt 1",
+          "nodeId": 51260,
+          "physicsOptions": {
+            "collisionMeshType": "boundingBox",
+            "density": 2000,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0,
+              0.65,
+              -0.3
+            ]
+          },
+          "prefabId": "2f4ff62c92aa864e",
+          "receiveShadow": true,
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1.5,
+              1.5,
+              1.5
+            ]
+          }
+        }
+      ],
+      "name": "Street Lamp Metal Scraps",
+      "nodeId": 62198,
+      "prefabId": "76a587ebad26341f"
+    }
+  },
+  "$version": 3
+}

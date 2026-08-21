@@ -1,0 +1,64 @@
+{
+  "$root": {
+    "$bc": "ENGINE.Prefab",
+    "$uuid": "1936e8f852a9bd8e",
+    "rootNode": {
+      "$bc": "ENGINE.SceneNode",
+      "children": [
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Trees Climbing",
+              "nodeId": 25296,
+              "prefabId": "e34305597f888b67",
+              "throwDistanceOverride": 5
+            }
+          ],
+          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/TreesClimbing.glb",
+          "name": "Trees Climbing Fallen Mesh",
+          "nodeId": 58412,
+          "physicsOptions": {
+            "collisionMeshType": "convexHull",
+            "density": 2000,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0,
+              0.2,
+              0
+            ]
+          },
+          "prefabId": "e40eac4515f84869",
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0.35,
+              0.1,
+              0
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "name": "Trees Climbing Fallen",
+      "nodeId": 13916,
+      "prefabId": "8def904e4c6f0d66"
+    }
+  },
+  "$version": 3
+}

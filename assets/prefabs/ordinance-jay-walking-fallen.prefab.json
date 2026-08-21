@@ -1,0 +1,64 @@
+{
+  "$root": {
+    "$bc": "ENGINE.Prefab",
+    "$uuid": "c1570d4b12f5e6f2",
+    "rootNode": {
+      "$bc": "ENGINE.SceneNode",
+      "children": [
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Jay Walking",
+              "nodeId": 28188,
+              "prefabId": "e913da89a9747ea9",
+              "throwDistanceOverride": 5
+            }
+          ],
+          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/JayWalking.glb",
+          "name": "Jay Walking Fallen Mesh",
+          "nodeId": 53430,
+          "physicsOptions": {
+            "collisionMeshType": "convexHull",
+            "density": 2000,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0,
+              0.2,
+              0
+            ]
+          },
+          "prefabId": "08bf04634be7cb1b",
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0.35,
+              0.1,
+              0
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "name": "Jay Walking Fallen",
+      "nodeId": 17466,
+      "prefabId": "6295e85ed8c900e0"
+    }
+  },
+  "$version": 3
+}

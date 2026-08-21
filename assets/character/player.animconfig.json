@@ -1,0 +1,238 @@
+{
+  "$root": {
+    "$bc": "ENGINE.AnimationConfigResource",
+    "clipOptions": {
+      "Idle 01": {
+        "loop": "LoopRepeat"
+      },
+      "Walk 01": {
+        "loop": "LoopRepeat"
+      },
+      "Run 01": {
+        "loop": "LoopRepeat"
+      },
+      "Jump 01": {
+        "clampWhenFinished": true,
+        "loop": "LoopOnce"
+      },
+      "Climb 01": {
+        "loop": "LoopRepeat"
+      },
+      "Attack 01": {
+        "clampWhenFinished": true,
+        "loop": "LoopOnce"
+      },
+      "Fall 01": {
+        "loop": "LoopRepeat"
+      }
+    },
+    "events": {
+      "Walk 01": [
+        {
+          "name": "footstep",
+          "tag": "left",
+          "time": 0.2
+        },
+        {
+          "name": "footstep",
+          "tag": "right",
+          "time": 0.7
+        }
+      ],
+      "Run 01": [
+        {
+          "name": "footstep",
+          "tag": "left",
+          "time": 0.15
+        },
+        {
+          "name": "footstep",
+          "tag": "right",
+          "time": 0.65
+        }
+      ]
+    },
+    "externalAnimationSources": [],
+    "initialState": "idle",
+    "oneShotClips": [
+      "Jump 01",
+      "Attack 01"
+    ],
+    "parameters": {
+      "forward": 0,
+      "isClimbing": false,
+      "isJumping": false,
+      "isRunning": false,
+      "isWalking": false
+    },
+    "states": {
+      "__any__": {
+        "transitions": [
+          {
+            "blendDuration": 0.15,
+            "condition": {
+              "isClimbing": true
+            },
+            "to": "climb"
+          }
+        ]
+      },
+      "climb": {
+        "clip": "Climb 01",
+        "transitions": [
+          {
+            "blendDuration": 0.2,
+            "condition": {
+              "isClimbing": false,
+              "isJumping": false,
+              "isRunning": false,
+              "isWalking": false
+            },
+            "to": "idle"
+          },
+          {
+            "blendDuration": 0.2,
+            "condition": {
+              "isClimbing": false,
+              "isWalking": true
+            },
+            "to": "walk"
+          },
+          {
+            "blendDuration": 0.2,
+            "condition": {
+              "isClimbing": false,
+              "isRunning": true
+            },
+            "to": "run"
+          },
+          {
+            "blendDuration": 0.2,
+            "condition": {
+              "isClimbing": false,
+              "isJumping": true
+            },
+            "to": "jump"
+          }
+        ]
+      },
+      "idle": {
+        "clip": "Idle 01",
+        "transitions": [
+          {
+            "blendDuration": 0.2,
+            "condition": {
+              "isJumping": false,
+              "isWalking": true
+            },
+            "to": "walk"
+          },
+          {
+            "blendDuration": 0.2,
+            "condition": {
+              "isJumping": false,
+              "isRunning": true
+            },
+            "to": "run"
+          },
+          {
+            "blendDuration": 0.2,
+            "condition": {
+              "isJumping": true
+            },
+            "to": "jump"
+          }
+        ]
+      },
+      "walk": {
+        "clip": "Walk 01",
+        "transitions": [
+          {
+            "blendDuration": 0.2,
+            "condition": {
+              "isJumping": false,
+              "isRunning": false,
+              "isWalking": false
+            },
+            "to": "idle"
+          },
+          {
+            "blendDuration": 0.2,
+            "condition": {
+              "isJumping": false,
+              "isRunning": true
+            },
+            "to": "run"
+          },
+          {
+            "blendDuration": 0.2,
+            "condition": {
+              "isJumping": true
+            },
+            "to": "jump"
+          }
+        ]
+      },
+      "jump": {
+        "clip": "Jump 01",
+        "transitions": [
+          {
+            "blendDuration": 0.2,
+            "condition": {
+              "isJumping": false,
+              "isRunning": false,
+              "isWalking": false
+            },
+            "to": "idle"
+          },
+          {
+            "blendDuration": 0.2,
+            "condition": {
+              "isJumping": false,
+              "isWalking": true
+            },
+            "to": "walk"
+          },
+          {
+            "blendDuration": 0.2,
+            "condition": {
+              "isJumping": false,
+              "isRunning": true
+            },
+            "to": "run"
+          }
+        ]
+      },
+      "run": {
+        "clip": "Run 01",
+        "transitions": [
+          {
+            "blendDuration": 0.2,
+            "condition": {
+              "isJumping": false,
+              "isRunning": false,
+              "isWalking": false
+            },
+            "to": "idle"
+          },
+          {
+            "blendDuration": 0.2,
+            "condition": {
+              "isJumping": false,
+              "isWalking": true
+            },
+            "to": "walk"
+          },
+          {
+            "blendDuration": 0.2,
+            "condition": {
+              "isJumping": true
+            },
+            "to": "jump"
+          }
+        ]
+      }
+    }
+  },
+  "$version": 2
+}

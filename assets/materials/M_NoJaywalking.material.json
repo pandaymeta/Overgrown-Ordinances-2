@@ -1,0 +1,18 @@
+{
+  "$root": {
+    "$bc": "GAME.SharpSignBoardMaterial",
+    "mapPath": "@project/assets/textures/signs/no-jaywalking.png",
+    "sharpAtDistance": false,
+    "anisotropy": 16,
+    "side": 0,
+    "color": {
+      "$bc": "c",
+      "_": [
+        1,
+        1,
+        1
+      ]
+    }
+  },
+  "$version": 3
+}

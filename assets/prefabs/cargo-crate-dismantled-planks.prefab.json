@@ -1,0 +1,219 @@
+{
+  "$root": {
+    "$bc": "ENGINE.Prefab",
+    "$uuid": "5942fbbf44caf854",
+    "rootNode": {
+      "$bc": "ENGINE.SceneNode",
+      "children": [
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Crate Planks 2",
+              "nodeId": 26787,
+              "prefabId": "4adb1e79e6615ee5",
+              "throwDistanceOverride": 8
+            }
+          ],
+          "excludeFromNavigation": true,
+          "modelUrl": "@project/assets/PolyforkAssets/crate_planks.glb",
+          "name": "Crate Planks Drop 2",
+          "navigationGeometryRole": "exclude",
+          "nodeId": 58436,
+          "physicsOptions": {
+            "collisionMeshType": "boundingBox",
+            "density": 200,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -0.1,
+              0.35,
+              -0.5
+            ]
+          },
+          "prefabId": "a94bc01e051105e4",
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0.13,
+              0.48,
+              -0.11
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1.5,
+              1.5,
+              1.5
+            ]
+          }
+        },
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Crate Planks 3",
+              "nodeId": 30293,
+              "prefabId": "833a92372d4e0da4",
+              "throwDistanceOverride": 8
+            }
+          ],
+          "excludeFromNavigation": true,
+          "modelUrl": "@project/assets/PolyforkAssets/crate_planks.glb",
+          "name": "Crate Planks Drop 3",
+          "navigationGeometryRole": "exclude",
+          "nodeId": 17257,
+          "physicsOptions": {
+            "collisionMeshType": "boundingBox",
+            "density": 200,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0.55,
+              0.5,
+              -0.35
+            ]
+          },
+          "prefabId": "2dab4fb814e1b1ad",
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0.26,
+              0.96,
+              -0.22
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1.5,
+              1.5,
+              1.5
+            ]
+          }
+        },
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Crate Planks 4",
+              "nodeId": 62636,
+              "prefabId": "322b0435217248af",
+              "throwDistanceOverride": 8
+            }
+          ],
+          "excludeFromNavigation": true,
+          "modelUrl": "@project/assets/PolyforkAssets/crate_planks.glb",
+          "name": "Crate Planks Drop 4",
+          "navigationGeometryRole": "exclude",
+          "nodeId": 56426,
+          "physicsOptions": {
+            "collisionMeshType": "boundingBox",
+            "density": 200,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -0.5,
+              0.65,
+              0.2
+            ]
+          },
+          "prefabId": "12be87dc77758ff3",
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0.39,
+              1.44,
+              -0.33
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1.5,
+              1.5,
+              1.5
+            ]
+          }
+        },
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Crate Planks 5",
+              "nodeId": 24023,
+              "prefabId": "cac16f9fe0819f08",
+              "throwDistanceOverride": 8
+            }
+          ],
+          "excludeFromNavigation": true,
+          "modelUrl": "@project/assets/PolyforkAssets/crate_planks.glb",
+          "name": "Crate Planks Drop 5",
+          "navigationGeometryRole": "exclude",
+          "nodeId": 41437,
+          "physicsOptions": {
+            "collisionMeshType": "boundingBox",
+            "density": 200,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0.05,
+              0.8,
+              0.5
+            ]
+          },
+          "prefabId": "cf3ea5d9e2a5fd26",
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0.52,
+              1.92,
+              -0.44
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1.5,
+              1.5,
+              1.5
+            ]
+          }
+        }
+      ],
+      "name": "Cargo Crate Dismantled Planks",
+      "nodeId": 35524,
+      "prefabId": "5e70e82e9201f0b3"
+    }
+  },
+  "$version": 3
+}

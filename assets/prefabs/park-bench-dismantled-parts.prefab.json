@@ -1,0 +1,199 @@
+{
+  "$root": {
+    "$bc": "ENGINE.Prefab",
+    "$uuid": "a07271444e8f7c02",
+    "rootNode": {
+      "$bc": "ENGINE.SceneNode",
+      "children": [
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Crate 16",
+              "nodeId": 24819,
+              "prefabId": "636ef711fc3fe6dc",
+              "throwDistanceOverride": 5
+            }
+          ],
+          "modelUrl": "@project/assets/PolyforkAssets/Bench_scrapt1.glb",
+          "name": "Bench Scrapt 04",
+          "nodeId": 59566,
+          "physicsOptions": {
+            "density": 2000,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -1.3,
+              0.5,
+              -0.05
+            ]
+          },
+          "prefabId": "26c74975032d4486",
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              0,
+              -1.22173
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1.5,
+              1.5,
+              1.5
+            ]
+          }
+        },
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Crate 17",
+              "nodeId": 24819,
+              "prefabId": "2743d3359764e2b6",
+              "throwDistanceOverride": 5
+            }
+          ],
+          "modelUrl": "@project/assets/PolyforkAssets/Bench_scrapt1.glb",
+          "name": "Bench Scrapt 05",
+          "nodeId": 19105,
+          "physicsOptions": {
+            "density": 2000,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              1.1,
+              0.5,
+              -0.05
+            ]
+          },
+          "prefabId": "2f05358721ff95ad",
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              0,
+              -1.919862
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1.5,
+              1.5,
+              1.5
+            ]
+          }
+        },
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Crate 14",
+              "nodeId": 58854,
+              "prefabId": "da038819429d59e8",
+              "throwDistanceOverride": 5
+            }
+          ],
+          "modelUrl": "@project/assets/PolyforkAssets/Bench_scrapt2-centered.glb",
+          "name": "Bench Scrapt 2",
+          "nodeId": 40536,
+          "physicsOptions": {
+            "density": 2000,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0,
+              0.6,
+              0
+            ]
+          },
+          "prefabId": "42a4ca88a92c6f27",
+          "receiveShadow": true,
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1.5,
+              1.5,
+              1.5
+            ]
+          }
+        },
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Crate 15",
+              "nodeId": 14951,
+              "prefabId": "7b6e40028d27a3e5",
+              "throwDistanceOverride": 5
+            }
+          ],
+          "modelUrl": "@project/assets/PolyforkAssets/Bench_scrapt3-centered.glb",
+          "name": "Bench Scrapt 3",
+          "nodeId": 14922,
+          "physicsOptions": {
+            "density": 2000,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0,
+              0.9,
+              -0.7
+            ]
+          },
+          "prefabId": "6f9fc0fec44b68ac",
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              -1.919862,
+              0,
+              0
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1.5,
+              1.5,
+              1.5
+            ]
+          }
+        }
+      ],
+      "name": "Park Bench Dismantled Parts",
+      "nodeId": 52157,
+      "prefabId": "d4af4eae5d9c7c1e"
+    }
+  },
+  "$version": 3
+}

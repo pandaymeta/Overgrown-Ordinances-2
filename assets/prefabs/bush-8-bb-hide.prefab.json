@@ -1,0 +1,57 @@
+{
+  "$root": {
+    "$bc": "ENGINE.Prefab",
+    "$uuid": "6e2d19c3de086d58",
+    "rootNode": {
+      "$bc": "ENGINE.SceneNode",
+      "children": [
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "attachToBodyCenter": true,
+              "bodyCenterPositionOffset": {
+                "$bc": "v3",
+                "_": [
+                  0,
+                  0.6,
+                  0
+                ]
+              },
+              "children": [],
+              "name": "Carryable Bush 8 Bb",
+              "nodeId": 33195,
+              "prefabId": "c0a4e17b92d65f38",
+              "throwEnabled": false
+            }
+          ],
+          "excludeFromNavigation": true,
+          "modelUrl": "@project/assets/PolyforkAssets/bush-8bb596.glb",
+          "name": "Bush 8 Bb Hide",
+          "navigationGeometryRole": "exclude",
+          "nodeId": 61570,
+          "physicsOptions": {
+            "collisionProfile": "NoCollision",
+            "enabled": false
+          },
+          "prefabId": "a47f9c12e83b6d01",
+          "receiveShadow": true,
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              3,
+              3,
+              3
+            ]
+          }
+        }
+      ],
+      "name": "Bush 8 Bb Hide Drop",
+      "nodeId": 22653,
+      "prefabId": "e5d28a90b14c7f63"
+    }
+  },
+  "$version": 3
+}

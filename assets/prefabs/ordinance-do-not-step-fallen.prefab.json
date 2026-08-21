@@ -1,0 +1,64 @@
+{
+  "$root": {
+    "$bc": "ENGINE.Prefab",
+    "$uuid": "31231ce92948f1b5",
+    "rootNode": {
+      "$bc": "ENGINE.SceneNode",
+      "children": [
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Do Not Step",
+              "nodeId": 17419,
+              "prefabId": "4fe3f09ee04ce328",
+              "throwDistanceOverride": 5
+            }
+          ],
+          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/DoNotStep.glb",
+          "name": "Do Not Step Fallen Mesh",
+          "nodeId": 35631,
+          "physicsOptions": {
+            "collisionMeshType": "convexHull",
+            "density": 2000,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0,
+              0.2,
+              0
+            ]
+          },
+          "prefabId": "5201d5aa5680a0ab",
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0.35,
+              0.1,
+              0
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ],
+      "name": "Do Not Step Fallen",
+      "nodeId": 28578,
+      "prefabId": "e757fdb2a75bc07e"
+    }
+  },
+  "$version": 3
+}

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": [
+    "asset-pack-authoring",
+    "behavior-tree",
+    "engine-upgrades",
+    "genesys-editor-manual",
+    "genesys-engine",
+    "genesys-mcp-orchestrator",
+    "genesys-multiplayer",
+    "genesys-ui-kit",
+    "pickups-interactions-and-doors",
+    "ptc-engine-reference",
+    "ptc-engine-search",
+    "webgpu-tsl-node-material-assets"
+  ]
+}

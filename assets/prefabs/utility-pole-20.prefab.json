@@ -1,0 +1,35 @@
+{
+  "$root": {
+    "$bc": "ENGINE.Prefab",
+    "$uuid": "20b144440b91591a",
+    "rootNode": {
+      "$bc": "ENGINE.SceneNode",
+      "children": [
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [],
+          "modelUrl": "@project/assets/PolyforkAssets/utilitypole/utility-pole-14-no-wires.glb",
+          "name": "Utility Pole 20 Mesh",
+          "nodeId": 29324,
+          "physicsOptions": {
+            "collisionMeshType": "trimesh"
+          },
+          "prefabId": "7a1c9e04b3d6825f",
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1.3,
+              1.3,
+              1.3
+            ]
+          }
+        }
+      ],
+      "name": "Utility Pole 20",
+      "nodeId": 8497,
+      "prefabId": "9d2e18c4f0a76b31"
+    }
+  },
+  "$version": 3
+}

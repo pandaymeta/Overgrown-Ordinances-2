@@ -1,0 +1,162 @@
+{
+  "$root": {
+    "$bc": "ENGINE.Prefab",
+    "$uuid": "dd032ef03f8afec8",
+    "rootNode": {
+      "$bc": "ENGINE.SceneNode",
+      "children": [
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Crate 22",
+              "nodeId": 25273,
+              "prefabId": "7b93c718a6085117",
+              "throwDistanceOverride": 5
+            }
+          ],
+          "modelUrl": "@project/assets/PolyforkAssets/guardrail4.glb",
+          "name": "Guardrail 4",
+          "nodeId": 46647,
+          "physicsOptions": {
+            "collisionMeshType": "trimesh",
+            "density": 2000,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0,
+              0.5,
+              0
+            ]
+          },
+          "prefabId": "9a4867547fad7e73",
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0.785398,
+              0,
+              0
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1.5,
+              1.5,
+              1.5
+            ]
+          }
+        },
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Crate 21",
+              "nodeId": 14337,
+              "prefabId": "dd0326793125878a",
+              "throwDistanceOverride": 5
+            }
+          ],
+          "modelUrl": "@project/assets/PolyforkAssets/guardrail3.glb",
+          "name": "Guardrail 3",
+          "nodeId": 39881,
+          "physicsOptions": {
+            "collisionMeshType": "trimesh",
+            "density": 2000,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -2.2,
+              0.2,
+              -0.1
+            ]
+          },
+          "prefabId": "394ffd34781c9819",
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0.785398,
+              -1.570796,
+              0
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1.5,
+              1.5,
+              1.5
+            ]
+          }
+        },
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Crate 23",
+              "nodeId": 14337,
+              "prefabId": "4ac7fdbbd4f133a6",
+              "throwDistanceOverride": 5
+            }
+          ],
+          "modelUrl": "@project/assets/PolyforkAssets/guardrail3.glb",
+          "name": "Guardrail 05",
+          "nodeId": 29599,
+          "physicsOptions": {
+            "collisionMeshType": "trimesh",
+            "density": 2000,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              2,
+              0.2,
+              -0.1
+            ]
+          },
+          "prefabId": "4b4cd3ea2d7b5b30",
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0.785398,
+              -1.570796,
+              0
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1.5,
+              1.5,
+              1.5
+            ]
+          }
+        }
+      ],
+      "name": "Guardrail D Dismantled Parts",
+      "nodeId": 13816,
+      "prefabId": "87df99cf47e9a31d"
+    }
+  },
+  "$version": 3
+}

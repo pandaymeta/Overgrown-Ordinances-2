@@ -3,8 +3,305 @@
 
 import { registerGeneratedClassMetadata, registerGeneratedPropertyMetadata } from '@gnsx/genesys.js';
 
+import { AsphaltRoadTile } from './asphalt-road-tile.js';
+import { CarryableCrateNode } from './carryable-crate-node.js';
+import { ClimbableLadder } from './climbable-ladder.js';
+import { ThirdPersonPlayer } from './player.js';
+import { PushablePhysicsStabilizerNode } from './pushable-physics-stabilizer-node.js';
+import { SharpSignBoardMaterial } from './sharp-sign-board-material.js';
 
 export function registerMetadata(): void {
+  registerGeneratedPropertyMetadata(AsphaltRoadTile, {
+      "piece": {
+        "type": "enum",
+        "options": [
+          "straight",
+          "corner",
+          "t-junction",
+          "crossroads",
+          "end"
+        ],
+        "category": "Road",
+        "description": "Which 4 m road piece to build. Geometry is rebuilt, not rotated."
+      },
+      "lines": {
+        "type": "enum",
+        "options": [
+          "none",
+          "centre",
+          "edges",
+          "both"
+        ],
+        "category": "Road",
+        "description": "Painted lane markings as real geometry, 2 mm proud of the asphalt."
+      },
+      "pour": {
+        "type": "enum",
+        "options": [
+          "none",
+          "step",
+          "tone"
+        ],
+        "category": "Road",
+        "description": "Junction pour. Does nothing on a straight piece."
+      },
+      "crossing": {
+        "type": "boolean",
+        "category": "Road",
+        "description": "Zebra crossing bars across the carriageway."
+      },
+      "colorway": {
+        "type": "enum",
+        "options": [
+          "city-asphalt",
+          "fresh-blacktop",
+          "sun-faded",
+          "pale-concrete"
+        ],
+        "category": "Look",
+        "description": "Curated color scheme. Sets all zone colours at once."
+      },
+      "asphalt": {
+        "type": "color",
+        "category": "Look",
+        "description": "Road surface colour."
+      },
+      "patchLight": {
+        "type": "color",
+        "category": "Look",
+        "description": "Older, lighter patch colour (needs Patch count 1+)."
+      },
+      "patchDark": {
+        "type": "color",
+        "category": "Look",
+        "description": "Newer, darker patch colour (needs Patch count 1+)."
+      },
+      "base": {
+        "type": "color",
+        "category": "Look",
+        "description": "Sub-base / underside colour."
+      },
+      "paint": {
+        "type": "color",
+        "category": "Look",
+        "description": "Lane marking and zebra paint colour."
+      },
+      "layout": {
+        "type": "enum",
+        "options": [
+          "patchwork",
+          "courses",
+          "blocks"
+        ],
+        "category": "Look",
+        "description": "Paving layout. Only visible when Patch count is 1 or more."
+      },
+      "patchCount": {
+        "type": "number",
+        "min": 0,
+        "max": 10,
+        "step": 1,
+        "category": "Look",
+        "description": "Patch divisions per axis. 0 is a clean flat road."
+      }
+    });
+
+  registerGeneratedClassMetadata(CarryableCrateNode, { description: "Reusable behavior that lets a dynamic PrimitiveNode be carried and released safely." });
+  registerGeneratedPropertyMetadata(CarryableCrateNode, {
+      "pickupRange": {
+        "type": "number",
+        "min": 0.5,
+        "max": 10,
+        "step": 0.1,
+        "category": "Carry"
+      },
+      "throwEnabled": {
+        "type": "boolean",
+        "category": "Carry"
+      },
+      "settleFlatAfterThrow": {
+        "type": "boolean",
+        "category": "Carry"
+      },
+      "attachToRightHand": {
+        "type": "boolean",
+        "category": "Carry"
+      },
+      "attachToBodyCenter": {
+        "type": "boolean",
+        "category": "Carry"
+      },
+      "bodyCenterPositionOffset": {
+        "type": "vector3",
+        "category": "Carry"
+      },
+      "rightHandPositionOffset": {
+        "type": "vector3",
+        "category": "Carry"
+      },
+      "rightHandRotationOffset": {
+        "type": "euler",
+        "category": "Carry"
+      },
+      "carryRotationOffset": {
+        "type": "euler",
+        "category": "Carry"
+      },
+      "throwDistanceOverride": {
+        "type": "number",
+        "min": 0,
+        "max": 30,
+        "step": 0.5,
+        "category": "Carry"
+      },
+      "throwArcHeightOverride": {
+        "type": "number",
+        "min": 0,
+        "max": 10,
+        "step": 0.25,
+        "category": "Carry"
+      },
+      "carryDistanceOverride": {
+        "type": "number",
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "category": "Carry"
+      },
+      "carryHeightOverride": {
+        "type": "number",
+        "min": -1,
+        "max": 5,
+        "step": 0.1,
+        "category": "Carry"
+      }
+    });
+
+  registerGeneratedPropertyMetadata(ClimbableLadder, {
+      "climbSpeed": {
+        "type": "number",
+        "min": 0.5,
+        "max": 8,
+        "step": 0.1,
+        "category": "Climb",
+        "description": "Vertical climb speed in meters per second."
+      }
+    });
+
+  registerGeneratedClassMetadata(ThirdPersonPlayer, { description: "Third person player: WASD relative to camera yaw, mesh faces move direction,\npitch locked at 45° from the floor, hold RMB to orbit yaw (root/body stay decoupled)." });
+  registerGeneratedPropertyMetadata(ThirdPersonPlayer, {
+      "bodyTurnSpeed": {
+        "type": "number",
+        "min": 1,
+        "max": 40,
+        "step": 0.5,
+        "category": "Movement"
+      },
+      "respawnHeight": {
+        "type": "number",
+        "min": -100,
+        "max": 0,
+        "step": 1,
+        "category": "Respawn"
+      },
+      "cameraMinDistance": {
+        "type": "number",
+        "min": 1,
+        "max": 10000,
+        "step": 1,
+        "category": "Camera"
+      },
+      "cameraMaxDistance": {
+        "type": "number",
+        "min": 1,
+        "max": 10000,
+        "step": 1,
+        "category": "Camera"
+      },
+      "cameraZoomSmoothing": {
+        "type": "number",
+        "min": 1,
+        "max": 30,
+        "step": 0.5,
+        "category": "Camera"
+      },
+      "pickupRange": {
+        "type": "number",
+        "min": 0.5,
+        "max": 10,
+        "step": 0.1,
+        "category": "Carry"
+      },
+      "carryDistance": {
+        "type": "number",
+        "min": 0.5,
+        "max": 5,
+        "step": 0.1,
+        "category": "Carry"
+      },
+      "carryHeight": {
+        "type": "number",
+        "min": 0,
+        "max": 3,
+        "step": 0.05,
+        "category": "Carry"
+      },
+      "throwArcHeight": {
+        "type": "number",
+        "min": 0.25,
+        "max": 5,
+        "step": 0.25,
+        "category": "Carry"
+      },
+      "maxThrowDistance": {
+        "type": "number",
+        "min": 1,
+        "max": 30,
+        "step": 0.5,
+        "category": "Carry"
+      }
+    });
+
+  registerGeneratedClassMetadata(PushablePhysicsStabilizerNode, { description: "Stabilizes a heavy grounded dynamic prop while preserving gravity and meaningful pushes." });
+  registerGeneratedPropertyMetadata(PushablePhysicsStabilizerNode, {
+      "linearDamping": {
+        "type": "number",
+        "min": 0,
+        "max": 20,
+        "step": 0.25,
+        "category": "Physics"
+      },
+      "settleVelocity": {
+        "type": "number",
+        "min": 0.05,
+        "max": 2,
+        "step": 0.05,
+        "category": "Physics"
+      }
+    });
+
+  registerGeneratedPropertyMetadata(SharpSignBoardMaterial, {
+      "color": {
+        "type": "color",
+        "description": "Tint multiplied with the sign map"
+      },
+      "mapPath": {
+        "type": "texturePath",
+        "description": "Sign graphic (PNG map)"
+      },
+      "anisotropy": {
+        "type": "number",
+        "min": 1,
+        "max": 16,
+        "step": 1,
+        "description": "Anisotropic filtering amount (helps angled / distant boards)"
+      },
+      "sharpAtDistance": {
+        "type": "boolean",
+        "description": "Disable mipmaps for max still sharpness (causes shimmer when moving). Prefer off."
+      }
+    });
+
 }
 
 // Deferred to avoid circular reference issues during module initialization

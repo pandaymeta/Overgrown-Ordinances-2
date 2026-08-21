@@ -1,0 +1,95 @@
+{
+  "$root": {
+    "$bc": "ENGINE.Prefab",
+    "$uuid": "d3a255da0867e370",
+    "rootNode": {
+      "$bc": "ENGINE.SceneNode",
+      "children": [
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Crate Wood 2",
+              "nodeId": 55654,
+              "prefabId": "9532d632c4b5bf7c",
+              "throwDistanceOverride": 8
+            }
+          ],
+          "modelUrl": "@project/assets/PolyforkAssets/Wood2-centered.glb",
+          "name": "Kiosk Wood",
+          "nodeId": 37902,
+          "physicsOptions": {
+            "density": 80,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0.125,
+              0.3,
+              -0.575
+            ]
+          },
+          "prefabId": "646ac7c616826f44",
+          "receiveShadow": true,
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1.65,
+              1.65,
+              1.65
+            ]
+          }
+        },
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Crate Wood 1",
+              "nodeId": 55259,
+              "prefabId": "d85edd34794250ae",
+              "throwDistanceOverride": 8
+            }
+          ],
+          "modelUrl": "@project/assets/PolyforkAssets/Wood1.glb",
+          "name": "Kiosk Wood",
+          "nodeId": 20878,
+          "physicsOptions": {
+            "density": 80,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -0.125,
+              0.55,
+              0.825
+            ]
+          },
+          "prefabId": "0184847061d75fe6",
+          "receiveShadow": true,
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1.5,
+              1.5,
+              1.5
+            ]
+          }
+        }
+      ],
+      "name": "Trail Map Kiosk Dismantled Parts",
+      "nodeId": 60020,
+      "prefabId": "102dab48b9ce75a8"
+    }
+  },
+  "$version": 3
+}

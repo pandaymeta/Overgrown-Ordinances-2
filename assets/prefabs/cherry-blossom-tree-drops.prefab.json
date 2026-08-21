@@ -1,0 +1,130 @@
+{
+  "$root": {
+    "$bc": "ENGINE.Prefab",
+    "$uuid": "4f9c5e101401258e",
+    "rootNode": {
+      "$bc": "ENGINE.SceneNode",
+      "children": [
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "children": [],
+              "name": "Carryable Crate Log 1",
+              "nodeId": 21751,
+              "prefabId": "f2d21bcda0559ea7",
+              "throwDistanceOverride": 8
+            }
+          ],
+          "excludeFromNavigation": true,
+          "modelUrl": "@project/assets/PolyforkAssets/fallen-log-1685fb-branch-color.glb",
+          "name": "Log",
+          "navigationGeometryRole": "exclude",
+          "nodeId": 64322,
+          "physicsOptions": {
+            "density": 80,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -0.8,
+              0.2,
+              0
+            ]
+          },
+          "prefabId": "e053ca61217d3899",
+          "receiveShadow": true
+        },
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "children": [],
+              "name": "Carryable Crate Log 2",
+              "nodeId": 5104,
+              "prefabId": "778f9dd121b16f2a",
+              "throwDistanceOverride": 8
+            }
+          ],
+          "excludeFromNavigation": true,
+          "modelUrl": "@project/assets/PolyforkAssets/fallen-log-1685fb-branch-color.glb",
+          "name": "Log",
+          "navigationGeometryRole": "exclude",
+          "nodeId": 32452,
+          "physicsOptions": {
+            "density": 80,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0,
+              0.5,
+              0.6
+            ]
+          },
+          "prefabId": "d2dd4dbf73e70f18",
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              2.961578,
+              0.30071,
+              -2.59065
+            ]
+          }
+        },
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "children": [],
+              "name": "Carryable Crate Log 3",
+              "nodeId": 6706,
+              "prefabId": "899048b132192cfe",
+              "throwDistanceOverride": 8
+            }
+          ],
+          "excludeFromNavigation": true,
+          "modelUrl": "@project/assets/PolyforkAssets/fallen-log-1685fb-branch-color.glb",
+          "name": "Log",
+          "navigationGeometryRole": "exclude",
+          "nodeId": 39249,
+          "physicsOptions": {
+            "density": 80,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0.8,
+              0.8,
+              -0.5
+            ]
+          },
+          "prefabId": "1241f3ec2aa7dca8",
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              -0.14469,
+              0.685451,
+              0.226238
+            ]
+          }
+        }
+      ],
+      "name": "Cherry Blossom Tree Log Drops",
+      "nodeId": 59130,
+      "prefabId": "e05386b304d1e23d"
+    }
+  },
+  "$version": 3
+}

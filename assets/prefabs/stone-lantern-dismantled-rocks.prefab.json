@@ -1,0 +1,262 @@
+{
+  "$root": {
+    "$bc": "ENGINE.Prefab",
+    "$uuid": "9246cb3efa1f2e1c",
+    "rootNode": {
+      "$bc": "ENGINE.SceneNode",
+      "children": [
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryDistanceOverride": 0.7,
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Crate Rock 1",
+              "nodeId": 41470,
+              "prefabId": "18df29996d0333e8",
+              "throwArcHeightOverride": 3,
+              "throwDistanceOverride": 12
+            }
+          ],
+          "excludeFromNavigation": true,
+          "modelUrl": "@project/assets/PolyforkAssets/small-rock-457be8.glb",
+          "name": "Small Rock 457 Be 8 Drop 1",
+          "navigationGeometryRole": "exclude",
+          "nodeId": 19418,
+          "physicsOptions": {
+            "density": 10,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -0.3,
+              0.2,
+              -0.3
+            ]
+          },
+          "prefabId": "1364cfd8d80cdb55",
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              0.8,
+              0.8,
+              0.8
+            ]
+          }
+        },
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryDistanceOverride": 0.7,
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Crate Rock 2",
+              "nodeId": 64343,
+              "prefabId": "a5271b517aa4a511",
+              "throwArcHeightOverride": 3,
+              "throwDistanceOverride": 12
+            }
+          ],
+          "excludeFromNavigation": true,
+          "modelUrl": "@project/assets/PolyforkAssets/small-rock-457be8.glb",
+          "name": "Small Rock 457 Be 8 Drop 2",
+          "navigationGeometryRole": "exclude",
+          "nodeId": 14579,
+          "physicsOptions": {
+            "density": 10,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0.2,
+              0.4,
+              -0.25
+            ]
+          },
+          "prefabId": "b0bbb3d5c15cb44e",
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0.21,
+              0.63,
+              -0.17
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              0.7,
+              0.7,
+              0.7
+            ]
+          }
+        },
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryDistanceOverride": 0.7,
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Crate Rock 3",
+              "nodeId": 26882,
+              "prefabId": "e4e4bce4318beabe",
+              "throwArcHeightOverride": 3,
+              "throwDistanceOverride": 12
+            }
+          ],
+          "excludeFromNavigation": true,
+          "modelUrl": "@project/assets/PolyforkAssets/small-rock-457be8.glb",
+          "name": "Small Rock 457 Be 8 Drop 3",
+          "navigationGeometryRole": "exclude",
+          "nodeId": 3954,
+          "physicsOptions": {
+            "density": 10,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -0.2,
+              0.6,
+              0.1
+            ]
+          },
+          "prefabId": "59b8b1f5cdf09589",
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0.42,
+              1.26,
+              -0.34
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              0.6,
+              0.6,
+              0.6
+            ]
+          }
+        },
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryDistanceOverride": 0.7,
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Crate Rock 4",
+              "nodeId": 6402,
+              "prefabId": "a7f108425db604b0",
+              "throwArcHeightOverride": 3,
+              "throwDistanceOverride": 12
+            }
+          ],
+          "excludeFromNavigation": true,
+          "modelUrl": "@project/assets/PolyforkAssets/small-rock-457be8.glb",
+          "name": "Small Rock 457 Be 8 Drop 4",
+          "navigationGeometryRole": "exclude",
+          "nodeId": 33142,
+          "physicsOptions": {
+            "density": 10,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0.3,
+              0.8,
+              0.1
+            ]
+          },
+          "prefabId": "e9b4845650cc8d40",
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0.63,
+              1.89,
+              -0.51
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              0.6,
+              0.6,
+              0.6
+            ]
+          }
+        },
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryDistanceOverride": 0.7,
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Crate Rock 05",
+              "nodeId": 6402,
+              "prefabId": "730bd44b3d463717",
+              "throwArcHeightOverride": 3,
+              "throwDistanceOverride": 12
+            }
+          ],
+          "excludeFromNavigation": true,
+          "modelUrl": "@project/assets/PolyforkAssets/small-rock-457be8.glb",
+          "name": "Small Rock 457 Be 8 Drop 05",
+          "navigationGeometryRole": "exclude",
+          "nodeId": 34906,
+          "physicsOptions": {
+            "density": 10,
+            "motionType": "dynamic"
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0,
+              0.9,
+              -0.2
+            ]
+          },
+          "prefabId": "a2b6a8f1c45b2ff6",
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0.63,
+              1.89,
+              -0.51
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              0.6,
+              0.6,
+              0.6
+            ]
+          }
+        }
+      ],
+      "name": "Stone Lantern Dismantled Rocks",
+      "nodeId": 51286,
+      "prefabId": "4cf12772f7bdeac8"
+    }
+  },
+  "$version": 3
+}

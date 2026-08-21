@@ -1,0 +1,50 @@
+{
+  "$root": {
+    "$bc": "ENGINE.Prefab",
+    "$uuid": "d8b0401f1c3ff364",
+    "rootNode": {
+      "$bc": "ENGINE.SceneNode",
+      "children": [
+        {
+          "$bc": "ENGINE.ModelMeshNode",
+          "castShadow": true,
+          "children": [
+            {
+              "$bc": "GAME.CarryableCrateNode",
+              "carryDistanceOverride": 0.7,
+              "carryHeightOverride": 0.8,
+              "children": [],
+              "name": "Carryable Crate Peach Drop",
+              "nodeId": 21483,
+              "prefabId": "cde127a44d7d91c8",
+              "throwArcHeightOverride": 3,
+              "throwDistanceOverride": 12
+            }
+          ],
+          "excludeFromNavigation": true,
+          "modelUrl": "@project/assets/PolyforkAssets/peach-100232.glb",
+          "name": "Peach 100232 Drop",
+          "navigationGeometryRole": "exclude",
+          "nodeId": 4834,
+          "physicsOptions": {
+            "density": 5,
+            "motionType": "dynamic"
+          },
+          "prefabId": "44583d3c4e60c155",
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              4,
+              4,
+              4
+            ]
+          }
+        }
+      ],
+      "name": "Cherry Blossom Peach Drop",
+      "nodeId": 53897,
+      "prefabId": "59a57a5b7ed58e93"
+    }
+  },
+  "$version": 3
+}
