@@ -111,8 +111,8 @@
           "name": "Utility Pole Fallen Mesh",
           "nodeId": 48233,
           "physicsOptions": {
-            "collisionMeshType": "trimesh",
-            "density": 10000,
+            "collisionMeshType": "convexHull",
+            "density": 1200,
             "motionType": "dynamic"
           },
           "position": {

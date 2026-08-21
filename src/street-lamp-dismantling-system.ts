@@ -163,6 +163,12 @@ export class StreetLampDismantlingSystem {
   private readonly dismantledTargets = new Set<ENGINE.SceneNode>();
   private readonly dismantledPhysics = new Map<ENGINE.SceneNode, ENGINE.NodePhysicsOptions>();
   private readonly spawnedScrapRoots: ENGINE.SceneNode[] = [];
+  /**
+   * Scrap roots retired from the world but not destroyed yet — destroying heavy
+   * scrap in the same frame as a cinematic/reset can lose the WebGPU device.
+   */
+  private readonly pendingDestroyRoots: ENGINE.SceneNode[] = [];
+  private pendingDestroyFrames = 0;
   private readonly meshSwapRecords: Array<{ node: ENGINE.ModelMeshNode; modelUrl: string }> = [];
   private readonly poseFallHomePoses = new Map<ENGINE.ModelMeshNode, {
     position: THREE.Vector3;
@@ -170,7 +176,7 @@ export class StreetLampDismantlingSystem {
     scale: THREE.Vector3;
     physics: ENGINE.NodePhysicsOptions;
   }>();
-  private readonly cherryTreeHealth = new WeakMap<ENGINE.ModelMeshNode, number>();
+  private readonly cherryTreeHealth = new Map<ENGINE.ModelMeshNode, number>();
   /** Fired when a Traffic Cone C reaches 0 health (5th axe hit). */
   private trafficConeFifthHitHandler: (() => void) | null = null;
   private utilityPoleDismantledHandler: (() => void) | null = null;
@@ -277,6 +283,7 @@ export class StreetLampDismantlingSystem {
     this.updateBushAppearAnimations(deltaTime);
     this.updatePoseFallAnimations(deltaTime);
     this.updateHydrantWater(deltaTime, camera);
+    this.flushPendingScrapDestroys();
     const world = player.getWorld();
     if (world) {
       this.updateHydrantProjectileHits(world);
@@ -296,6 +303,124 @@ export class StreetLampDismantlingSystem {
       this.findPointedDismantleTarget(player, carriedObject, camera, aimNdc),
     );
     this.updateTreeHealthBar(world, camera, this.targetObject ?? this.healthDisplayTarget);
+  }
+
+  /**
+   * Lighten scrap GPU cost before cinematics without changing motion/physics.
+   * Hides scrap from the renderer (physics bodies stay as-is).
+   */
+  public prepareScrapForCinematic(): void {
+    for (const scrap of this.spawnedScrapRoots) {
+      this.disableScrapShadows(scrap);
+      scrap.visible = false;
+      scrap.traverse((child) => {
+        child.visible = false;
+      });
+      this.setScrapMeshesRenderable(scrap, false);
+    }
+  }
+
+  /** Detach scrap from the world and queue deferred GPU-safe destroy. */
+  public retireAllScrap(): void {
+    for (const scrap of this.spawnedScrapRoots.splice(0)) {
+      this.retireScrapRoot(scrap);
+    }
+  }
+
+  /** Queue an already-detached (or still-parented) root for deferred GPU-safe destroy. */
+  public retireDetachedRoot(root: ENGINE.SceneNode): void {
+    const tracked = this.spawnedScrapRoots.indexOf(root);
+    if (tracked >= 0) {
+      this.spawnedScrapRoots.splice(tracked, 1);
+    }
+    this.retireScrapRoot(root);
+  }
+
+  public hasPendingScrapDestroys(): boolean {
+    return this.pendingDestroyRoots.length > 0;
+  }
+
+  /** Force-progress deferred scrap destroys (call while screen is black). */
+  public flushPendingScrapDestroysNow(): void {
+    this.flushPendingScrapDestroys();
+  }
+
+  /**
+   * Restore dismantled originals / pose falls / health after scrap has been
+   * retired (and preferably after pending destroys have flushed).
+   */
+  public finishDayReset(world: ENGINE.World | null): void {
+    if (!world) {
+      return;
+    }
+
+    this.setTarget(world, null);
+    this.pendingDismantle = null;
+    this.restoreHitFlash();
+    this.bushAppearAnimations.length = 0;
+    this.poseFallAnimations.length = 0;
+
+    for (const stream of this.hydrantWaterStreams) {
+      stream.destroy();
+    }
+    this.hydrantWaterStreams.length = 0;
+
+    for (const [node, home] of this.poseFallHomePoses) {
+      if (!node.parent) {
+        continue;
+      }
+      this.applyPoseFallWorldPose(node, home.position, home.quaternion, home.scale);
+      node.overridePhysicsOptions({ ...home.physics });
+      node.setPhysicsTransformUpdateFlags({
+        sendPosition: false,
+        sendRotation: false,
+        receivePosition: false,
+        receiveRotation: false,
+      });
+      node.visible = true;
+    }
+    this.poseFallHomePoses.clear();
+
+    // Mesh reloads after scrap GPU teardown (staged day transition waits first).
+    const meshSwaps = this.meshSwapRecords.splice(0);
+    if (meshSwaps.length > 0) {
+      window.setTimeout(() => {
+        for (const record of meshSwaps) {
+          if (!record.node.parent || !record.modelUrl) {
+            continue;
+          }
+          void record.node.loadModel(ENGINE.AssetPath.fromString(record.modelUrl)).then(() => {
+            void record.node.waitForLoad();
+          });
+        }
+      }, 220);
+    }
+
+    for (const node of [...this.dismantledTargets]) {
+      this.restoreDismantledNode(node);
+    }
+    this.dismantledTargets.clear();
+    this.dismantledPhysics.clear();
+    this.clearAllTargetHealth();
+
+    this.hidePoseFallTargets(world);
+    this.bindHydrantProjectileHits(world);
+    this.parentPoleCutBoardsOntoUtilityPoles(world);
+  }
+
+  /**
+   * Immediate full reset (editor clear / teardown). Prefer staged retire → finish
+   * during play day transitions.
+   */
+  public resetDay(world: ENGINE.World | null): void {
+    if (!world) {
+      return;
+    }
+    this.prepareScrapForCinematic();
+    this.retireAllScrap();
+    this.pendingDestroyFrames = 99;
+    this.flushPendingScrapDestroys();
+    this.finishDayReset(world);
   }
 
   /** Dismantles the pointed target; otherwise leaves left-click available for carry/throw. */
@@ -350,82 +475,101 @@ export class StreetLampDismantlingSystem {
     this.treeHealthBar?.destroy();
     this.treeHealthBar = null;
     this.treeHealthBarReady = false;
-    this.spawnedScrapRoots.length = 0;
+    for (const scrap of this.spawnedScrapRoots.splice(0)) {
+      this.retireScrapRoot(scrap);
+    }
+    this.pendingDestroyFrames = 99;
+    this.flushPendingScrapDestroys();
     this.meshSwapRecords.length = 0;
     this.dismantledTargets.clear();
     this.dismantledPhysics.clear();
     this.poseFallHomePoses.clear();
+    this.clearAllTargetHealth();
+  }
+
+  /** Fresh day / soft-loop: every axe target starts at full health again. */
+  private clearAllTargetHealth(): void {
+    this.cherryTreeHealth.clear();
+    this.healthDisplayTarget = null;
+    this.healthDisplayTime = 0;
+    if (this.treeHealthBarReady) {
+      this.treeHealthBar?.setValue(CHERRY_TREE_MAX_HEALTH, false);
+      this.treeHealthBar?.hide();
+    }
+  }
+
+  private retireScrapRoot(scrap: ENGINE.SceneNode): void {
+    this.disableScrapShadows(scrap);
+    // Disable physics only while retiring for destroy — do not convert motion types
+    // during normal play (poles must keep falling / settling dynamically).
+    const stack: ENGINE.SceneNode[] = [scrap];
+    while (stack.length > 0) {
+      const node = stack.pop();
+      if (!node) {
+        continue;
+      }
+      node.visible = false;
+      if (node instanceof ENGINE.PrimitiveNode) {
+        node.setPhysicsVectorParam(ENGINE.PhysicsVectorParam.LinearVelocity, [0, 0, 0]);
+        node.setPhysicsVectorParam(ENGINE.PhysicsVectorParam.AngularVelocity, [0, 0, 0]);
+        node.overridePhysicsOptions({ enabled: false });
+      }
+      for (const child of node.children) {
+        if (child instanceof ENGINE.SceneNode) {
+          stack.push(child);
+        }
+      }
+    }
+    scrap.removeFromParent();
+    this.pendingDestroyRoots.push(scrap);
+    this.pendingDestroyFrames = 0;
+  }
+
+  private flushPendingScrapDestroys(): void {
+    if (this.pendingDestroyRoots.length === 0) {
+      return;
+    }
+    this.pendingDestroyFrames += 1;
+    // Wait enough update ticks for WebGPU to drop mesh/shadow refs before destroy.
+    if (this.pendingDestroyFrames < 16) {
+      return;
+    }
+    for (const scrap of this.pendingDestroyRoots.splice(0)) {
+      try {
+        scrap.destroy();
+      } catch (error) {
+        console.warn('[StreetLampDismantlingSystem] Scrap destroy after retire failed.', error);
+      }
+    }
+    this.pendingDestroyFrames = 0;
+  }
+
+  /** Shadows on large scrap meshes are expensive for WebGPU; physics stays unchanged. */
+  private disableScrapShadows(root: ENGINE.SceneNode): void {
+    root.traverse((child) => {
+      if (child instanceof ENGINE.ModelMeshNode) {
+        child.castShadow = false;
+        child.receiveShadow = false;
+      }
+      const mesh = child as THREE.Mesh;
+      if (mesh.isMesh) {
+        mesh.castShadow = false;
+        mesh.receiveShadow = false;
+      }
+    });
   }
 
   /**
-   * Next-day reset: remove scrap, undo pose falls / mesh swaps, and re-show
-   * props that were dismantled (hidden) during the day.
+   * Render-only hide/show for scrap GLBs. Does not call overridePhysicsOptions —
+   * physics keeps simulating while the GPU stops drawing the meshes.
    */
-  public resetDay(world: ENGINE.World | null): void {
-    if (!world) {
-      return;
-    }
-
-    this.setTarget(world, null);
-    this.pendingDismantle = null;
-    this.restoreHitFlash();
-    this.bushAppearAnimations.length = 0;
-    this.poseFallAnimations.length = 0;
-
-    for (const stream of this.hydrantWaterStreams) {
-      stream.destroy();
-    }
-    this.hydrantWaterStreams.length = 0;
-
-    for (const scrap of this.spawnedScrapRoots.splice(0)) {
-      if (scrap.parent) {
-        scrap.destroy();
+  private setScrapMeshesRenderable(root: ENGINE.SceneNode, renderable: boolean): void {
+    root.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      if (mesh.isMesh) {
+        mesh.visible = renderable;
       }
-    }
-
-    for (const [node, home] of this.poseFallHomePoses) {
-      if (!node.parent) {
-        continue;
-      }
-      this.applyPoseFallWorldPose(node, home.position, home.quaternion, home.scale);
-      node.overridePhysicsOptions({ ...home.physics });
-      node.setPhysicsTransformUpdateFlags({
-        sendPosition: false,
-        sendRotation: false,
-        receivePosition: false,
-        receiveRotation: false,
-      });
-      node.visible = true;
-    }
-    this.poseFallHomePoses.clear();
-
-    for (const record of this.meshSwapRecords.splice(0)) {
-      if (!record.node.parent || !record.modelUrl) {
-        continue;
-      }
-      void record.node.loadModel(ENGINE.AssetPath.fromString(record.modelUrl)).then(() => {
-        void record.node.waitForLoad();
-      });
-    }
-
-    for (const node of [...this.dismantledTargets]) {
-      this.restoreDismantledNode(node);
-    }
-    this.dismantledTargets.clear();
-    this.dismantledPhysics.clear();
-
-    // Clear cherry tree hit progress for the new day.
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
-      if (CHERRY_BLOSSOM_TREE_NAME.test(node.name ?? '')) {
-        this.cherryTreeHealth.delete(node);
-      }
-    }
-
-    this.healthDisplayTarget = null;
-    this.healthDisplayTime = 0;
-    this.hidePoseFallTargets(world);
-    this.bindHydrantProjectileHits(world);
-    this.parentPoleCutBoardsOntoUtilityPoles(world);
+    });
   }
 
   private markDismantled(node: ENGINE.SceneNode): void {
@@ -1305,6 +1449,8 @@ export class StreetLampDismantlingSystem {
       scraps.quaternion.copy(rotation);
       world.add(scraps);
       this.spawnedScrapRoots.push(scraps);
+      // WebGPU: scrap GLBs with castShadow are a major device-loss source.
+      this.disableScrapShadows(scraps);
       if (prefabPath === BUSH_8_BB_DROP_PREFAB) {
         this.playBushTransformAnimation(scraps);
       }

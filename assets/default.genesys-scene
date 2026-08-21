@@ -6051,9 +6051,9 @@
         "position": {
           "$bc": "v3",
           "_": [
-            -17.9,
-            -1.5,
-            14.6
+            13.4,
+            -0.7,
+            -0.1
           ]
         },
         "rotation": {
@@ -6945,20 +6945,12 @@
         "position": {
           "$bc": "v3",
           "_": [
-            10,
-            8.7,
-            -10.9
+            8.8,
+            4.7,
+            -12.9
           ]
         },
         "receiveShadow": true,
-        "rotation": {
-          "$bc": "e",
-          "_": [
-            0,
-            -1.570796,
-            0
-          ]
-        },
         "userData": {
           "objectFlags": 4
         },
@@ -7275,6 +7267,75 @@
         },
         "uuid": "e233a3512c12bb64",
         "visible": false
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "castShadow": true,
+        "modelUrl": "@project/assets/PolyforkAssets/tiled-roof-section-6f1121.glb",
+        "name": "Tiled Roof Section 6 F 1121",
+        "nodeId": 59571,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -18.7,
+            3.6,
+            -9.9
+          ]
+        },
+        "receiveShadow": true,
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "03f6ba43-e70d-48a2-8c65-c760a26841c9"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "castShadow": true,
+        "modelUrl": "@project/assets/PolyforkAssets/tiled-roof-section-6f1121.glb",
+        "name": "Tiled Roof Section 6 F 1122",
+        "nodeId": 40997,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -14.7,
+            3.6,
+            -9.9
+          ]
+        },
+        "receiveShadow": true,
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "5b20f2e645a136fb"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "castShadow": true,
+        "modelUrl": "@project/assets/PolyforkAssets/tiled-roof-section-6f1121.glb",
+        "name": "Tiled Roof Section 6 F 1123",
+        "nodeId": 16726,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -10.7,
+            3.6,
+            -9.9
+          ]
+        },
+        "receiveShadow": true,
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "6045598ba0ad74f9"
       }
     ],
     "editorData": {
@@ -8158,6 +8219,18 @@
           },
           {
             "id": "e233a3512c12bb64",
+            "nodeType": "actor"
+          },
+          {
+            "id": "03f6ba43-e70d-48a2-8c65-c760a26841c9",
+            "nodeType": "actor"
+          },
+          {
+            "id": "5b20f2e645a136fb",
+            "nodeType": "actor"
+          },
+          {
+            "id": "6045598ba0ad74f9",
             "nodeType": "actor"
           }
         ],

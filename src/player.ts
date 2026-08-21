@@ -170,6 +170,10 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     });
   }
 
+  private readonly suppressBrowserContextMenu = (event: Event): void => {
+    event.preventDefault();
+  };
+
   public override beginPlay(): boolean {
     if (!super.beginPlay()) {
       return false;
@@ -177,6 +181,14 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     const world = this.getWorld();
     if (world) {
       this.streetLampDismantling.initialize(world);
+      const container = world.gameContainer;
+      if (container) {
+        container.addEventListener('contextmenu', this.suppressBrowserContextMenu);
+        container.querySelector('canvas')?.addEventListener(
+          'contextmenu',
+          this.suppressBrowserContextMenu,
+        );
+      }
     }
     const visual = this.visualNode;
     if (visual instanceof ENGINE.ModelMeshNode) {
@@ -292,6 +304,13 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
 
   /** Drop carried/thrown objects so a day reset can restore their transforms. */
   public prepareForDayReset(): void {
+    this.releaseHeldItemsForDayReset();
+    this.streetLampDismantling.prepareScrapForCinematic();
+    this.streetLampDismantling.resetDay(this.getWorld());
+  }
+
+  /** Release carried/thrown items without touching scrap or world restore. */
+  public releaseHeldItemsForDayReset(): void {
     this.releaseCarriedCrate();
     this.releaseHeldTool();
     for (const record of this.thrownGravityRestores) {
@@ -301,7 +320,34 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     }
     this.thrownGravityRestores.length = 0;
     this.setHoveredCarryable(null);
-    this.streetLampDismantling.resetDay(this.getWorld());
+  }
+
+  /** Lighten scrap GPU cost before mailbox / ordinance cinematics (keeps physics). */
+  public prepareScrapForCinematic(): void {
+    this.streetLampDismantling.prepareScrapForCinematic();
+  }
+
+  /** Stage 1 of black-screen day transition: detach scrap, queue deferred destroy. */
+  public retireScrapForDayReset(): void {
+    this.streetLampDismantling.retireAllScrap();
+  }
+
+  public hasPendingScrapDestroys(): boolean {
+    return this.streetLampDismantling.hasPendingScrapDestroys();
+  }
+
+  /** Queue an orphan / leftover root for deferred GPU-safe destroy (day reset). */
+  public retireDetachedRootForDayReset(root: ENGINE.SceneNode): void {
+    this.streetLampDismantling.retireDetachedRoot(root);
+  }
+
+  public flushPendingScrapDestroys(): void {
+    this.streetLampDismantling.flushPendingScrapDestroysNow();
+  }
+
+  /** Stage 2: restore dismantled props / health after scrap GPU teardown. */
+  public finishDayResetRest(): void {
+    this.streetLampDismantling.finishDayReset(this.getWorld());
   }
 
   /** True while this primitive is in the player's carry / body-cover slot. */
@@ -575,6 +621,15 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
   public override endPlay(): boolean {
     if (!super.endPlay()) {
       return false;
+    }
+
+    const container = this.getWorld()?.gameContainer;
+    if (container) {
+      container.removeEventListener('contextmenu', this.suppressBrowserContextMenu);
+      container.querySelector('canvas')?.removeEventListener(
+        'contextmenu',
+        this.suppressBrowserContextMenu,
+      );
     }
 
     this.streetLampDismantling.clear(this.getWorld());

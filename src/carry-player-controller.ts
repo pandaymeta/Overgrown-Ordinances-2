@@ -36,6 +36,9 @@ export class CarryPlayerController extends ENGINE.DefaultPlayerController {
   }
 
   public override handleMouseDown(button: ENGINE.MouseButton, event: MouseEvent): boolean {
+    if (button === ENGINE.MouseButton.Right) {
+      event.preventDefault();
+    }
     if (button === ENGINE.MouseButton.Left && isCarryPawn(this.pawn)) {
       this.pawn.setCarryAimCursor(event);
       if (this.pawn.handleCarryPrimaryAction()) {

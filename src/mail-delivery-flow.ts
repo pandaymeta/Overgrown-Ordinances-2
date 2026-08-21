@@ -77,6 +77,11 @@ const CINEMATIC_BLEND_SEC = 1.15;
 const CINEMATIC_RETURN_SEC = 2.4;
 const FADE_SEC = 0.85;
 const NEXT_DAY_LABEL_SEC = 2;
+/** Black-screen staging: hide scrap, then retire, then restore, then reveal. */
+const DAY_TRANSITION_SCRAP_RETIRE_SEC = 0.15;
+const DAY_TRANSITION_WORLD_RESTORE_SEC = 0.7;
+const DAY_TRANSITION_REVEAL_SEC = 1.05;
+const DAY_TRANSITION_CINEMATIC_SEC = 1.3;
 const DELIVER_MAX_DISTANCE = 2.5;
 const TRAIL_ARROW_COUNT = 8;
 const ENVELOPE_INSERT_SEC = 2.0;
@@ -508,6 +513,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private hasNoScrapMetalsFocusAnchor = false;
   /** After ordinance focus, continue into the black next-day transition. */
   private fadeAfterOrdinanceFocus = false;
+  /** Staged next-day transition under black (scrap hide → destroy → restore → reveal). */
+  private dayTransitionScrapRetired = false;
+  private dayTransitionWorldRestored = false;
+  private dayTransitionOrdinanceRevealed = false;
+  private dayTransitionCamReady = false;
   private hiddenOrdinances: HiddenOrdinance[] = [];
   private speechEl: HTMLDivElement | null = null;
   private fadeEl: HTMLDivElement | null = null;
@@ -971,16 +981,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         this.player?.setMovementFrozen(true);
         this.player?.forceIdlePose();
         this.setFade(1);
-        // Reveal + snap ordinance cam while still black so fade-in is already framed.
-        if (this.phaseElapsed >= NEXT_DAY_LABEL_SEC * 0.45) {
-          this.applyQueuedOrdinanceReveals();
-          this.ensureWakeOrdinanceCinematic();
-        }
-        if (this.phaseElapsed >= NEXT_DAY_LABEL_SEC) {
+        this.tickDayTransitionStaging();
+        if (this.isDayTransitionHoldComplete()) {
           this.showNextDayLabel(false);
-          this.applyQueuedOrdinanceReveals();
           this.pendingOrdinance = null;
-          this.ensureWakeOrdinanceCinematic();
           this.player?.forceIdlePose();
           this.setPhase(FlowPhase.FadeFromBlack);
         }
@@ -1218,6 +1222,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private beginOrdinanceFocus(options: {
     fadeToNextDayAfter: boolean;
     target?: ENGINE.ModelMeshNode | null;
+    /** Soft-loop: blend from a pose captured before day-reset / teleport. */
+    blendFromCapturedStart?: boolean;
   }): void {
     this.fadeAfterOrdinanceFocus = options.fadeToNextDayAfter;
     this.ordinanceFocusHoldElapsed = 0;
@@ -1227,7 +1233,13 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.player?.setMovementFrozen(true);
     this.player?.setCinematicCameraLock(true);
     const target = options.target ?? this.maintenance;
-    this.startModelFrontCinematic(target, MODEL_FOCUS_DISTANCE);
+    this.startModelFrontCinematic(
+      target,
+      MODEL_FOCUS_DISTANCE,
+      false,
+      0,
+      options.blendFromCapturedStart === true,
+    );
     this.setPhase(FlowPhase.OrdinanceFocus);
   }
 
@@ -1290,6 +1302,20 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (this.isWireBypassRouteCandidate(id)) {
       this.clearHighVoltageRouteCandidate();
     }
+    // Tree canopy is easy to brush while using tram / lamps / signs — those beat tree.
+    if (
+      id === 'streetLightsClimb'
+      || id === 'doNotStepTram'
+      || id === 'doNotDestroyThisSign'
+      || id === 'doNotRemoveTheSigns'
+    ) {
+      this.routeCandidates.delete('noClimbingOnTheTree');
+      this.routeCandidateAt.delete('noClimbingOnTheTree');
+    }
+    // Tree climb: first contact only (continuous canopy standing must not out-stamp others).
+    if (id === 'noClimbingOnTheTree' && this.routeCandidates.has(id)) {
+      return;
+    }
     this.routeCandidates.add(id);
     this.routeCandidateStamp += 1;
     this.routeCandidateAt.set(id, this.routeCandidateStamp);
@@ -1332,7 +1358,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
   }
 
-  /** Lower number = higher priority (tie-break only; last stamp wins first). */
+  /** Lower number = higher priority (tie-break; also used when filtering tree climb). */
   private routePriority(id: DeliveryRouteCandidate): number {
     switch (id) {
       case 'noCatsOnStreets':
@@ -1343,26 +1369,26 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         return 3;
       case 'dontRemoveThisKiosk':
         return 4;
-      case 'noClimbingOnTheTree':
-        return 5;
-      case 'dontCutThisPole':
-        return 6;
       case 'doNotDestroyThisSign':
-        return 7;
-      case 'doNotRemoveTheSigns':
-        return 8;
-      case 'dontDestroyTheStreetLights':
-        return 9;
-      case 'dontRemoveTheCones':
-        return 10;
+        return 5;
       case 'streetLightsClimb':
-        return 11;
-      case 'highVoltage':
-        return 12;
+        return 6;
       case 'doNotStepTram':
-        return 13;
+        return 7;
       case 'doNotStepCar':
-        return 14;
+        return 8;
+      case 'dontCutThisPole':
+        return 9;
+      case 'doNotRemoveTheSigns':
+        return 10;
+      case 'dontDestroyTheStreetLights':
+        return 11;
+      case 'dontRemoveTheCones':
+        return 12;
+      case 'noClimbingOnTheTree':
+        return 20;
+      case 'highVoltage':
+        return 21;
       default: {
         const _exhaustive: never = id;
         return _exhaustive;
@@ -1402,9 +1428,19 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
     const eligible = [...this.routeCandidates].filter((id) => !this.isRouteOrdinanceActive(id));
     const hasBypass = eligible.some((id) => this.isWireBypassRouteCandidate(id));
-    const filtered = hasBypass
+    let filtered = hasBypass
       ? eligible.filter((id) => id !== 'highVoltage')
       : eligible;
+    // Tree climb loses to intentional elevated routes even if stamped later.
+    const treeBeatenBy: DeliveryRouteCandidate[] = [
+      'doNotDestroyThisSign',
+      'doNotRemoveTheSigns',
+      'streetLightsClimb',
+      'doNotStepTram',
+    ];
+    if (filtered.some((id) => treeBeatenBy.includes(id))) {
+      filtered = filtered.filter((id) => id !== 'noClimbingOnTheTree');
+    }
     if (filtered.length === 0) {
       return;
     }
@@ -1470,6 +1506,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.setTrailVisible(false);
     this.setMailboxHighlight(false);
     this.setMailboxHoverOutline(false);
+    // Scrap shadows are costly for WebGPU; physics stays dynamic so poles settle.
+    this.player?.prepareScrapForCinematic();
     this.player?.setMovementFrozen(true);
     this.player?.forceIdlePose();
     this.player?.setCinematicCameraLock(true);
@@ -2180,337 +2218,121 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   }
 
   private triggerBlockedMainRoadLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    // Same ordinance again: no black / next-day — focus board, teleport home, then zoom out.
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({ fadeToNextDayAfter: false, target: this.maintenance });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.maintenance);
   }
 
   private triggerBlockedJaywalkingLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({ fadeToNextDayAfter: false, target: this.jaywalking });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.jaywalking);
   }
 
   private triggerBlockedDoNotStepCarLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({ fadeToNextDayAfter: false, target: this.doNotStepCar });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.doNotStepCar);
   }
 
   private triggerBlockedDoNotStepTramLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({ fadeToNextDayAfter: false, target: this.doNotStepCityTram });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.doNotStepCityTram);
   }
 
   private triggerBlockedStreetLightsClimbLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({
-      fadeToNextDayAfter: false,
-      target: this.findNearestStreetLightsClimb(),
-    });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.findNearestStreetLightsClimb());
   }
 
   private triggerBlockedDontDestroyTheStreetLightsLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({
-      fadeToNextDayAfter: false,
-      target: this.findNearestStreetLightsDestroy(),
-    });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.findNearestStreetLightsDestroy());
   }
 
   private triggerBlockedDontFeedTheCatLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({
-      fadeToNextDayAfter: false,
-      target: this.findNearestDontFeedTheCat(),
-    });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.findNearestDontFeedTheCat());
   }
 
   private triggerBlockedNoCatsOnStreetsLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({
-      fadeToNextDayAfter: false,
-      target: this.findNearestNoCatsOnStreets(),
-    });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.findNearestNoCatsOnStreets());
   }
 
   private triggerBlockedNoCratesOnRoadsLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({
-      fadeToNextDayAfter: false,
-      target: this.findNearestNoCratesOnRoads(),
-    });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.findNearestNoCratesOnRoads());
   }
 
   private triggerBlockedNoBenchOnRoadsLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({
-      fadeToNextDayAfter: false,
-      target: this.findNearestNoBenchOnRoads(),
-    });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.findNearestNoBenchOnRoads());
   }
 
   private triggerBlockedNoLogsOnRoadsLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({
-      fadeToNextDayAfter: false,
-      target: this.findNearestNoLogsOnRoads(),
-    });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.findNearestNoLogsOnRoads());
   }
 
   private triggerBlockedNoWoodPlanksOnRoadsLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({
-      fadeToNextDayAfter: false,
-      target: this.findNearestNoWoodPlanksOnRoads(),
-    });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.findNearestNoWoodPlanksOnRoads());
   }
 
   private triggerBlockedDontRemoveTheConesLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({
-      fadeToNextDayAfter: false,
-      target: this.findNearestDontRemoveTheCones(),
-    });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.findNearestDontRemoveTheCones());
   }
 
   private triggerBlockedNoScrapMetalsOnRoadsLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({
-      fadeToNextDayAfter: false,
-      target: this.findNearestNoScrapMetalsOnRoads(),
-    });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.findNearestNoScrapMetalsOnRoads());
   }
 
   private triggerBlockedDontRemoveThisBushLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({
-      fadeToNextDayAfter: false,
-      target: this.findNearestDontRemoveThisBush(),
-    });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.findNearestDontRemoveThisBush());
   }
 
   private triggerBlockedDontRemoveThisKioskLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({
-      fadeToNextDayAfter: false,
-      target: this.findNearestDontRemoveThisKiosk(),
-    });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.findNearestDontRemoveThisKiosk());
   }
 
   private triggerBlockedDontCutThisPoleLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({
-      fadeToNextDayAfter: false,
-      target: this.findNearestDontCutThisPole(),
-    });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.findNearestDontCutThisPole());
   }
 
   private triggerBlockedDoNotDestroyThisSignLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({
-      fadeToNextDayAfter: false,
-      target: this.findNearestDoNotDestroyThisSign(),
-    });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.findNearestDoNotDestroyThisSign());
   }
 
   private triggerBlockedDontHitTheFireHydrantLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({
-      fadeToNextDayAfter: false,
-      target: this.findNearestDontHitTheFireHydrant(),
-    });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.findNearestDontHitTheFireHydrant());
   }
 
   private triggerBlockedHighVoltageLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({
-      fadeToNextDayAfter: false,
-      target: this.findNearestHighVoltage(),
-    });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.findNearestHighVoltage());
   }
 
   private triggerBlockedNoCuttingOfTreesLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({
-      fadeToNextDayAfter: false,
-      target: this.findNearestNoCuttingOfTrees(),
-    });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.findNearestNoCuttingOfTrees());
   }
 
   private triggerBlockedNoClimbingOnTheTreeLoop(): void {
-    this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(false);
-    this.setTrailVisible(false);
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.beginOrdinanceFocus({
-      fadeToNextDayAfter: false,
-      target: this.findNearestNoClimbingOnTheTree(),
-    });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.beginImmediateSoftLoop(this.findNearestNoClimbingOnTheTree());
   }
 
   private triggerBlockedDoNotRemoveTheSignsLoop(): void {
+    this.beginImmediateSoftLoop(this.findNearestDoNotRemoveTheSigns());
+  }
+
+  /** Soft-loop: reset day state, then smoothly zoom from the player's last view onto the board. */
+  private beginImmediateSoftLoop(target: ENGINE.ModelMeshNode | null): void {
     this.setMailboxHoverOutline(false);
     this.setMailboxHighlight(false);
     this.setTrailVisible(false);
+
+    // Capture the live gameplay camera before teleport/reset so we don't snap.
+    const active = this.getWorld()?.getActiveCamera();
+    if (active) {
+      active.updateMatrixWorld(true);
+      active.getWorldPosition(this.cinematicStartPos);
+      active.getWorldQuaternion(this.cinematicStartQuat);
+    }
+
     this.player?.prepareForDayReset();
     this.restoreDayBaseline();
     this.baselineReinforceRemaining = 10;
+    this.player?.teleportToPlayerStartAndSettle();
+    // Keep orbit camera where it was for this frame; cinematic owns the view next.
     this.beginOrdinanceFocus({
       fadeToNextDayAfter: false,
-      target: this.findNearestDoNotRemoveTheSigns(),
+      target,
+      blendFromCapturedStart: true,
     });
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
   }
 
   private onMainRoadContact(): void {
@@ -6310,19 +6132,70 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
   /**
    * Instant spawn teleport while the screen is fully black.
-   * Restores gameplay camera defaults and resets props moved during the day.
+   * Scrap teardown / world restore / ordinance reveal happen later via staging.
    */
   private performHiddenTeleport(): void {
     this.clearEnvelope();
     this.stopModelFrontCinematic();
-    this.player?.prepareForDayReset();
-    this.restoreDayBaseline();
-    // Physics can overwrite node transforms the next few frames — reinforce.
-    this.baselineReinforceRemaining = 10;
+    this.dayTransitionScrapRetired = false;
+    this.dayTransitionWorldRestored = false;
+    this.dayTransitionOrdinanceRevealed = false;
+    this.dayTransitionCamReady = false;
+    this.player?.releaseHeldItemsForDayReset();
+    this.player?.prepareScrapForCinematic();
     this.player?.setMovementFrozen(true);
     this.player?.teleportToPlayerStartAndSettle();
-    // Default camera/orbit under black so fade-in (and loop days) wake cleanly.
     this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+  }
+
+  /**
+   * Under full black: retire scrap → wait for GPU destroy → restore world →
+   * reveal boards → snap ordinance cam.
+   */
+  private tickDayTransitionStaging(): void {
+    // Let the dismantling system tick deferred destroys once per update —
+    // do not double-increment the GPU settle counter from here.
+    const t = this.phaseElapsed;
+
+    if (!this.dayTransitionScrapRetired && t >= DAY_TRANSITION_SCRAP_RETIRE_SEC) {
+      this.player?.retireScrapForDayReset();
+      this.dayTransitionScrapRetired = true;
+    }
+
+    if (
+      this.dayTransitionScrapRetired
+      && !this.dayTransitionWorldRestored
+      && t >= DAY_TRANSITION_WORLD_RESTORE_SEC
+      && !(this.player?.hasPendingScrapDestroys() ?? false)
+    ) {
+      this.player?.finishDayResetRest();
+      this.restoreDayBaseline();
+      this.baselineReinforceRemaining = 10;
+      this.dayTransitionWorldRestored = true;
+    }
+
+    if (
+      this.dayTransitionWorldRestored
+      && !this.dayTransitionOrdinanceRevealed
+      && t >= DAY_TRANSITION_REVEAL_SEC
+      && !(this.player?.hasPendingScrapDestroys() ?? false)
+    ) {
+      this.applyQueuedOrdinanceReveals();
+      this.dayTransitionOrdinanceRevealed = true;
+    }
+
+    if (
+      this.dayTransitionOrdinanceRevealed
+      && !this.dayTransitionCamReady
+      && t >= DAY_TRANSITION_CINEMATIC_SEC
+    ) {
+      this.ensureWakeOrdinanceCinematic();
+      this.dayTransitionCamReady = true;
+    }
+  }
+
+  private isDayTransitionHoldComplete(): boolean {
+    return this.dayTransitionCamReady && this.phaseElapsed >= NEXT_DAY_LABEL_SEC;
   }
 
   private shouldSkipDayReset(node: ENGINE.SceneNode): boolean {
@@ -6453,7 +6326,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
   /**
    * Put moved/thrown props back to the session baseline, and remove scrap spawned mid-day.
-   * Dismantled props are restored by StreetLampDismantlingSystem.resetDay (called first).
+   * Dismantled props are restored by StreetLampDismantlingSystem.finishDayReset (called first).
    */
   private restoreDayBaseline(): void {
     const world = this.getWorld();
@@ -6466,7 +6339,14 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         continue;
       }
       if (!this.dayBaselineIds.has(root.uuid)) {
-        root.destroy();
+        // Hide + detach only — immediate destroy of heavy scrap mid-frame loses WebGPU.
+        // Deferred destroy runs through StreetLampDismantlingSystem while still under black.
+        root.visible = false;
+        root.traverse((child) => {
+          child.visible = false;
+        });
+        root.removeFromParent();
+        this.player?.retireDetachedRootForDayReset(root);
       }
     }
 
@@ -6604,7 +6484,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     });
     const mesh = new THREE.Mesh(geom, mat);
     mesh.name = 'DeliveryEnvelope';
-    mesh.castShadow = true;
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
     mesh.position.copy(this.envelopeStartPos);
     mesh.quaternion.copy(this.envelopeQuat);
     this.add(mesh);
@@ -6670,12 +6551,14 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
    * Cutscene camera: blend from the active cam into a shot in front of the model.
    * Pass `immediate` to snap (used under black so fade-in is already framed).
    * `pitchFromFloorDeg` elevates the camera (e.g. 30° = look down 30° from horizontal).
+   * `useCapturedStart` keeps `cinematicStartPos/Quat` already filled (soft-loop).
    */
   private startModelFrontCinematic(
     target: ENGINE.SceneNode | null,
     distance: number,
     immediate = false,
     pitchFromFloorDeg = 0,
+    useCapturedStart = false,
   ): void {
     if (!target) {
       return;
@@ -6713,7 +6596,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.cinematicStartPos.copy(this.cinematicEndPos);
       this.cinematicStartQuat.copy(this.cinematicEndQuat);
       this.cinematicBlend = 1;
-    } else {
+    } else if (!useCapturedStart) {
       const active = world.getActiveCamera();
       if (active) {
         active.updateMatrixWorld(true);
@@ -6723,6 +6606,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         this.cinematicStartPos.copy(this.cinematicEndPos);
         this.cinematicStartQuat.copy(this.cinematicEndQuat);
       }
+      this.cinematicBlend = 0;
+    } else {
       this.cinematicBlend = 0;
     }
 
@@ -6752,6 +6637,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       && !STREET_LIGHTS_CLIMB_ANY_NAME.test(name)
       && !STREET_LIGHTS_DESTROY_ANY_NAME.test(name)
       && !DONT_FEED_THE_CAT_ANY_NAME.test(name)
+      && !NO_CATS_ON_STREETS_ANY_NAME.test(name)
       && !NO_CRATES_ON_ROADS_ANY_NAME.test(name)
       && !NO_BENCH_ON_ROADS_ANY_NAME.test(name)
       && !NO_LOGS_ON_ROADS_ANY_NAME.test(name)
@@ -6781,7 +6667,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         return;
       }
       const childName = child.name ?? '';
-      if (/board|sign|panel|jaywalk|step|hydrant|tree|cutting/i.test(childName)) {
+      if (/board|sign|panel|jaywalk|step|hydrant|tree|cutting|cats?/i.test(childName)) {
         boardObject = child;
       }
     });

@@ -111,8 +111,8 @@
           "name": "Utility Pole 18 Fallen Mesh",
           "nodeId": 41433,
           "physicsOptions": {
-            "collisionMeshType": "trimesh",
-            "density": 10000,
+            "collisionMeshType": "convexHull",
+            "density": 1200,
             "motionType": "dynamic"
           },
           "position": {

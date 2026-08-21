@@ -71,7 +71,7 @@
           "name": "Metal Scrapt 2",
           "nodeId": 18469,
           "physicsOptions": {
-            "collisionMeshType": "trimesh",
+            "collisionMeshType": "convexHull",
             "density": 2000,
             "motionType": "dynamic"
           },
