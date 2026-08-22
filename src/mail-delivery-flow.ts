@@ -2709,10 +2709,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
 
-    // Metal ordinance boards: unlock Do not remove the SIGNS before No Scrap Metals
-    // when these boards are the first scrap-metal contact of the day.
-    // Street-lamp Metal Scrapt never diverts — always No Scrap Metals when on a road.
-    if (fromFallenOrdinanceSign && !this.doNotRemoveTheSignsOrdinanceActive) {
+    // Fallen ordinance boards always belong to the Do not remove the SIGNS rule.
+    // This takes precedence over No Scrap Metals both before and after the sign
+    // ordinance is active; street-lamp scrap still always uses No Scrap Metals.
+    if (fromFallenOrdinanceSign) {
       this.onDontRemoveTheSignsContact('roadRest');
       return;
     }
@@ -3052,6 +3052,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
 
     if (source === 'platform' || source === 'dismantle') {
+      // Using a board is more specific than the generic scrap-on-road rule.
+      if (this.pendingOrdinance === 'noScrapMetalsOnRoads') {
+        this.pendingOrdinance = null;
+      }
       this.markRouteCandidate('doNotRemoveTheSigns');
       return;
     }
@@ -6585,6 +6589,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (this.dayTransitionWorldRestoreStarted) {
       return;
     }
+    // Deferred scrap retirement is complete at this stage. Finish the dismantle
+    // reset now so persistent effects, including hydrant water streams, are removed.
+    this.player?.finishDayResetRest();
     const world = this.getWorld();
     if (!world || this.daySnapshots.length === 0) {
       this.dayTransitionWorldRestoreStarted = true;

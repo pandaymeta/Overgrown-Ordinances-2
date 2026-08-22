@@ -603,6 +603,9 @@ export class StreetLampDismantlingSystem {
       if (!namePattern.test(child.name ?? '')) {
         continue;
       }
+      // Include mounted boards in the reset set so tree/lamp props return with
+      // their host after the next-day transition.
+      this.markDismantled(child);
       child.visible = false;
       child.overridePhysicsOptions({
         enabled: false,
