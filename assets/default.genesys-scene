@@ -4208,7 +4208,7 @@
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/fuel-tank-3a0111.glb",
         "name": "Fuel Tank 3 A 0111",
-        "nodeId": 12651,
+        "nodeId": 25947,
         "physicsOptions": {
           "collisionMeshType": "trimesh"
         },
@@ -5856,9 +5856,9 @@
         "position": {
           "$bc": "v3",
           "_": [
-            13.8,
+            13.5,
             -0.7,
-            0
+            0.1
           ]
         },
         "rotation": {
@@ -7331,6 +7331,83 @@
           "objectFlags": 4
         },
         "uuid": "718e0afe-22e1-4566-a3f8-aa996b512fa5"
+      },
+      {
+        "$bc": "GAME.AxePickupRingSystem",
+        "$initOptions": {},
+        "children": [
+          {
+            "$bc": "ENGINE.MeshNode",
+            "children": {
+              "$length": 1
+            },
+            "geometry": {
+              "$bc": "THREE.RingGeometry",
+              "_": [
+                0.52,
+                0.78,
+                40,
+                1
+              ]
+            },
+            "material": {
+              "$bc": "THREE.MeshBasicMaterial",
+              "color": {
+                "$bc": "c",
+                "_": [
+                  0.955973,
+                  0.603827,
+                  0.007499
+                ]
+              },
+              "depthWrite": false,
+              "opacity": 0.9,
+              "side": 2,
+              "transparent": true,
+              "uuid": "4eb32cbc-8fbc-45a4-8ddc-c209a1ed890d"
+            },
+            "name": "Axe Pickup Ring Visual",
+            "nodeId": 22545,
+            "physicsOptions": {
+              "enabled": false
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                13.8,
+                -0.67,
+                -0.2
+              ]
+            },
+            "renderOrder": 850,
+            "rotation": {
+              "$bc": "e",
+              "_": [
+                -1.570796,
+                0,
+                0
+              ]
+            },
+            "userData": {
+              "objectFlags": 1
+            },
+            "uuid": "204a5fef-d737-450e-8494-bc2f988495f4"
+          }
+        ],
+        "name": "Axe Pickup Ring System",
+        "nodeId": 51759,
+        "position": {
+          "$bc": "v3",
+          "_": [
+            0,
+            -0.1,
+            0
+          ]
+        },
+        "userData": {
+          "objectFlags": 6
+        },
+        "uuid": "ea417049db235966"
       }
     ],
     "editorData": {
@@ -8219,6 +8296,10 @@
           },
           {
             "id": "718e0afe-22e1-4566-a3f8-aa996b512fa5",
+            "nodeType": "actor"
+          },
+          {
+            "id": "ea417049db235966",
             "nodeType": "actor"
           }
         ],

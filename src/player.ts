@@ -376,6 +376,11 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     this.streetLampDismantling.finishDayReset(this.getWorld());
   }
 
+  /** True while this primitive is held as the player's equipped tool. */
+  public isHoldingTool(node: ENGINE.PrimitiveNode | null | undefined): boolean {
+    return !!node && this.heldTool === node;
+  }
+
   /** True while this primitive is in the player's carry / body-cover slot. */
   public isCarryingObject(node: ENGINE.SceneNode | null | undefined): boolean {
     return !!node && this.carriedCrate === node;

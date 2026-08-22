@@ -17,6 +17,7 @@ import { MailDeliveryFlowSystem } from './mail-delivery-flow.js';
 import './sharp-sign-board-material.js';
 import { StairWalkRamp } from './stair-walk-ramp.js';
 import { ShophouseCameraOcclusionSystem } from './shophouse-camera-occlusion.js';
+import { AxePickupRingSystem } from './axe-pickup-ring.js';
 
 installAnimationOneShotHostPatch(ENGINE);
 
@@ -47,6 +48,7 @@ class ThirdPersonGameMode extends ENGINE.GameMode {
     void refreshOrdinanceSignSharpness(this.getWorld());
     this.ensureMailDeliveryFlow();
     this.ensureShophouseCameraOcclusion();
+    this.ensureAxePickupRing();
     return true;
   }
 
@@ -59,6 +61,14 @@ class ThirdPersonGameMode extends ENGINE.GameMode {
       return;
     }
     world.add(MailDeliveryFlowSystem.create());
+  }
+
+  private ensureAxePickupRing(): void {
+    const world = this.getWorld();
+    if (!world || world.getNodes(AxePickupRingSystem).length > 0) {
+      return;
+    }
+    world.add(AxePickupRingSystem.create());
   }
 
   private ensureShophouseCameraOcclusion(): void {

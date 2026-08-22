@@ -1,6 +1,7 @@
 import './airmail-envelope.js';
 import './animation-oneshot-host-patch.js';
 import './asphalt-road-tile.js';
+import './axe-pickup-ring.js';
 import './carry-player-controller.js';
 import './carryable-crate-node.js';
 import './cat-mail-courier.js';
