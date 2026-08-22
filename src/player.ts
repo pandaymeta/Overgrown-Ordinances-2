@@ -1,14 +1,13 @@
 import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
+import { createAirmailEnvelope, disposeAirmailEnvelope } from './airmail-envelope.js';
 import { installAnimationOneShotHostPatch } from './animation-oneshot-host-patch.js';
 import { CarryableCrateNode } from './carryable-crate-node.js';
 import { FaceMovementCharacterMovementNode } from './face-movement-character-movement.js';
-import { installEditorTrimeshPatch } from './rapier-trimesh-patch.js';
 import { StreetLampDismantlingSystem } from './street-lamp-dismantling-system.js';
 
 installAnimationOneShotHostPatch(ENGINE);
-installEditorTrimeshPatch(ENGINE);
 
 /** Avatar.glb faces the pawn's native forward axis without a yaw correction. */
 const MESH_YAW_OFFSET = 0;
@@ -17,12 +16,23 @@ const MESH_YAW_OFFSET = 0;
 const LOCKED_CAMERA_PITCH_DEGREES = -45;
 
 /** Camera spring-arm distances in meters. */
-const INITIAL_CAMERA_DISTANCE = 20;
+const INITIAL_CAMERA_DISTANCE = 3;
 const MIN_CAMERA_DISTANCE = 2;
 const MAX_CAMERA_DISTANCE = 40;
 
 const AXE_ATTACK_CLIP = 'Attack 01';
 const AXE_ATTACK_PLAY_RATE = 2;
+/** Left-hand-local placement: keep the hand on the envelope edge, not over its center. */
+const MAIL_ENVELOPE_LEFT_HAND_OFFSET = new THREE.Vector3(0.03, -0.075, 0);
+const MAIL_ENVELOPE_GRIP_GEOMETRY_OFFSET = new THREE.Vector3(0, -0.08, 0);
+/** Hold the envelope on its side in the fingers. */
+const MAIL_ENVELOPE_LEFT_HAND_ROTATION = new THREE.Euler(
+  Math.PI / 2,
+  Math.PI / 2,
+  0,
+);
+const MAIL_ENVELOPE_HIGHLIGHT_RED = new THREE.Color(0xff2f2f);
+const MAIL_ENVELOPE_HIGHLIGHT_EMISSIVE = new THREE.Color(0xff0000);
 
 type LocomotionAnimationParameters = {
   isClimbing: boolean;
@@ -91,6 +101,12 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
   private carriedPhysicsOptions: ENGINE.NodePhysicsOptions | null = null;
   private heldTool: ENGINE.PrimitiveNode | null = null;
   private heldToolPhysicsOptions: ENGINE.NodePhysicsOptions | null = null;
+  private mailEnvelopeMesh: THREE.Mesh | null = null;
+  private mailEnvelopeRequested = false;
+  private mailEnvelopeHighlightPulsing = false;
+  private mailEnvelopeHighlightTime = 0;
+  private readonly mailEnvelopeOffset = new THREE.Vector3();
+  private readonly mailEnvelopeBaseColors: THREE.Color[] = [];
   private hoveredCarryable: ENGINE.PrimitiveNode | null = null;
   private calculatedThrowFlightTime: number = 0.65;
   private readonly thrownGravityRestores: Array<{
@@ -295,6 +311,16 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
   /** Current spring-arm length (meters), falling back to the scripted target. */
   public getCameraArmLength(): number {
     return this.springArm?.armLength ?? this.cameraTargetDistance;
+  }
+
+  /** Whether the player is currently providing movement input. */
+  public hasMovementInput(): boolean {
+    const movementNode = this.movementNode;
+    if (!(movementNode instanceof ENGINE.CharacterMovementNode)) {
+      return false;
+    }
+    const { forward, right } = movementNode.getMovementInputs();
+    return Math.abs(forward) > 0.01 || Math.abs(right) > 0.01;
   }
 
   /** When true, player zoom input is ignored (cinematics). */
@@ -602,6 +628,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     this.updateThrownCrateGravity(deltaTime);
     this.updateHeldTool();
     this.updateCarriedCrate();
+    this.updateMailEnvelope(deltaTime);
     this.streetLampDismantling.update(
       this,
       this.heldTool,
@@ -637,6 +664,8 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     this.hoveredCarryable = null;
     this.releaseCarriedCrate();
     this.releaseHeldTool();
+    this.mailEnvelopeRequested = false;
+    this.clearMailEnvelope();
     for (const record of this.thrownGravityRestores) {
       this.restoreCrateGravity(record.crate, record.gravityScale);
     }
@@ -671,6 +700,26 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
   /** Optional LMB intercept (e.g. mailbox delivery click). */
   public setMailDeliveryClickHandler(handler: (() => boolean) | null): void {
     this.mailDeliveryClickHandler = handler;
+  }
+
+  /** Show or remove the current mail in the animated left hand. */
+  public setMailEnvelopeCarried(carried: boolean): void {
+    this.mailEnvelopeRequested = carried;
+    if (!carried) {
+      this.clearMailEnvelope();
+      return;
+    }
+    this.ensureMailEnvelope();
+    this.updateMailEnvelope(0);
+  }
+
+  public setMailEnvelopeHighlightPulsing(enabled: boolean): void {
+    this.mailEnvelopeHighlightPulsing = enabled;
+    if (enabled) {
+      this.ensureMailEnvelope();
+      return;
+    }
+    this.restoreMailEnvelopeMaterials();
   }
 
   public handleCarryPrimaryAction(): boolean {
@@ -1194,6 +1243,118 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
       return;
     }
     this.updateCarriedObjectTransform(tool, rightHandSettings);
+  }
+
+  private ensureMailEnvelope(): void {
+    if (!this.mailEnvelopeRequested || this.mailEnvelopeMesh) {
+      return;
+    }
+    const mesh = createAirmailEnvelope(0.22, 0.02, 0.16, MAIL_ENVELOPE_GRIP_GEOMETRY_OFFSET);
+    mesh.name = 'PlayerMailEnvelope';
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
+    mesh.visible = false;
+    this.add(mesh);
+    this.mailEnvelopeMesh = mesh;
+    this.captureMailEnvelopeBaseColors(mesh);
+  }
+
+  private updateMailEnvelope(deltaTime: number): void {
+    this.ensureMailEnvelope();
+    const mesh = this.mailEnvelopeMesh;
+    const leftHandAnchor = this.visualNode?.getObjectByName('Left_Hand-Global');
+    if (!mesh || !leftHandAnchor) {
+      if (mesh) {
+        mesh.visible = false;
+      }
+      return;
+    }
+
+    this.mailEnvelopeOffset.copy(MAIL_ENVELOPE_LEFT_HAND_OFFSET);
+    this.carryPosition.copy(this.mailEnvelopeOffset);
+    leftHandAnchor.localToWorld(this.carryPosition);
+    this.worldToLocal(this.carryPosition);
+    mesh.position.copy(this.carryPosition);
+
+    leftHandAnchor.getWorldQuaternion(this.carryWorldQuaternion);
+    this.carryGripQuaternion.setFromEuler(MAIL_ENVELOPE_LEFT_HAND_ROTATION);
+    this.carryWorldQuaternion.multiply(this.carryGripQuaternion);
+    this.getWorldQuaternion(this.carryParentQuaternion).invert();
+    mesh.quaternion.copy(this.carryParentQuaternion.multiply(this.carryWorldQuaternion));
+    mesh.visible = true;
+    this.updateMailEnvelopeHighlight(deltaTime);
+    mesh.updateMatrixWorld(true);
+  }
+
+  private clearMailEnvelope(): void {
+    if (!this.mailEnvelopeMesh) {
+      return;
+    }
+    disposeAirmailEnvelope(this.mailEnvelopeMesh);
+    this.mailEnvelopeMesh = null;
+    this.mailEnvelopeBaseColors.length = 0;
+    this.mailEnvelopeHighlightTime = 0;
+  }
+
+  private captureMailEnvelopeBaseColors(mesh: THREE.Mesh): void {
+    this.mailEnvelopeBaseColors.length = 0;
+    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    for (const material of materials) {
+      const tintable = material as THREE.Material & { color?: THREE.Color };
+      this.mailEnvelopeBaseColors.push(tintable.color?.clone() ?? new THREE.Color(0xffffff));
+    }
+  }
+
+  private updateMailEnvelopeHighlight(deltaTime: number): void {
+    if (!this.mailEnvelopeMesh) {
+      return;
+    }
+    if (!this.mailEnvelopeHighlightPulsing) {
+      this.restoreMailEnvelopeMaterials();
+      return;
+    }
+
+    this.mailEnvelopeHighlightTime += deltaTime;
+    const pulse = 0.5 + 0.5 * Math.sin(this.mailEnvelopeHighlightTime * 7);
+    const tint = new THREE.Color(0xffffff).lerp(MAIL_ENVELOPE_HIGHLIGHT_RED, 0.35 + pulse * 0.45);
+    const materials = Array.isArray(this.mailEnvelopeMesh.material)
+      ? this.mailEnvelopeMesh.material
+      : [this.mailEnvelopeMesh.material];
+    for (const material of materials) {
+      const tintable = material as THREE.Material & {
+        color?: THREE.Color;
+        emissive?: THREE.Color;
+        emissiveIntensity?: number;
+      };
+      tintable.color?.copy(tint);
+      tintable.emissive?.copy(MAIL_ENVELOPE_HIGHLIGHT_EMISSIVE);
+      if (typeof tintable.emissiveIntensity === 'number') {
+        tintable.emissiveIntensity = 0.45 + pulse * 1.35;
+      }
+      material.needsUpdate = true;
+    }
+  }
+
+  private restoreMailEnvelopeMaterials(): void {
+    if (!this.mailEnvelopeMesh) {
+      return;
+    }
+    const materials = Array.isArray(this.mailEnvelopeMesh.material)
+      ? this.mailEnvelopeMesh.material
+      : [this.mailEnvelopeMesh.material];
+    materials.forEach((material, index) => {
+      const tintable = material as THREE.Material & {
+        color?: THREE.Color;
+        emissive?: THREE.Color;
+        emissiveIntensity?: number;
+      };
+      tintable.color?.copy(this.mailEnvelopeBaseColors[index] ?? new THREE.Color(0xffffff));
+      tintable.emissive?.set(0x000000);
+      if (typeof tintable.emissiveIntensity === 'number') {
+        tintable.emissiveIntensity = 0;
+      }
+      material.needsUpdate = true;
+    });
   }
 
   private updateCarriedCrate(): void {

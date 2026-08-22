@@ -521,7 +521,7 @@
         "$bc": "ENGINE.ModelMeshNode",
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9768",
-        "nodeId": 57649,
+        "nodeId": 46788,
         "physicsOptions": {
           "collisionMeshType": "boundingBox"
         },
@@ -1273,7 +1273,7 @@
         "$bc": "ENGINE.ModelMeshNode",
         "modelUrl": "@project/assets/PolyforkAssets/Tiles/asphalt-road-tile-straight-both.glb",
         "name": "LeftSideRoad Asphalt Road Tile Straight Both 06",
-        "nodeId": 57762,
+        "nodeId": 48859,
         "physicsOptions": {
           "collisionMeshType": "boundingBox"
         },
@@ -4048,6 +4048,123 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
+        "modelUrl": "@project/assets/PolyforkAssets/air-con-unit-9fadc2.glb",
+        "name": "Air Con Unit 9 Fadc 03",
+        "nodeId": 23303,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            16.3,
+            2.4,
+            -3.2
+          ]
+        },
+        "receiveShadow": true,
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            0,
+            1.570796,
+            0
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1.5,
+            1.5,
+            1.5
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "523771a01a12d2da"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "castShadow": true,
+        "modelUrl": "@project/assets/PolyforkAssets/air-con-unit-9fadc2.glb",
+        "name": "Air Con Unit 9 Fadc 04",
+        "nodeId": 64998,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            16.3,
+            6.7,
+            -3.2
+          ]
+        },
+        "receiveShadow": true,
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            0,
+            1.570796,
+            0
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1.5,
+            1.5,
+            1.5
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "ac160b79b13c9594"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "castShadow": true,
+        "modelUrl": "@project/assets/PolyforkAssets/air-con-unit-9fadc2.glb",
+        "name": "Air Con Unit 9 Fadc 05",
+        "nodeId": 42099,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            16.3,
+            11.2,
+            -3.2
+          ]
+        },
+        "receiveShadow": true,
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            0,
+            1.570796,
+            0
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1.5,
+            1.5,
+            1.5
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "0e89e531f23bd04e"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "castShadow": true,
         "children": [
           {
             "$bc": "GAME.CarryableCrateNode",
@@ -5760,6 +5877,45 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
+        "modelUrl": "@project/assets/PolyforkAssets/KanjiSign.glb",
+        "name": "Kanji Sign",
+        "nodeId": 35654,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            9,
+            6.8,
+            -13
+          ]
+        },
+        "receiveShadow": true,
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            3.141593,
+            0,
+            3.141593
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            3,
+            3,
+            3
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "718e0afe-22e1-4566-a3f8-aa996b512fa5"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/stone-lantern-d56d0a.glb",
         "name": "Stone Lantern D 56 D 0 A",
         "nodeId": 62748,
@@ -5821,6 +5977,45 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "castShadow": true,
+        "modelUrl": "@project/assets/PolyforkAssets/fabric-awning-4d6acc.glb",
+        "name": "Fabric Awning 4 D 6 Acc",
+        "nodeId": 10542,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            9.2,
+            1.7,
+            -10.4
+          ]
+        },
+        "receiveShadow": true,
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            0,
+            -1.570796,
+            0
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1.5,
+            1.5,
+            1.5
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "9c32977b-bfb9-465f-af29-8cd2e04aef12"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
         "children": [
           {
             "$bc": "GAME.CarryableCrateNode",
@@ -5856,9 +6051,9 @@
         "position": {
           "$bc": "v3",
           "_": [
-            13.8,
+            13.4,
             -0.7,
-            0
+            -0.1
           ]
         },
         "rotation": {
@@ -5915,7 +6110,7 @@
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
         "hiddenInGame": true,
-        "modelUrl": "@project/assets/PolyforkAssets/KanjiSign-unindexed.glb",
+        "modelUrl": "@project/assets/PolyforkAssets/KanjiSign.glb",
         "name": "Kanji Sign 02",
         "nodeId": 34750,
         "physicsOptions": {
@@ -6843,7 +7038,7 @@
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/Ordinances/WoodPlanks.glb",
         "name": "Wood Planks",
-        "nodeId": 13419,
+        "nodeId": 41766,
         "physicsOptions": {
           "collisionMeshType": "trimesh"
         },
@@ -6914,6 +7109,16 @@
           "objectFlags": 4
         },
         "uuid": "2c72e6a54f375b20"
+      },
+      {
+        "$bc": "GAME.OrdinanceSignSharpnessSystem",
+        "$initOptions": {},
+        "name": "Ordinance Sign Sharpness System",
+        "nodeId": 40554,
+        "userData": {
+          "objectFlags": 6
+        },
+        "uuid": "a6c1afd9cb66a89f"
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
@@ -7131,206 +7336,6 @@
           "objectFlags": 4
         },
         "uuid": "6045598ba0ad74f9"
-      },
-      {
-        "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/air-con-unit-9fadc2.glb",
-        "name": "Air Con Unit 9 Fadc 05",
-        "nodeId": 6763,
-        "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "enabled": false
-        },
-        "position": {
-          "$bc": "v3",
-          "_": [
-            16.3,
-            11.2,
-            -3.2
-          ]
-        },
-        "receiveShadow": true,
-        "rotation": {
-          "$bc": "e",
-          "_": [
-            0,
-            1.570796,
-            0
-          ]
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1.5,
-            1.5,
-            1.5
-          ]
-        },
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "53032353e2b6d3c4"
-      },
-      {
-        "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/air-con-unit-9fadc2.glb",
-        "name": "Air Con Unit 9 Fadc 04",
-        "nodeId": 60076,
-        "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "enabled": false
-        },
-        "position": {
-          "$bc": "v3",
-          "_": [
-            16.3,
-            6.7,
-            -3.2
-          ]
-        },
-        "receiveShadow": true,
-        "rotation": {
-          "$bc": "e",
-          "_": [
-            0,
-            1.570796,
-            0
-          ]
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1.5,
-            1.5,
-            1.5
-          ]
-        },
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "d232be3441bd5153"
-      },
-      {
-        "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/air-con-unit-9fadc2.glb",
-        "name": "Air Con Unit 9 Fadc 03",
-        "nodeId": 23303,
-        "physicsOptions": {
-          "collisionData": null,
-          "collisionMeshType": "boundingBox",
-          "enabled": false
-        },
-        "position": {
-          "$bc": "v3",
-          "_": [
-            16.3,
-            2.4,
-            -3.2
-          ]
-        },
-        "receiveShadow": true,
-        "rotation": {
-          "$bc": "e",
-          "_": [
-            0,
-            1.570796,
-            0
-          ]
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1.5,
-            1.5,
-            1.5
-          ]
-        },
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "523771a01a12d2da"
-      },
-      {
-        "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/fabric-awning-4d6acc.glb",
-        "name": "Fabric Awning 4 D 6 Acc",
-        "nodeId": 10542,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
-        "position": {
-          "$bc": "v3",
-          "_": [
-            9.2,
-            1.7,
-            -10.4
-          ]
-        },
-        "receiveShadow": true,
-        "rotation": {
-          "$bc": "e",
-          "_": [
-            0,
-            -1.570796,
-            0
-          ]
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1.5,
-            1.5,
-            1.5
-          ]
-        },
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "9c32977b-bfb9-465f-af29-8cd2e04aef12"
-      },
-      {
-        "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/KanjiSign-unindexed.glb",
-        "name": "Kanji Sign",
-        "nodeId": 35654,
-        "physicsOptions": {
-          "collisionData": null,
-          "collisionMeshType": "trimesh"
-        },
-        "position": {
-          "$bc": "v3",
-          "_": [
-            9,
-            6.8,
-            -13
-          ]
-        },
-        "receiveShadow": true,
-        "rotation": {
-          "$bc": "e",
-          "_": [
-            3.141593,
-            0,
-            3.141593
-          ]
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            3,
-            3,
-            3
-          ]
-        },
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "718e0afe-22e1-4566-a3f8-aa996b512fa5"
       }
     ],
     "editorData": {
@@ -7488,6 +7493,11 @@
           },
           {
             "id": "96ab55acde44efa8",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "523771a01a12d2da",
             "isExpanded": false,
             "nodeType": "actor"
           },
@@ -7892,6 +7902,11 @@
             "nodeType": "actor"
           },
           {
+            "id": "718e0afe-22e1-4566-a3f8-aa996b512fa5",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
             "id": "05c15bea765dd5db",
             "isExpanded": false,
             "nodeType": "actor"
@@ -7943,6 +7958,11 @@
           },
           {
             "id": "263e58e9-79ec-4d9e-9d9e-56e96d47c7ff",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "9c32977b-bfb9-465f-af29-8cd2e04aef12",
             "isExpanded": false,
             "nodeType": "actor"
           },
@@ -8150,6 +8170,10 @@
             "nodeType": "actor"
           },
           {
+            "id": "a6c1afd9cb66a89f",
+            "nodeType": "actor"
+          },
+          {
             "id": "57daf860f591bafe",
             "nodeType": "actor"
           },
@@ -8178,6 +8202,14 @@
             "nodeType": "actor"
           },
           {
+            "id": "ac160b79b13c9594",
+            "nodeType": "actor"
+          },
+          {
+            "id": "0e89e531f23bd04e",
+            "nodeType": "actor"
+          },
+          {
             "id": "abe3a04c897b3a91",
             "nodeType": "actor"
           },
@@ -8199,26 +8231,6 @@
           },
           {
             "id": "6045598ba0ad74f9",
-            "nodeType": "actor"
-          },
-          {
-            "id": "53032353e2b6d3c4",
-            "nodeType": "actor"
-          },
-          {
-            "id": "d232be3441bd5153",
-            "nodeType": "actor"
-          },
-          {
-            "id": "523771a01a12d2da",
-            "nodeType": "actor"
-          },
-          {
-            "id": "9c32977b-bfb9-465f-af29-8cd2e04aef12",
-            "nodeType": "actor"
-          },
-          {
-            "id": "718e0afe-22e1-4566-a3f8-aa996b512fa5",
             "nodeType": "actor"
           }
         ],

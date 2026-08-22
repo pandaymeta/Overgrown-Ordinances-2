@@ -1,6 +1,7 @@
 import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
+import { createAirmailEnvelope, disposeAirmailEnvelope } from './airmail-envelope.js';
 import type { ThirdPersonPlayer } from './player.js';
 
 const CAT_NAME = /^Cat$/i;
@@ -990,13 +991,7 @@ export class CatMailCourier {
     if (!this.cat) {
       return;
     }
-    const geom = new THREE.BoxGeometry(0.22, 0.02, 0.16);
-    const mat = new THREE.MeshStandardMaterial({
-      color: 0xf3e6c8,
-      roughness: 0.85,
-      metalness: 0.05,
-    });
-    const mesh = new THREE.Mesh(geom, mat);
+    const mesh = createAirmailEnvelope(0.22, 0.02, 0.16);
     mesh.name = 'CatMailEnvelope';
     // After faceYawFlip, snout is +Z in local space — keep the letter at the mouth.
     mesh.position.set(0, 0.38, 0.55);
@@ -1008,16 +1003,7 @@ export class CatMailCourier {
     if (!this.envelopeMesh) {
       return;
     }
-    this.envelopeMesh.removeFromParent();
-    this.envelopeMesh.geometry.dispose();
-    const mat = this.envelopeMesh.material;
-    if (Array.isArray(mat)) {
-      for (const m of mat) {
-        m.dispose();
-      }
-    } else {
-      mat.dispose();
-    }
+    disposeAirmailEnvelope(this.envelopeMesh);
     this.envelopeMesh = null;
   }
 

@@ -39,12 +39,24 @@ export class PushablePhysicsStabilizerNode extends ENGINE.SceneNode {
       return;
     }
 
-    const angular = root.getPhysicsVectorParam(ENGINE.PhysicsVectorParam.AngularVelocity);
-    if (angular && (Math.abs(angular[0]) > 1e-6 || Math.abs(angular[1]) > 1e-6 || Math.abs(angular[2]) > 1e-6)) {
-      root.setPhysicsVectorParam(ENGINE.PhysicsVectorParam.AngularVelocity, [0, 0, 0]);
+    let angular: [number, number, number] | number[] | null = null;
+    let linear: [number, number, number] | number[] | null = null;
+    try {
+      angular = root.getPhysicsVectorParam(ENGINE.PhysicsVectorParam.AngularVelocity);
+      linear = root.getPhysicsVectorParam(ENGINE.PhysicsVectorParam.LinearVelocity);
+    } catch {
+      // Rapier may still hold borrows after a physics fault — skip this frame.
+      return;
     }
 
-    const linear = root.getPhysicsVectorParam(ENGINE.PhysicsVectorParam.LinearVelocity);
+    if (angular && (Math.abs(angular[0]) > 1e-6 || Math.abs(angular[1]) > 1e-6 || Math.abs(angular[2]) > 1e-6)) {
+      try {
+        root.setPhysicsVectorParam(ENGINE.PhysicsVectorParam.AngularVelocity, [0, 0, 0]);
+      } catch {
+        return;
+      }
+    }
+
     if (!linear || !this.isNearGround(root)) {
       return;
     }
@@ -53,11 +65,15 @@ export class PushablePhysicsStabilizerNode extends ENGINE.SceneNode {
     const shouldSettleHorizontal = horizontalSpeedSquared < this.settleVelocity ** 2;
     const shouldSettleVertical = Math.abs(linear[1]) < this.settleVelocity;
     if (shouldSettleHorizontal || shouldSettleVertical) {
-      root.setPhysicsVectorParam(ENGINE.PhysicsVectorParam.LinearVelocity, [
-        shouldSettleHorizontal ? 0 : linear[0],
-        shouldSettleVertical ? 0 : linear[1],
-        shouldSettleHorizontal ? 0 : linear[2],
-      ]);
+      try {
+        root.setPhysicsVectorParam(ENGINE.PhysicsVectorParam.LinearVelocity, [
+          shouldSettleHorizontal ? 0 : linear[0],
+          shouldSettleVertical ? 0 : linear[1],
+          shouldSettleHorizontal ? 0 : linear[2],
+        ]);
+      } catch {
+        // ignore
+      }
     }
   }
 

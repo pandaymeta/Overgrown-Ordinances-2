@@ -35,7 +35,7 @@
  *  Kiosk); after active, the next kiosk dismantle soft-loops after the parts appear.
  *
  * Flow:
- * 1. Speech bubble + close camera on player (4m) for 5s, then ~2s smooth zoom to 20m
+ * 1. Speech bubble + close camera on player (3m) for 5s, then ~2s smooth zoom to 20m
  * 2. Highlight mailbox (red pulse) + arrow trail
  * 3. Player approaches and left-clicks mailbox to deliver (2.5m, green outline hover)
  * 4. Stepping on MainRoad* / LeftSideRoad* / Yellow Cab / City Tram / LampTrigger, placing a
@@ -58,14 +58,15 @@
 import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
+import { createAirmailEnvelope, disposeAirmailEnvelope } from './airmail-envelope.js';
 import { CatMailCourier } from './cat-mail-courier.js';
 import { ThirdPersonPlayer } from './player.js';
 
-const INTRO_CAMERA_DISTANCE = 4;
+const INTRO_CAMERA_DISTANCE = 3;
 const DEFAULT_CAMERA_DISTANCE = 20;
 /** Close-up cinematic distance in front of mailbox / ordinance models. */
 const MODEL_FOCUS_DISTANCE = 2;
-const SPEECH_DURATION_SEC = 5;
+const SPEECH_DURATION_SEC = 3;
 /** Smooth intro zoom-out from close → default. */
 const INTRO_ZOOM_OUT_SEC = 2;
 const ORDINANCE_FOCUS_SEC = 2;
@@ -77,13 +78,32 @@ const CINEMATIC_BLEND_SEC = 1.15;
 const CINEMATIC_RETURN_SEC = 2.4;
 const FADE_SEC = 0.85;
 const NEXT_DAY_LABEL_SEC = 2;
+/** Solid road cue after first reveal or breaking active Maintenance / Jaywalking ordinances. */
+const ROAD_HIGHLIGHT_DURATION_SEC = 2;
 /** Black-screen staging: hide scrap, then retire, then restore, then reveal. */
-const DAY_TRANSITION_SCRAP_RETIRE_SEC = 0.15;
-const DAY_TRANSITION_WORLD_RESTORE_SEC = 0.7;
-const DAY_TRANSITION_REVEAL_SEC = 1.05;
-const DAY_TRANSITION_CINEMATIC_SEC = 1.3;
+const DAY_TRANSITION_SCRAP_RETIRE_SEC = 0.2;
+/** Let renderer resource retirement settle before beginning the reset. */
+const DAY_TRANSITION_WORLD_RESTORE_SEC = 0.9;
+/** Cooldown between the completed world restore and ordinance reveal. */
+const DAY_TRANSITION_REVEAL_COOLDOWN_SEC = 0.35;
+/** Cooldown between revealing assets and starting the cinematic camera work. */
+const DAY_TRANSITION_CINEMATIC_COOLDOWN_SEC = 0.35;
+/** Maximum authored props restored per frame while the screen is black. */
+const DAY_TRANSITION_RESTORE_BATCH_SIZE = 4;
 const DELIVER_MAX_DISTANCE = 2.5;
-const TRAIL_ARROW_COUNT = 8;
+/** Pool capacity; only arrows that fit on the current route are rendered. */
+const TRAIL_ARROW_MAX_COUNT = 32;
+/** Constant player-to-target gap between consecutive arrows, in world units. */
+const TRAIL_ARROW_SPACING = 1.0;
+/** Arrow.png source aspect ratio (288 × 406); preserve it rather than stretching the chevron. */
+const TRAIL_ARROW_ASPECT_RATIO = 288 / 406;
+const TRAIL_ARROW_HEIGHT = 0.52;
+const TRAIL_ARROW_WIDTH = TRAIL_ARROW_HEIGHT * TRAIL_ARROW_ASPECT_RATIO;
+/** World-space speed of the repeating player → mailbox arrow flow. */
+const TRAIL_ARROW_TRAVEL_SPEED = 1.8;
+/** Later days briefly remind the player of the mailbox route. */
+const LATER_DAY_TRAIL_DURATION_SEC = 5;
+const TRAIL_ARROW_TEXTURE_PATH = '@project/assets/textures/mail-trail-arrow.png';
 const ENVELOPE_INSERT_SEC = 2.0;
 /** Extra world-Y lift so the envelope meets the mailbox slot. */
 const ENVELOPE_SLOT_Y_BOOST = 0.06;
@@ -310,6 +330,8 @@ type MailboxPulseRecord = {
   pulseMaterial: THREE.Material | THREE.Material[];
 };
 
+type RoadHighlightKind = 'mainRoad' | 'leftSideRoad';
+
 @ENGINE.GameClass()
 export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private phase: FlowPhase = FlowPhase.Boot;
@@ -516,7 +538,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   /** Staged next-day transition under black (scrap hide → destroy → restore → reveal). */
   private dayTransitionScrapRetired = false;
   private dayTransitionWorldRestored = false;
+  private dayTransitionWorldRestoreStarted = false;
+  private dayTransitionWorldRestoreCursor = 0;
+  private dayTransitionWorldRestoredAt = 0;
   private dayTransitionOrdinanceRevealed = false;
+  private dayTransitionOrdinanceRevealedAt = 0;
   private dayTransitionCamReady = false;
   private hiddenOrdinances: HiddenOrdinance[] = [];
   private speechEl: HTMLDivElement | null = null;
@@ -524,8 +550,18 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private nextDayEl: HTMLDivElement | null = null;
   private trailGroup: THREE.Group | null = null;
   private readonly trailArrows: THREE.Mesh[] = [];
+  private trailArrowTexture: THREE.Texture | null = null;
+  private trailArrowMaterial: THREE.MeshBasicMaterial | null = null;
+  /** Infinity on day one; later days count down to hide the route hint. */
+  private trailVisibleRemaining = 0;
   private readonly mailboxPulseRecords: MailboxPulseRecord[] = [];
   private mailboxHighlightActive = false;
+  /** After the first reveal, pulse the matching road while the camera returns to play. */
+  private pendingRoadHighlight: RoadHighlightKind | null = null;
+  private readonly roadHighlightPulseRecords: MailboxPulseRecord[] = [];
+  private roadHighlightActive = false;
+  private roadHighlightElapsed = 0;
+  private readonly roadHighlightTint = new THREE.Color();
   private readonly tmpPlayerPos = new THREE.Vector3();
   private readonly tmpMailboxPos = new THREE.Vector3();
   private readonly tmpDir = new THREE.Vector3();
@@ -601,6 +637,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private cinematicBlend = 0;
   /** When true, cinematic blends toward the player orbit cam instead of a model. */
   private cinematicReturningToPlayer = false;
+  private cinematicReturnDistance = DEFAULT_CAMERA_DISTANCE;
   private envelopeMesh: THREE.Mesh | null = null;
   private readonly envelopeStartPos = new THREE.Vector3();
   private readonly envelopeEndPos = new THREE.Vector3();
@@ -650,6 +687,12 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private readonly crateRoadContactYSlop = 0.1;
   /** Ignore props still in a throw arc (vertical only — sliding on the road still counts). */
   private readonly propRoadMaxVerticalSpeed = 1.75;
+  /**
+   * Bottom-Y samples for throw-arc rejection. Prefer this over Rapier linvel —
+   * getPhysicsVectorParam during polls can trip WASM "unsafe aliasing" / unreachable.
+   */
+  private readonly propPrevBottomY = new Map<string, number>();
+  private lastPrePhysicsDeltaTime = 1 / 60;
   /** Standing on a cone tip: allow feet slightly above the cone AABB top. */
   private readonly conePlatformTopYPad = 0.35;
   /** Standing on a fallen pole: allow feet slightly above the pole AABB top. */
@@ -711,9 +754,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     this.stopModelFrontCinematic();
     this.clearEnvelope();
+    this.player?.setMailEnvelopeCarried(false);
     this.teardownUi();
     this.clearTrail();
     this.setMailboxHighlight(false);
+    this.clearRoadHighlight();
     this.setMailboxHoverOutline(false);
     // Restore authored edit-mode visibility so ordinance boards stay visible in the editor.
     this.restoreOrdinanceVisibilityForEditMode();
@@ -736,6 +781,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
   public override tickPrePhysics(deltaTime: number): void {
     super.tickPrePhysics(deltaTime);
+    this.lastPrePhysicsDeltaTime = Math.max(deltaTime, 1e-5);
     if (this.phase === FlowPhase.Boot) {
       return;
     }
@@ -785,7 +831,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.updateEnvelopeInsert(deltaTime);
     this.updateSpeechBubblePosition();
     this.updateTrail();
+    this.updateTrailVisibility(deltaTime);
     this.updateMailboxPulse();
+    this.updateRoadHighlightPulse(deltaTime);
     this.tickPhase(deltaTime);
   }
 
@@ -793,7 +841,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     super.tickPostPhysics(_deltaTime);
     if (this.baselineReinforceRemaining > 0) {
       const finalizePhysics = this.baselineReinforceRemaining === 1;
-      this.applyAllSnapshotPoses({ finalizePhysics });
+      // Static scenery was restored once under black. Only dynamic props need repeated
+      // physics settling; replaying the entire scene here overloads the renderer/physics bridge.
+      this.applyAllSnapshotPoses({ finalizePhysics, dynamicOnly: true });
       this.baselineReinforceRemaining -= 1;
       if (finalizePhysics) {
         this.reapplyOrdinanceVisibility();
@@ -813,6 +863,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
     const controller = await world.gameMode?.waitForLocalPlayerController();
     this.player = await this.waitForPlayer(world, controller ?? null);
+    this.player?.setMailEnvelopeCarried(true);
     this.mailbox = this.findModelByName(MAILBOX_NAME);
     this.maintenance = this.findModelByName(MAINTENANCE_NAME);
     this.jaywalking = this.findModelByName(JAYWALKING_NAME);
@@ -858,7 +909,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.captureSessionBaseline();
     this.ensureGreenOutline(world);
     this.ensureUi(world);
-    this.buildTrail(world);
+    await this.buildTrail(world);
 
     if (this.player) {
       this.player.setMailDeliveryClickHandler(() => this.tryDeliverByClick());
@@ -874,8 +925,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.player.setCameraTargetDistance(INTRO_CAMERA_DISTANCE, true);
     }
 
-    this.setPhase(FlowPhase.IntroSpeech);
-    this.showSpeechBubble(this.introSpeechText);
+    this.beginIntroSpeech();
   }
 
   private async waitForPlayer(
@@ -912,6 +962,13 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         }
         break;
       case FlowPhase.ZoomOutReveal: {
+        // Respect player movement: stop the tutorial zoom at its current view
+        // rather than continuing or snapping the camera out to 20m.
+        if (this.player?.hasMovementInput()) {
+          this.player.setCameraTargetDistance(this.player.getCameraArmLength(), true);
+          this.enterPlayableDay(false, true);
+          break;
+        }
         this.introZoomElapsed += _deltaTime;
         const u = Math.min(1, this.introZoomElapsed / INTRO_ZOOM_OUT_SEC);
         const eased = u * u * (3 - 2 * u);
@@ -1000,12 +1057,14 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
           this.player?.forceIdlePose();
           if (this.focusOrdinanceOnWake) {
             this.focusOrdinanceOnWake = false;
+            this.pendingRoadHighlight = 'mainRoad';
             this.fadeAfterOrdinanceFocus = false;
             this.ordinanceFocusHoldElapsed = 0;
             this.player?.setCinematicCameraLock(true);
             this.setPhase(FlowPhase.OrdinanceFocus);
           } else if (this.focusJaywalkingOnWake) {
             this.focusJaywalkingOnWake = false;
+            this.pendingRoadHighlight = 'leftSideRoad';
             this.fadeAfterOrdinanceFocus = false;
             this.ordinanceFocusHoldElapsed = 0;
             this.player?.setCinematicCameraLock(true);
@@ -1153,6 +1212,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         if (!this.cinematicActive || this.cinematicBlend >= 1 || this.phaseElapsed > 5) {
           this.finishCinematicReturnToPlayer();
           this.enterPlayableDay(true);
+          // Only reveal the road cue after the camera has returned to gameplay distance.
+          this.beginPendingRoadHighlight();
         }
         break;
       default:
@@ -1165,7 +1226,15 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.phaseElapsed = 0;
   }
 
-  private enterPlayableDay(resetPathUsage: boolean): void {
+  private beginIntroSpeech(): void {
+    this.stopModelFrontCinematic();
+    this.player?.setCinematicCameraLock(true);
+    this.player?.setCameraTargetDistance(INTRO_CAMERA_DISTANCE, true);
+    this.setPhase(FlowPhase.IntroSpeech);
+    this.showSpeechBubble(this.introSpeechText);
+  }
+
+  private enterPlayableDay(resetPathUsage: boolean, preserveCurrentCamera = false): void {
     if (resetPathUsage) {
       this.pendingOrdinance = null;
       this.mainRoadLoopTriggered = false;
@@ -1209,12 +1278,18 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.playableGraceRemaining = 1.35;
     this.setMailboxHoverOutline(false);
     this.setMailboxHighlight(true);
+    this.trailVisibleRemaining = resetPathUsage
+      ? LATER_DAY_TRAIL_DURATION_SEC
+      : Number.POSITIVE_INFINITY;
     this.setTrailVisible(true);
+    this.player?.setMailEnvelopeCarried(true);
     this.player?.setMailDeliveryClickHandler(() => this.tryDeliverByClick());
     this.player?.forceIdlePose();
     this.player?.setMovementFrozen(false);
     this.player?.setCinematicCameraLock(false);
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    if (!preserveCurrentCamera) {
+      this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    }
     this.captureSessionBaseline();
     this.setPhase(FlowPhase.AwaitingDelivery);
   }
@@ -1248,6 +1323,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return false;
     }
     if (this.catMailCourier.tryInteractByClick()) {
+      this.player?.setMailEnvelopeCarried(false);
       return true;
     }
     if (!this.isMailboxInRange() || !this.isAimingAtMailbox()) {
@@ -1502,6 +1578,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   }
 
   private completeDelivery(): void {
+    this.player?.setMailEnvelopeCarried(false);
     this.hideSpeechBubble();
     this.setTrailVisible(false);
     this.setMailboxHighlight(false);
@@ -2218,10 +2295,12 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   }
 
   private triggerBlockedMainRoadLoop(): void {
+    this.startRoadHighlight('mainRoad');
     this.beginImmediateSoftLoop(this.maintenance);
   }
 
   private triggerBlockedJaywalkingLoop(): void {
+    this.startRoadHighlight('leftSideRoad');
     this.beginImmediateSoftLoop(this.jaywalking);
   }
 
@@ -4258,17 +4337,22 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return false;
     }
 
-    const velocity = prop.getPhysicsVectorParam(ENGINE.PhysicsVectorParam.LinearVelocity);
-    const verticalSpeed = Math.abs(velocity?.[1] ?? 0);
-    if (verticalSpeed > this.propRoadMaxVerticalSpeed) {
-      return false;
-    }
-
     const minX = this.tmpBounds.min.x;
     const maxX = this.tmpBounds.max.x;
     const minZ = this.tmpBounds.min.z;
     const maxZ = this.tmpBounds.max.z;
     const bottomY = this.tmpBounds.min.y;
+
+    // Estimate vertical speed from AABB bottom motion — do not read Rapier linvel here.
+    const prevBottomY = this.propPrevBottomY.get(prop.uuid);
+    this.propPrevBottomY.set(prop.uuid, bottomY);
+    if (prevBottomY === undefined) {
+      return false;
+    }
+    const verticalSpeed = Math.abs((bottomY - prevBottomY) / this.lastPrePhysicsDeltaTime);
+    if (verticalSpeed > this.propRoadMaxVerticalSpeed) {
+      return false;
+    }
 
     // Denser grid so long thin props (logs) still register from a single piece.
     for (let ix = 0; ix < 5; ix += 1) {
@@ -5778,7 +5862,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   }
 
   private setMailboxHighlight(enabled: boolean): void {
-    if (!enabled) {
+    // The mailbox cue is part of the route hint; never show it by itself.
+    const shouldEnable = enabled && this.trailGroup?.visible === true;
+    if (!shouldEnable) {
       this.restoreMailboxMaterials();
       this.mailboxHighlightActive = false;
       return;
@@ -5869,23 +5955,139 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.mailboxPulseRecords.length = 0;
   }
 
-  private buildTrail(world: ENGINE.World): void {
+  /** Start a queued first-reveal pulse once ordinance focus returns to the player. */
+  private beginPendingRoadHighlight(): void {
+    const kind = this.pendingRoadHighlight;
+    this.pendingRoadHighlight = null;
+    if (!kind) {
+      return;
+    }
+    this.startRoadHighlight(kind);
+  }
+
+  /** Pulse a newly revealed or subsequently violated road red. */
+  private startRoadHighlight(kind: RoadHighlightKind): void {
+    this.clearRoadHighlight();
+    if (kind === 'mainRoad') {
+      if (this.mainRoadNodes.length === 0) {
+        this.cacheMainRoads();
+      }
+    } else if (this.leftSideRoadNodes.length === 0) {
+      this.cacheLeftSideRoads();
+    }
+    const nodes = kind === 'mainRoad' ? this.mainRoadNodes : this.leftSideRoadNodes;
+    for (const node of nodes) {
+      this.applyRoadPulseMaterialsToNode(node);
+    }
+    if (this.roadHighlightPulseRecords.length === 0) {
+      return;
+    }
+    this.roadHighlightActive = true;
+    this.roadHighlightElapsed = 0;
+  }
+
+  private applyRoadPulseMaterialsToNode(node: ENGINE.SceneNode): void {
+    const meshes: THREE.Mesh[] = [];
+    if (node instanceof ENGINE.ModelMeshNode) {
+      meshes.push(...node.getAllMeshes());
+    } else {
+      node.traverse((child) => {
+        const mesh = child as THREE.Mesh;
+        if (mesh.isMesh) {
+          meshes.push(mesh);
+        }
+      });
+    }
+    for (const mesh of meshes) {
+      const originalMaterial = mesh.material;
+      const pulseMaterial = Array.isArray(originalMaterial)
+        ? originalMaterial.map((mat) => this.createRoadPulseMaterial(mat))
+        : this.createRoadPulseMaterial(originalMaterial);
+      this.roadHighlightPulseRecords.push({ mesh, originalMaterial, pulseMaterial });
+      mesh.material = pulseMaterial;
+    }
+  }
+
+  /** Solid red overlay, removed abruptly after the brief road cue. */
+  private createRoadPulseMaterial(material: THREE.Material): THREE.Material {
+    const pulse = material.clone() as THREE.Material & {
+      color?: THREE.Color;
+      emissive?: THREE.Color;
+      emissiveIntensity?: number;
+      transparent?: boolean;
+      opacity?: number;
+      depthWrite?: boolean;
+    };
+    if (pulse.color) {
+      pulse.color.copy(HIGHLIGHT_RED).multiplyScalar(0.72);
+    }
+    if (pulse.emissive) {
+      pulse.emissive.copy(HIGHLIGHT_EMISSIVE).multiplyScalar(0.18);
+      if (typeof pulse.emissiveIntensity === 'number') {
+        pulse.emissiveIntensity = 0.28;
+      }
+    }
+    pulse.transparent = true;
+    pulse.opacity = 1;
+    pulse.depthWrite = false;
+    pulse.needsUpdate = true;
+    return pulse;
+  }
+
+  private updateRoadHighlightPulse(deltaTime: number): void {
+    if (!this.roadHighlightActive) {
+      return;
+    }
+    this.roadHighlightElapsed += deltaTime;
+    if (this.roadHighlightElapsed >= ROAD_HIGHLIGHT_DURATION_SEC) {
+      this.clearRoadHighlight();
+    }
+  }
+
+  private clearRoadHighlight(): void {
+    for (const record of this.roadHighlightPulseRecords) {
+      record.mesh.material = record.originalMaterial;
+      const mats = Array.isArray(record.pulseMaterial)
+        ? record.pulseMaterial
+        : [record.pulseMaterial];
+      for (const mat of mats) {
+        mat.dispose();
+      }
+    }
+    this.roadHighlightPulseRecords.length = 0;
+    this.roadHighlightActive = false;
+    this.roadHighlightElapsed = 0;
+  }
+
+  private async buildTrail(world: ENGINE.World): Promise<void> {
     this.clearTrail();
+    const texture = await ENGINE.resourceManager.loadTexture(
+      ENGINE.AssetPath.fromString(TRAIL_ARROW_TEXTURE_PATH),
+    );
+    if (!texture) {
+      console.error(`Failed to load mail trail texture: ${TRAIL_ARROW_TEXTURE_PATH}`);
+      return;
+    }
+
     const group = new THREE.Group();
     group.name = 'MailDeliveryTrail';
     group.visible = false;
     group.setTransient(true);
-    const mat = new THREE.MeshBasicMaterial({
-      color: 0xe11d2e,
+    this.trailArrowTexture = texture;
+    this.trailArrowTexture.colorSpace = THREE.SRGBColorSpace;
+    this.trailArrowTexture.needsUpdate = true;
+    this.trailArrowMaterial = new THREE.MeshBasicMaterial({
+      map: this.trailArrowTexture,
+      color: 0xffffff,
       transparent: true,
       opacity: 0.9,
       depthWrite: false,
+      side: THREE.DoubleSide,
       toneMapped: false,
     });
-    for (let i = 0; i < TRAIL_ARROW_COUNT; i += 1) {
-      const geo = new THREE.ConeGeometry(0.12, 0.35, 6);
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.rotation.x = Math.PI / 2;
+    for (let i = 0; i < TRAIL_ARROW_MAX_COUNT; i += 1) {
+      const geo = new THREE.PlaneGeometry(TRAIL_ARROW_WIDTH, TRAIL_ARROW_HEIGHT);
+      const mesh = new THREE.Mesh(geo, this.trailArrowMaterial);
       mesh.setTransient(true);
       group.add(mesh);
       this.trailArrows.push(mesh);
@@ -5895,8 +6097,20 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   }
 
   private setTrailVisible(visible: boolean): void {
-    if (this.trailGroup) {
-      this.trailGroup.visible = visible;
+    if (!this.trailGroup) {
+      return;
+    }
+    this.trailGroup.visible = visible;
+    this.setMailboxHighlight(visible);
+  }
+
+  private updateTrailVisibility(deltaTime: number): void {
+    if (!this.trailGroup?.visible || !Number.isFinite(this.trailVisibleRemaining)) {
+      return;
+    }
+    this.trailVisibleRemaining = Math.max(0, this.trailVisibleRemaining - deltaTime);
+    if (this.trailVisibleRemaining === 0) {
+      this.setTrailVisible(false);
     }
   }
 
@@ -5915,13 +6129,30 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
     this.tmpDir.multiplyScalar(1 / length);
+    this.tmpForward.crossVectors(this.upAxis, this.tmpDir);
+    if (this.tmpForward.lengthSq() < 1e-6) {
+      this.tmpForward.set(1, 0, 0);
+    } else {
+      this.tmpForward.normalize();
+    }
+    this.tmpMatrix.makeBasis(this.tmpDir, this.tmpForward, this.upAxis);
+
+    // The route is recomputed from the player's current position, but the
+    // arrow phase is independent of route length. That keeps their speed and
+    // spacing stable as the player approaches the mailbox.
+    const phaseDistance = (this.pulseTime * TRAIL_ARROW_TRAVEL_SPEED)
+      % TRAIL_ARROW_SPACING;
     for (let i = 0; i < this.trailArrows.length; i += 1) {
-      const t = (i + 1) / (this.trailArrows.length + 1);
       const arrow = this.trailArrows[i];
-      arrow.position.lerpVectors(this.tmpPlayerPos, this.tmpMailboxPos, t);
-      arrow.quaternion.setFromUnitVectors(this.upAxis, this.tmpDir);
-      const pulse = 0.75 + 0.25 * Math.sin(this.pulseTime * 5 + i * 0.6);
-      arrow.scale.setScalar(pulse);
+      const distance = phaseDistance + i * TRAIL_ARROW_SPACING;
+      if (distance > length) {
+        arrow.visible = false;
+        continue;
+      }
+      arrow.position.lerpVectors(this.tmpPlayerPos, this.tmpMailboxPos, distance / length);
+      arrow.quaternion.setFromRotationMatrix(this.tmpMatrix);
+      arrow.scale.setScalar(1);
+      arrow.visible = true;
     }
   }
 
@@ -5932,11 +6163,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.trailGroup.removeFromParent();
     for (const arrow of this.trailArrows) {
       arrow.geometry.dispose();
-      const mat = arrow.material;
-      if (!Array.isArray(mat)) {
-        mat.dispose();
-      }
     }
+    this.trailArrowMaterial?.dispose();
+    this.trailArrowMaterial = null;
+    this.trailArrowTexture = null;
     this.trailArrows.length = 0;
     this.trailGroup = null;
   }
@@ -6018,7 +6248,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         'text-align:center',
         'white-space:nowrap',
       ].join(';');
-      el.textContent = 'the Next Day...';
+      el.textContent = 'The Next Day...';
       container.appendChild(el);
       this.nextDayEl = el;
     }
@@ -6043,6 +6273,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.speechEl.style.display = 'block';
     this.speechEl.style.left = '50%';
     this.speechEl.style.top = '18%';
+    this.player?.setMailEnvelopeHighlightPulsing(true);
     this.updateSpeechBubblePosition();
   }
 
@@ -6050,6 +6281,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (this.speechEl) {
       this.speechEl.style.display = 'none';
     }
+    this.player?.setMailEnvelopeHighlightPulsing(false);
   }
 
   private updateSpeechBubblePosition(): void {
@@ -6121,6 +6353,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.speechEl = null;
     this.fadeEl = null;
     this.nextDayEl = null;
+    this.player?.setMailEnvelopeHighlightPulsing(false);
   }
 
   private isCameraNear(distance: number, epsilon: number): boolean {
@@ -6139,7 +6372,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.stopModelFrontCinematic();
     this.dayTransitionScrapRetired = false;
     this.dayTransitionWorldRestored = false;
+    this.dayTransitionWorldRestoreStarted = false;
+    this.dayTransitionWorldRestoreCursor = 0;
+    this.dayTransitionWorldRestoredAt = 0;
     this.dayTransitionOrdinanceRevealed = false;
+    this.dayTransitionOrdinanceRevealedAt = 0;
     this.dayTransitionCamReady = false;
     this.player?.releaseHeldItemsForDayReset();
     this.player?.prepareScrapForCinematic();
@@ -6168,26 +6405,30 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       && t >= DAY_TRANSITION_WORLD_RESTORE_SEC
       && !(this.player?.hasPendingScrapDestroys() ?? false)
     ) {
-      this.player?.finishDayResetRest();
-      this.restoreDayBaseline();
-      this.baselineReinforceRemaining = 10;
-      this.dayTransitionWorldRestored = true;
+      if (!this.dayTransitionWorldRestoreStarted) {
+        this.beginStagedDayBaselineRestore();
+      }
+      if (this.tickStagedDayBaselineRestore()) {
+        this.dayTransitionWorldRestored = true;
+        this.dayTransitionWorldRestoredAt = t;
+      }
     }
 
     if (
       this.dayTransitionWorldRestored
       && !this.dayTransitionOrdinanceRevealed
-      && t >= DAY_TRANSITION_REVEAL_SEC
+      && t >= this.dayTransitionWorldRestoredAt + DAY_TRANSITION_REVEAL_COOLDOWN_SEC
       && !(this.player?.hasPendingScrapDestroys() ?? false)
     ) {
       this.applyQueuedOrdinanceReveals();
       this.dayTransitionOrdinanceRevealed = true;
+      this.dayTransitionOrdinanceRevealedAt = t;
     }
 
     if (
       this.dayTransitionOrdinanceRevealed
       && !this.dayTransitionCamReady
-      && t >= DAY_TRANSITION_CINEMATIC_SEC
+      && t >= this.dayTransitionOrdinanceRevealedAt + DAY_TRANSITION_CINEMATIC_COOLDOWN_SEC
     ) {
       this.ensureWakeOrdinanceCinematic();
       this.dayTransitionCamReady = true;
@@ -6334,37 +6575,102 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
 
+    this.beginDayBaselineRestore(world);
+    this.applyAllSnapshotPoses();
+    this.completeDayBaselineRestore();
+  }
+
+  /** Start a black-screen reset without submitting every prop update in one frame. */
+  private beginStagedDayBaselineRestore(): void {
+    if (this.dayTransitionWorldRestoreStarted) {
+      return;
+    }
+    const world = this.getWorld();
+    if (!world || this.daySnapshots.length === 0) {
+      this.dayTransitionWorldRestoreStarted = true;
+      this.dayTransitionWorldRestoreCursor = this.daySnapshots.length;
+      return;
+    }
+    this.beginDayBaselineRestore(world);
+    this.dayTransitionWorldRestoreStarted = true;
+    this.dayTransitionWorldRestoreCursor = 0;
+  }
+
+  /** Restore a bounded batch each frame; returns true once the reset is fully settled. */
+  private tickStagedDayBaselineRestore(): boolean {
+    if (!this.dayTransitionWorldRestoreStarted) {
+      return false;
+    }
+    const end = Math.min(
+      this.dayTransitionWorldRestoreCursor + DAY_TRANSITION_RESTORE_BATCH_SIZE,
+      this.daySnapshots.length,
+    );
+    for (let index = this.dayTransitionWorldRestoreCursor; index < end; index += 1) {
+      const snap = this.daySnapshots[index];
+      if (snap) {
+        this.applySnapshotPose(snap, false, false);
+      }
+    }
+    this.dayTransitionWorldRestoreCursor = end;
+    if (end < this.daySnapshots.length) {
+      return false;
+    }
+    this.completeDayBaselineRestore();
+    return true;
+  }
+
+  private beginDayBaselineRestore(world: ENGINE.World): void {
+    this.propPrevBottomY.clear();
     for (const root of [...world.getRootNodes()]) {
-      if (this.shouldSkipDayReset(root)) {
+      if (this.shouldSkipDayReset(root) || this.dayBaselineIds.has(root.uuid)) {
         continue;
       }
-      if (!this.dayBaselineIds.has(root.uuid)) {
-        // Hide + detach only — immediate destroy of heavy scrap mid-frame loses WebGPU.
-        // Deferred destroy runs through StreetLampDismantlingSystem while still under black.
-        root.visible = false;
-        root.traverse((child) => {
-          child.visible = false;
-        });
-        root.removeFromParent();
-        this.player?.retireDetachedRootForDayReset(root);
-      }
+      // Hide + detach only — immediate destroy of heavy scrap mid-frame loses WebGPU.
+      // Deferred destroy runs through StreetLampDismantlingSystem while still under black.
+      root.visible = false;
+      root.traverse((child) => {
+        child.visible = false;
+      });
+      root.removeFromParent();
+      this.player?.retireDetachedRootForDayReset(root);
     }
+  }
 
-    this.applyAllSnapshotPoses();
+  private completeDayBaselineRestore(): void {
     this.catMailCourier.resetToHome();
     this.reapplyOrdinanceVisibility();
+    this.baselineReinforceRemaining = 10;
   }
 
-  private applyAllSnapshotPoses(options?: { finalizePhysics?: boolean }): void {
+  private applyAllSnapshotPoses(options?: {
+    finalizePhysics?: boolean;
+    /** Reapply only movable bodies during the short post-reset physics settle. */
+    dynamicOnly?: boolean;
+  }): void {
     const finalizePhysics = options?.finalizePhysics === true;
+    const dynamicOnly = options?.dynamicOnly === true;
     for (const snap of this.daySnapshots) {
-      this.applySnapshotPose(snap, finalizePhysics);
+      this.applySnapshotPose(snap, finalizePhysics, dynamicOnly);
     }
   }
 
-  private applySnapshotPose(snap: DayTransformSnapshot, finalizePhysics: boolean): void {
+  private applySnapshotPose(
+    snap: DayTransformSnapshot,
+    finalizePhysics: boolean,
+    dynamicOnly: boolean,
+  ): void {
     const node = snap.node;
     if (!node.parent) {
+      return;
+    }
+
+    const hidden = this.hiddenOrdinances.find((h) => h.node === node);
+    const physicsOptions = hidden?.movable
+      ? hidden.physicsOptions
+      : snap.physicsOptions;
+    const isMovable = hidden?.movable === true
+      || physicsOptions?.motionType === ENGINE.PhysicsMotionType.Dynamic;
+    if (dynamicOnly && !isMovable) {
       return;
     }
 
@@ -6377,15 +6683,12 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
 
-    const hidden = this.hiddenOrdinances.find((h) => h.node === node);
-    // Static ordinance boards: transform only — visibility/physics handled by reapply.
-    if (hidden && !hidden.movable) {
+    // Static scenery never moves during play. Reset its scene transform once, but avoid
+    // flooding the physics/GPU bridge with redundant teleports and velocity writes.
+    if (!isMovable) {
       return;
     }
 
-    const physicsOptions = hidden?.movable
-      ? hidden.physicsOptions
-      : snap.physicsOptions;
     if (physicsOptions) {
       // Movable cones stay disabled until reapplyOrdinanceVisibility reveals them.
       const enabled = hidden?.movable
@@ -6474,15 +6777,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.tmpMatrix.lookAt(this.envelopeStartPos, this.tmpHitPoint, this.upAxis);
     this.envelopeQuat.setFromRotationMatrix(this.tmpMatrix);
 
-    const geom = new THREE.BoxGeometry(0.36, 0.028, 0.24);
-    const mat = new THREE.MeshStandardMaterial({
-      color: 0xf3e6c8,
-      roughness: 0.85,
-      metalness: 0.05,
-      emissive: 0x2a2418,
-      emissiveIntensity: 0.15,
-    });
-    const mesh = new THREE.Mesh(geom, mat);
+    const mesh = createAirmailEnvelope(0.36, 0.028, 0.24);
     mesh.name = 'DeliveryEnvelope';
     mesh.castShadow = false;
     mesh.receiveShadow = false;
@@ -6514,16 +6809,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.envelopeProgress = 0;
       return;
     }
-    this.envelopeMesh.removeFromParent();
-    this.envelopeMesh.geometry.dispose();
-    const mat = this.envelopeMesh.material;
-    if (Array.isArray(mat)) {
-      for (const m of mat) {
-        m.dispose();
-      }
-    } else {
-      mat.dispose();
-    }
+    disposeAirmailEnvelope(this.envelopeMesh);
     this.envelopeMesh = null;
     this.envelopeProgress = 0;
   }
@@ -6684,11 +6970,12 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     out.y = THREE.MathUtils.lerp(this.tmpBounds.min.y, this.tmpBounds.max.y, 0.82);
   }
 
-  /** Blend the view-target cam from the current shot back onto the player at 20m. */
-  private beginCinematicReturnToPlayer(): void {
+  /** Blend the view-target cam from the current shot back onto the player. */
+  private beginCinematicReturnToPlayer(distance = DEFAULT_CAMERA_DISTANCE): void {
+    this.cinematicReturnDistance = distance;
     if (!this.player || !this.viewTargetCam || !this.cinematicActive) {
       this.stopModelFrontCinematic();
-      this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+      this.player?.resetGameplayCameraToDefault(this.cinematicReturnDistance);
       return;
     }
 
@@ -6700,8 +6987,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.viewTargetCam.getWorldQuaternion(this.cinematicStartQuat);
 
     // Match gameplay cam defaults first so the blend end pose is the real free-play view.
-    this.player.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
-    this.syncCinematicReturnEndPose();
+    this.player.resetGameplayCameraToDefault(this.cinematicReturnDistance);
+    this.syncCinematicReturnEndPose(false);
     this.matchCinematicFovToGameplay();
 
     this.cinematicReturningToPlayer = true;
@@ -6709,11 +6996,13 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.cinematicActive = true;
   }
 
-  private syncCinematicReturnEndPose(): void {
+  private syncCinematicReturnEndPose(resetCamera = true): void {
     if (!this.player) {
       return;
     }
-    this.player.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    if (resetCamera) {
+      this.player.resetGameplayCameraToDefault(this.cinematicReturnDistance);
+    }
     this.player.updateMatrixWorld(true);
     const gameplayCam = this.player.getGameplayCamera();
     if (gameplayCam) {
@@ -6743,7 +7032,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   /** Seamless handoff: align to gameplay pose, then drop the view-target override. */
   private finishCinematicReturnToPlayer(): void {
     if (this.cinematicReturningToPlayer) {
-      this.syncCinematicReturnEndPose();
+      this.syncCinematicReturnEndPose(false);
       if (this.viewTargetCam) {
         this.viewTargetCam.position.copy(this.cinematicEndPos);
         this.viewTargetCam.quaternion.copy(this.cinematicEndQuat);
@@ -6751,7 +7040,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       }
     }
     this.stopModelFrontCinematic();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.player?.resetGameplayCameraToDefault(this.cinematicReturnDistance);
   }
 
   private updateModelFrontCinematic(deltaTime: number): void {
@@ -6759,8 +7048,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
     if (this.cinematicReturningToPlayer) {
-      // Chase the live gameplay camera so the final frame matches before handoff.
-      this.syncCinematicReturnEndPose();
+      // Keep the prepared gameplay end pose stable so the return blend stays smooth.
+      this.syncCinematicReturnEndPose(false);
     }
     const blendSec = this.cinematicReturningToPlayer ? CINEMATIC_RETURN_SEC : CINEMATIC_BLEND_SEC;
     if (blendSec <= 0) {

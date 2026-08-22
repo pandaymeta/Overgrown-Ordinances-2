@@ -8,7 +8,7 @@ import { installAnimationOneShotHostPatch } from './animation-oneshot-host-patch
 import { CarryPlayerController } from './carry-player-controller.js';
 import { ClimbableLadder } from './climbable-ladder.js';
 import { ThirdPersonPlayer } from './player.js';
-import { installEditorTrimeshPatch, patchTrimeshColliderScale } from './rapier-trimesh-patch.js';
+import { patchTrimeshColliderScale } from './rapier-trimesh-patch.js';
 import {
   OrdinanceSignSharpnessSystem,
   refreshOrdinanceSignSharpness,
@@ -16,9 +16,9 @@ import {
 import { MailDeliveryFlowSystem } from './mail-delivery-flow.js';
 import './sharp-sign-board-material.js';
 import { StairWalkRamp } from './stair-walk-ramp.js';
+import { ShophouseCameraOcclusionSystem } from './shophouse-camera-occlusion.js';
 
 installAnimationOneShotHostPatch(ENGINE);
-installEditorTrimeshPatch(ENGINE);
 
 @ENGINE.GameClass()
 class ThirdPersonGameMode extends ENGINE.GameMode {
@@ -46,6 +46,7 @@ class ThirdPersonGameMode extends ENGINE.GameMode {
     this.ensureOrdinanceSignSharpness();
     void refreshOrdinanceSignSharpness(this.getWorld());
     this.ensureMailDeliveryFlow();
+    this.ensureShophouseCameraOcclusion();
     return true;
   }
 
@@ -58,6 +59,14 @@ class ThirdPersonGameMode extends ENGINE.GameMode {
       return;
     }
     world.add(MailDeliveryFlowSystem.create());
+  }
+
+  private ensureShophouseCameraOcclusion(): void {
+    const world = this.getWorld();
+    if (!world || world.getNodes(ShophouseCameraOcclusionSystem).length > 0) {
+      return;
+    }
+    world.add(ShophouseCameraOcclusionSystem.create());
   }
 
   private ensureOrdinanceSignSharpness(): void {

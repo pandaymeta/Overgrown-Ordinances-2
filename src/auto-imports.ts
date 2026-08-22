@@ -1,3 +1,4 @@
+import './airmail-envelope.js';
 import './animation-oneshot-host-patch.js';
 import './asphalt-road-tile.js';
 import './carry-player-controller.js';
@@ -13,6 +14,7 @@ import './player.js';
 import './pushable-physics-stabilizer-node.js';
 import './rapier-trimesh-patch.js';
 import './sharp-sign-board-material.js';
+import './shophouse-camera-occlusion.js';
 import './stair-walk-ramp.js';
 import './street-lamp-dismantling-system.js';
 import '@packs/stylized-village-pack/index';

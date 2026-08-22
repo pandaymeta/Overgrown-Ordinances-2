@@ -1,7 +1,7 @@
 /**
  * Ordinance ModelMeshNode presentation for Play ≈ editor:
  * - Unlit (MeshBasic) so game lights/shadows don't wash lettering
- * - Mipmaps on + high anisotropy to stop crawl/shimmer while moving
+ * - Trilinear mipmaps + moderate anisotropy for readable, stable distant lettering
  * - Red boards (PoleCut / Wires / StreetLightsDestroy) stay lit — unlit made them too dark
  */
 
@@ -11,7 +11,7 @@ import * as THREE from 'three';
 const ORDINANCE_MODEL_PATH = /PolyforkAssets\/Ordinances\//i;
 /** Keep these lit (standard materials) — dark Kanji-red fills need scene lighting. */
 const LIT_RED_BOARD_PATH = /PolyforkAssets\/Ordinances\/(PoleCut|Wires|StreetLightsDestroy)\.glb/i;
-const DEFAULT_ANISOTROPY = 16;
+const DEFAULT_ANISOTROPY = 8;
 const UNLIT_FLAG = 'ordinanceSignUnlit';
 
 const patchedNodes = new WeakSet<ENGINE.ModelMeshNode>();
@@ -28,7 +28,7 @@ function applyStableSamplingToTexture(texture: THREE.Texture | null | undefined)
   if (!texture) {
     return;
   }
-  // Trilinear mips kill shimmer under camera motion; anisotropy keeps angled boards clearer.
+  // Trilinear mips stabilize camera motion; moderate anisotropy keeps text clear without harsh shimmer.
   texture.magFilter = THREE.LinearFilter;
   texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.generateMipmaps = true;

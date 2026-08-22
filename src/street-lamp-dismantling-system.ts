@@ -725,7 +725,7 @@ export class StreetLampDismantlingSystem {
     if (!hydrant || !projectile) {
       return;
     }
-    const impactSpeed = event.relativeVelocity ?? this.getProjectileSpeed(projectile);
+    const impactSpeed = event.relativeVelocity ?? 0;
     this.tryHydrantProjectileHit(hydrant, projectile, impactSpeed);
   }
 
@@ -899,11 +899,16 @@ export class StreetLampDismantlingSystem {
   }
 
   private getProjectileSpeed(projectile: ENGINE.PrimitiveNode): number {
-    const velocity = projectile.getPhysicsVectorParam(ENGINE.PhysicsVectorParam.LinearVelocity);
-    if (!velocity) {
+    // Never call during onCollide / physics step — Rapier throws unsafe-aliasing.
+    try {
+      const velocity = projectile.getPhysicsVectorParam(ENGINE.PhysicsVectorParam.LinearVelocity);
+      if (!velocity) {
+        return 0;
+      }
+      return Math.hypot(velocity[0], velocity[1], velocity[2]);
+    } catch {
       return 0;
     }
-    return Math.hypot(velocity[0], velocity[1], velocity[2]);
   }
 
   private isHydrantProjectile(node: ENGINE.PrimitiveNode): boolean {
