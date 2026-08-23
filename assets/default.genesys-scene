@@ -9,11 +9,11 @@
             "$bc": "c",
             "_": [
               1,
-              0.930111,
-              0.83077
+              0.814847,
+              0.57758
             ]
           },
-          10
+          3.25
         ]
       }
     },
@@ -23,6 +23,48 @@
       "$value": {
         "name": "DefaultTexture"
       }
+    },
+    {
+      "$bc": "THREE.HemisphereLight",
+      "$id": 3,
+      "$value": {
+        "_": [
+          {
+            "$bc": "c",
+            "_": [
+              0.502886,
+              0.814847,
+              1
+            ]
+          },
+          {
+            "$bc": "c",
+            "_": [
+              0.913099,
+              0.665387,
+              0.462077
+            ]
+          },
+          2.4
+        ]
+      }
+    },
+    {
+      "$bc": "THREE.AmbientLight",
+      "$id": 4,
+      "$value": {
+        "_": [
+          {
+            "$bc": "c",
+            "_": [
+              0.783538,
+              0.896269,
+              1
+            ]
+          },
+          1.05
+        ]
+      }
     }
   ],
   "$root": {
@@ -31,11 +73,61 @@
       {
         "$bc": "ENGINE.DirectionalLightNode",
         "castShadow": true,
-        "children": [
-          {
+        "children": {
+          "0": {
+            "$bc": "THREE.Object3D",
+            "position": {
+              "$bc": "v3",
+              "_": [
+                -36.305832,
+                36.861007,
+                -130.3041
+              ]
+            },
+            "uuid": "9353c93a-0b4f-4670-9354-314b76481b5d"
+          },
+          "1": {
+            "$bc": "THREE.Object3D",
+            "position": {
+              "$bc": "v3",
+              "_": [
+                -123.455878,
+                47.659332,
+                -180.081844
+              ]
+            },
+            "uuid": "428ea2b7-244e-49f6-98f4-150e8beaada8"
+          },
+          "2": {
+            "$bc": "THREE.Object3D",
+            "position": {
+              "$bc": "v3",
+              "_": [
+                -238.257843,
+                61.970705,
+                -245.693591
+              ]
+            },
+            "uuid": "553f4019-350e-44be-85d3-e0f830bfa414"
+          },
+          "3": {
+            "$bc": "THREE.Object3D",
+            "position": {
+              "$bc": "v3",
+              "_": [
+                -623.637187,
+                110.352241,
+                -465.917107
+              ]
+            },
+            "uuid": "671a5e3f-d4ff-4fb3-a22a-65df53348607"
+          },
+          "4": {
             "$ref": 1
-          }
-        ],
+          },
+          "$length": 13
+        },
+        "csmFade": true,
         "isSunLight": true,
         "light": {
           "$ref": 1
@@ -45,9 +137,9 @@
         "position": {
           "$bc": "v3",
           "_": [
-            10,
-            50,
-            -10
+            -28,
+            42,
+            -18
           ]
         },
         "rotation": {
@@ -63,11 +155,12 @@
         "shadowCameraLeft": -40,
         "shadowCameraRight": 40,
         "shadowCameraTop": 40,
-        "shadowFar": 200,
+        "shadowFar": 2000,
         "shadowMapSize": 4096,
         "shadowNear": 0.5,
-        "shadowNormalBias": 0.02,
-        "shadowRadius": 2,
+        "shadowNormalBias": 0.04,
+        "shadowRadius": 6,
+        "useCsmShadows": true,
         "userData": {
           "objectFlags": 6
         },
@@ -354,11 +447,13 @@
         "children": {
           "$length": 1
         },
-        "cloudDensity": 0.7,
-        "cloudElevation": 0.42,
-        "cloudSpeed": 0.00005,
+        "cloudCoverage": 0.42,
+        "cloudDensity": 0.48,
+        "cloudElevation": 0.45,
+        "cloudSpeed": 0.00003,
         "hiddenInGame": true,
-        "mieDirectionalG": 0.85,
+        "mieCoefficient": 0.006,
+        "mieDirectionalG": 0.76,
         "name": "Sky",
         "nodeId": 35256,
         "position": {
@@ -369,7 +464,7 @@
             -3.7
           ]
         },
-        "rayleigh": 2.2,
+        "rayleigh": 1.8,
         "scale": {
           "$bc": "v3",
           "_": [
@@ -378,12 +473,12 @@
             10000
           ]
         },
-        "selfHidden": true,
+        "showSunDisc": false,
+        "turbidity": 4,
         "userData": {
           "objectFlags": 6
         },
-        "uuid": "7f877ad3935ff9cb",
-        "visible": false
+        "uuid": "7f877ad3935ff9cb"
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
@@ -455,7 +550,7 @@
         "$bc": "ENGINE.ModelMeshNode",
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9748",
-        "nodeId": 16292,
+        "nodeId": 64026,
         "physicsOptions": {
           "collisionMeshType": "boundingBox"
         },
@@ -1158,44 +1253,6 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "modelUrl": "@project/assets/PolyforkAssets/Tiles/asphalt-road-tile-straight-both.glb",
-        "name": "RightSideRoad Asphalt Road Tile Straight Both 02",
-        "nodeId": 13646,
-        "physicsOptions": {
-          "collisionMeshType": "boundingBox"
-        },
-        "position": {
-          "$bc": "v3",
-          "_": [
-            12.009632,
-            -0.8,
-            3.928571
-          ]
-        },
-        "receiveShadow": true,
-        "rotation": {
-          "$bc": "e",
-          "_": [
-            0,
-            1.570796,
-            0
-          ]
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            2,
-            2,
-            2
-          ]
-        },
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "6905a59086840678"
-      },
-      {
-        "$bc": "ENGINE.ModelMeshNode",
-        "modelUrl": "@project/assets/PolyforkAssets/Tiles/asphalt-road-tile-straight-both.glb",
         "name": "LeftSideRoad Asphalt Road Tile Straight Both 07",
         "nodeId": 1892,
         "physicsOptions": {
@@ -1387,7 +1444,7 @@
         "$bc": "ENGINE.ModelMeshNode",
         "modelUrl": "@project/assets/PolyforkAssets/Tiles/asphalt-road-tile-corner-none.glb",
         "name": "Asphalt Road Tile Corner None 19",
-        "nodeId": 31561,
+        "nodeId": 22391,
         "physicsOptions": {
           "collisionMeshType": "boundingBox"
         },
@@ -1500,7 +1557,7 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "modelUrl": "@project/assets/PolyforkAssets/Tiles/asphalt-road-tile-corner-none.glb",
-        "name": "Asphalt Road Tile Corner None 24",
+        "name": "RightSideRoad Corner Both 01",
         "nodeId": 1452,
         "physicsOptions": {
           "collisionMeshType": "boundingBox"
@@ -4208,7 +4265,7 @@
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/fuel-tank-3a0111.glb",
         "name": "Fuel Tank 3 A 0111",
-        "nodeId": 25947,
+        "nodeId": 29768,
         "physicsOptions": {
           "collisionMeshType": "trimesh"
         },
@@ -4866,7 +4923,7 @@
         "$bc": "ENGINE.ModelMeshNode",
         "modelUrl": "@project/assets/PolyforkAssets/Tiles/corner_both.glb",
         "name": "RightSideRoad Corner Both",
-        "nodeId": 52424,
+        "nodeId": 35956,
         "physicsOptions": {
           "collisionMeshType": "boundingBox"
         },
@@ -4930,7 +4987,7 @@
         ],
         "modelUrl": "@project/assets/PolyforkAssets/yellow-cab-8df4a0.glb",
         "name": "Yellow Cab 8 Df 4 A 0",
-        "nodeId": 44260,
+        "nodeId": 49622,
         "physicsOptions": {
           "collisionMeshType": "trimesh"
         },
@@ -5150,7 +5207,7 @@
         "position": {
           "$bc": "v3",
           "_": [
-            7,
+            6.8,
             -1.6,
             12
           ]
@@ -5856,9 +5913,9 @@
         "position": {
           "$bc": "v3",
           "_": [
-            13.5,
+            13.25,
             -0.7,
-            0.1
+            2.25
           ]
         },
         "rotation": {
@@ -5956,28 +6013,31 @@
         "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_07.glb",
         "name": "Sm Sb Env Cloud 07",
         "nodeId": 10424,
+        "physicsOptions": {
+          "collisionProfile": "NoCollision"
+        },
         "position": {
           "$bc": "v3",
           "_": [
-            29.2,
-            8.4,
-            1.1
+            26.1,
+            7.8,
+            2.2
           ]
         },
         "rotation": {
           "$bc": "e",
           "_": [
-            0,
-            -1.570796,
-            0
+            3.141593,
+            -1.221731,
+            3.141593
           ]
         },
         "scale": {
           "$bc": "v3",
           "_": [
-            2,
-            2,
-            2
+            2.5,
+            2.5,
+            2.5
           ]
         },
         "userData": {
@@ -5987,23 +6047,100 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_06.glb",
-        "name": "Sm Sb Env Cloud 06",
-        "nodeId": 50911,
+        "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_07.glb",
+        "name": "Sm Sb Env Cloud 11",
+        "nodeId": 31581,
+        "physicsOptions": {
+          "collisionProfile": "NoCollision"
+        },
         "position": {
           "$bc": "v3",
           "_": [
-            2.6,
-            13.1,
-            26.4
+            -6.6,
+            -6.1,
+            -34.8
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            3.141593,
+            -1.221731,
+            3.141593
           ]
         },
         "scale": {
           "$bc": "v3",
           "_": [
-            2,
-            2,
-            2
+            1.5,
+            1.5,
+            1.5
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "7f41ffa41ec75397"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_07.glb",
+        "name": "Sm Sb Env Cloud 09",
+        "nodeId": 32148,
+        "physicsOptions": {
+          "collisionProfile": "NoCollision"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -24.4,
+            1.7,
+            25.6
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            0,
+            0.872665,
+            0
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1.5,
+            1.5,
+            1.5
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "c3f41816bfbc541f"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_06.glb",
+        "name": "Sm Sb Env Cloud 06",
+        "nodeId": 50911,
+        "physicsOptions": {
+          "collisionProfile": "NoCollision"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            6.8,
+            13.1,
+            21.1
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            2.5,
+            2.5,
+            2.5
           ]
         },
         "userData": {
@@ -6016,6 +6153,9 @@
         "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_05.glb",
         "name": "Sm Sb Env Cloud 05",
         "nodeId": 21289,
+        "physicsOptions": {
+          "collisionProfile": "NoCollision"
+        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -6024,12 +6164,20 @@
             -37.5
           ]
         },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            0,
+            -0.349066,
+            0
+          ]
+        },
         "scale": {
           "$bc": "v3",
           "_": [
-            2,
-            2,
-            2
+            2.5,
+            2.5,
+            2.5
           ]
         },
         "userData": {
@@ -6039,14 +6187,54 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_04.glb",
-        "name": "Sm Sb Env Cloud 10",
-        "nodeId": 39350,
+        "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_05.glb",
+        "name": "Sm Sb Env Cloud 08",
+        "nodeId": 60696,
+        "physicsOptions": {
+          "collisionProfile": "NoCollision"
+        },
         "position": {
           "$bc": "v3",
           "_": [
-            -36.8,
-            7.8,
+            -6.9,
+            -8.9,
+            28.6
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            0,
+            -0.174533,
+            0
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1.5,
+            1.5,
+            1.5
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "0e3ca3a8756bc955"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_04.glb",
+        "name": "Sm Sb Env Cloud 10",
+        "nodeId": 39350,
+        "physicsOptions": {
+          "collisionProfile": "NoCollision"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -34.9,
+            5.4,
             4.3
           ]
         },
@@ -6061,9 +6249,9 @@
         "scale": {
           "$bc": "v3",
           "_": [
-            2,
-            2,
-            2
+            2.5,
+            2.5,
+            2.5
           ]
         },
         "userData": {
@@ -6076,12 +6264,15 @@
         "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_02.glb",
         "name": "Sm Sb Env Cloud 02",
         "nodeId": 18978,
+        "physicsOptions": {
+          "collisionProfile": "NoCollision"
+        },
         "position": {
           "$bc": "v3",
           "_": [
-            -24.5,
+            -28.3,
             10.1,
-            -29.9
+            -26.9
           ]
         },
         "rotation": {
@@ -6095,9 +6286,9 @@
         "scale": {
           "$bc": "v3",
           "_": [
-            2,
-            2,
-            2
+            2.5,
+            2.5,
+            2.5
           ]
         },
         "userData": {
@@ -6106,36 +6297,40 @@
         "uuid": "b54653f2-1952-4ac2-a9fc-706b1a9199b1"
       },
       {
-        "$bc": "ENGINE.SceneEnvironmentNode",
-        "bottomColor": "#87CEEB",
-        "middleColor": "#B8E4FF",
-        "name": "Scene Environment",
-        "nodeId": 56030,
-        "sourceType": "Procedural",
-        "topColor": "#6EC6FF",
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "d116553566348ac3"
-      },
-      {
         "$bc": "ENGINE.SceneNode",
         "children": [
           {
             "$bc": "ENGINE.SceneEnvironmentNode",
+            "backgroundBlurriness": 0.08,
+            "backgroundIntensity": 0.9,
             "bottomColor": {
               "$bc": "c",
               "_": [
-                0.242281,
-                0.617207,
-                0.83077
+                0.679542,
+                0.854993,
+                0.947307
               ]
             },
-            "middleColor": "#87CEEB",
+            "envMapIntensity": 0.8,
+            "middleColor": {
+              "$bc": "c",
+              "_": [
+                0.003035,
+                0.3564,
+                1
+              ]
+            },
             "name": "Skybox",
             "nodeId": 45650,
             "sourceType": "Procedural",
-            "topColor": "#4A9FE0",
+            "topColor": {
+              "$bc": "c",
+              "_": [
+                0.003035,
+                0.250158,
+                1
+              ]
+            },
             "uuid": "c4d7ef38abac2867"
           }
         ],
@@ -6243,7 +6438,7 @@
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Birds.glb",
         "name": "Birds",
-        "nodeId": 7004,
+        "nodeId": 7257,
         "physicsOptions": {
           "collisionMeshType": "trimesh"
         },
@@ -7364,7 +7559,7 @@
               "opacity": 0.9,
               "side": 2,
               "transparent": true,
-              "uuid": "4eb32cbc-8fbc-45a4-8ddc-c209a1ed890d"
+              "uuid": "15e59302-2d8b-4365-a4f3-6d1d451a780d"
             },
             "name": "Axe Pickup Ring Visual",
             "nodeId": 22545,
@@ -7399,15 +7594,567 @@
         "position": {
           "$bc": "v3",
           "_": [
-            0,
+            -0.25,
             -0.1,
-            0
+            2.15
           ]
         },
         "userData": {
           "objectFlags": 6
         },
         "uuid": "ea417049db235966"
+      },
+      {
+        "$bc": "GAME.EnvironmentArtDirectionSystem",
+        "$initOptions": {},
+        "name": "Environment Art Direction System",
+        "nodeId": 20080,
+        "userData": {
+          "objectFlags": 6
+        },
+        "uuid": "b131f498e59604a8"
+      },
+      {
+        "$bc": "ENGINE.HemisphereLightNode",
+        "children": [
+          {
+            "$ref": 3
+          }
+        ],
+        "light": {
+          "$ref": 3
+        },
+        "name": "Anime Sky Fill",
+        "nodeId": 20880,
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "6c62d3df98397240"
+      },
+      {
+        "$bc": "ENGINE.AmbientLightNode",
+        "children": [
+          {
+            "$ref": 4
+          }
+        ],
+        "light": {
+          "$ref": 4
+        },
+        "name": "Anime Ambient Fill",
+        "nodeId": 47640,
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "e5947a1b6620404d"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "castShadow": true,
+        "modelUrl": "@project/assets/PolyforkAssets/Tiles/asphalt-road-tile-straight-edges.glb",
+        "name": "RightSideRoad Asphalt Road Tile Straight Both 02",
+        "nodeId": 25279,
+        "physicsOptions": {
+          "collisionMeshType": "boundingBox"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            12.01,
+            -0.8,
+            3.929
+          ]
+        },
+        "receiveShadow": true,
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            0,
+            1.570796,
+            0
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            2,
+            2,
+            2
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "a5603e69-cd24-4667-afe8-ca8a913f3589"
+      },
+      {
+        "$bc": "GAME.TutorialKeysGuide",
+        "$initOptions": {},
+        "children": [
+          {
+            "$bc": "ENGINE.MeshNode",
+            "children": {
+              "$length": 1
+            },
+            "geometry": {
+              "$bc": "THREE.PlaneGeometry",
+              "_": [
+                0.85,
+                0.85,
+                1,
+                1
+              ]
+            },
+            "material": {
+              "$bc": "THREE.MeshBasicMaterial",
+              "depthTest": false,
+              "depthWrite": false,
+              "map": {
+                "$bc": "THREE.CanvasTexture"
+              },
+              "opacity": 0,
+              "side": 2,
+              "toneMapped": false,
+              "transparent": true,
+              "uuid": "f5623f10-6c1f-43a4-bb1b-c8580c94054c"
+            },
+            "name": "Tutorial Key W",
+            "nodeId": 45828,
+            "physicsOptions": {
+              "enabled": false
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0.999999,
+                0.04,
+                -0.799996
+              ]
+            },
+            "renderOrder": 860,
+            "rotation": {
+              "$bc": "e",
+              "_": [
+                -1.570796,
+                0,
+                -3.141592
+              ]
+            },
+            "scale": {
+              "$bc": "v3",
+              "_": [
+                2,
+                2,
+                2
+              ]
+            },
+            "userData": {
+              "objectFlags": 1
+            },
+            "uuid": "f094e561-584b-40d4-8461-66fa0f7550da",
+            "visible": false
+          },
+          {
+            "$bc": "ENGINE.MeshNode",
+            "children": {
+              "$length": 1
+            },
+            "geometry": {
+              "$bc": "THREE.PlaneGeometry",
+              "_": [
+                0.85,
+                0.85,
+                1,
+                1
+              ]
+            },
+            "material": {
+              "$bc": "THREE.MeshBasicMaterial",
+              "depthTest": false,
+              "depthWrite": false,
+              "map": {
+                "$bc": "THREE.CanvasTexture"
+              },
+              "opacity": 0,
+              "side": 2,
+              "toneMapped": false,
+              "transparent": true,
+              "uuid": "0ea20616-9f26-466e-8028-8060a8fa7262"
+            },
+            "name": "Tutorial Key A",
+            "nodeId": 14834,
+            "physicsOptions": {
+              "enabled": false
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                2.5,
+                0.039999,
+                0.700014
+              ]
+            },
+            "renderOrder": 860,
+            "rotation": {
+              "$bc": "e",
+              "_": [
+                -1.570796,
+                0.000001,
+                3.141593
+              ]
+            },
+            "scale": {
+              "$bc": "v3",
+              "_": [
+                2,
+                2,
+                2
+              ]
+            },
+            "userData": {
+              "objectFlags": 1
+            },
+            "uuid": "fc11a4bb-26f0-4d14-a4b1-ca578e3cef2f",
+            "visible": false
+          },
+          {
+            "$bc": "ENGINE.MeshNode",
+            "children": {
+              "$length": 1
+            },
+            "geometry": {
+              "$bc": "THREE.PlaneGeometry",
+              "_": [
+                0.85,
+                0.85,
+                1,
+                1
+              ]
+            },
+            "material": {
+              "$bc": "THREE.MeshBasicMaterial",
+              "depthTest": false,
+              "depthWrite": false,
+              "map": {
+                "$bc": "THREE.CanvasTexture"
+              },
+              "opacity": 0,
+              "side": 2,
+              "toneMapped": false,
+              "transparent": true,
+              "uuid": "97f3a94a-52e5-43c3-84a6-a52cfa16f0e2"
+            },
+            "name": "Tutorial Key S",
+            "nodeId": 6506,
+            "physicsOptions": {
+              "enabled": false
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0.999997,
+                0.04,
+                0.700004
+              ]
+            },
+            "renderOrder": 860,
+            "rotation": {
+              "$bc": "e",
+              "_": [
+                -1.570796,
+                0,
+                0
+              ]
+            },
+            "scale": {
+              "$bc": "v3",
+              "_": [
+                2,
+                2,
+                2
+              ]
+            },
+            "userData": {
+              "objectFlags": 1
+            },
+            "uuid": "7e663702-3c1d-45f4-8d3d-9cb111551a9b",
+            "visible": false
+          },
+          {
+            "$bc": "ENGINE.MeshNode",
+            "children": {
+              "$length": 1
+            },
+            "geometry": {
+              "$bc": "THREE.PlaneGeometry",
+              "_": [
+                0.85,
+                0.85,
+                1,
+                1
+              ]
+            },
+            "material": {
+              "$bc": "THREE.MeshBasicMaterial",
+              "depthTest": false,
+              "depthWrite": false,
+              "map": {
+                "$bc": "THREE.CanvasTexture"
+              },
+              "opacity": 0,
+              "side": 2,
+              "toneMapped": false,
+              "transparent": true,
+              "uuid": "0c23d72c-8a20-4ea1-bbf2-23eee9fe830b"
+            },
+            "name": "Tutorial Key D",
+            "nodeId": 10790,
+            "physicsOptions": {
+              "enabled": false
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                -0.5,
+                0.040001,
+                0.699994
+              ]
+            },
+            "renderOrder": 860,
+            "rotation": {
+              "$bc": "e",
+              "_": [
+                -1.570796,
+                0.000001,
+                3.141593
+              ]
+            },
+            "scale": {
+              "$bc": "v3",
+              "_": [
+                2,
+                2,
+                2
+              ]
+            },
+            "userData": {
+              "objectFlags": 1
+            },
+            "uuid": "e56dea16-29b2-467c-995c-427a95d15f08",
+            "visible": false
+          },
+          {
+            "$bc": "ENGINE.MeshNode",
+            "children": {
+              "$length": 1
+            },
+            "geometry": {
+              "$bc": "THREE.PlaneGeometry",
+              "_": [
+                1.941406,
+                0.7,
+                1,
+                1
+              ]
+            },
+            "material": {
+              "$bc": "THREE.MeshBasicMaterial",
+              "depthTest": false,
+              "depthWrite": false,
+              "map": {
+                "$bc": "THREE.CanvasTexture"
+              },
+              "opacity": 0,
+              "side": 2,
+              "toneMapped": false,
+              "transparent": true,
+              "uuid": "411c139d-c5de-4092-b4f6-991370eee8f6"
+            },
+            "name": "Tutorial Key Space",
+            "nodeId": 876,
+            "physicsOptions": {
+              "enabled": false
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                1,
+                0.04,
+                2.200004
+              ]
+            },
+            "renderOrder": 860,
+            "rotation": {
+              "$bc": "e",
+              "_": [
+                -1.570796,
+                0.000001,
+                -3.141593
+              ]
+            },
+            "scale": {
+              "$bc": "v3",
+              "_": [
+                2.45,
+                2.45,
+                2.45
+              ]
+            },
+            "userData": {
+              "objectFlags": 1
+            },
+            "uuid": "beb1e2f9-409e-4028-8221-5f0e59586ec6",
+            "visible": false
+          },
+          {
+            "$bc": "ENGINE.MeshNode",
+            "children": {
+              "$length": 1
+            },
+            "geometry": {
+              "$bc": "THREE.PlaneGeometry",
+              "_": [
+                0.55,
+                0.55,
+                1,
+                1
+              ]
+            },
+            "material": {
+              "$bc": "THREE.MeshBasicMaterial",
+              "depthTest": false,
+              "depthWrite": false,
+              "map": {
+                "$bc": "THREE.CanvasTexture"
+              },
+              "opacity": 0,
+              "side": 2,
+              "toneMapped": false,
+              "transparent": true,
+              "uuid": "79849a5b-ab0f-4b97-9412-d700ef87a593"
+            },
+            "name": "Tutorial Key Plus",
+            "nodeId": 39693,
+            "physicsOptions": {
+              "enabled": false
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                -2.000003,
+                0.040001,
+                1.2
+              ]
+            },
+            "renderOrder": 860,
+            "rotation": {
+              "$bc": "e",
+              "_": [
+                -1.570796,
+                0,
+                0
+              ]
+            },
+            "scale": {
+              "$bc": "v3",
+              "_": [
+                2,
+                2,
+                2
+              ]
+            },
+            "userData": {
+              "objectFlags": 1
+            },
+            "uuid": "beafd975-546c-4cbf-b83f-e4674aa98eee",
+            "visible": false
+          },
+          {
+            "$bc": "ENGINE.MeshNode",
+            "children": {
+              "$length": 1
+            },
+            "geometry": {
+              "$bc": "THREE.PlaneGeometry",
+              "_": [
+                0.9,
+                0.9,
+                1,
+                1
+              ]
+            },
+            "material": {
+              "$bc": "THREE.MeshBasicMaterial",
+              "depthTest": false,
+              "depthWrite": false,
+              "map": {
+                "$bc": "THREE.CanvasTexture"
+              },
+              "opacity": 0,
+              "side": 2,
+              "toneMapped": false,
+              "transparent": true,
+              "uuid": "2a425ee4-9ef7-48f9-b601-f60f98625d26"
+            },
+            "name": "Tutorial Key Pointer",
+            "nodeId": 28250,
+            "physicsOptions": {
+              "enabled": false
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                -3.500003,
+                0.040003,
+                1.1
+              ]
+            },
+            "renderOrder": 860,
+            "rotation": {
+              "$bc": "e",
+              "_": [
+                -1.570796,
+                0.000001,
+                3.141593
+              ]
+            },
+            "scale": {
+              "$bc": "v3",
+              "_": [
+                3,
+                3,
+                3
+              ]
+            },
+            "userData": {
+              "objectFlags": 1
+            },
+            "uuid": "a5154513-a8e0-4beb-8599-fd1a1a695a53",
+            "visible": false
+          }
+        ],
+        "name": "Tutorial Keys Guide",
+        "nodeId": 1230,
+        "position": {
+          "$bc": "v3",
+          "_": [
+            11.5,
+            -0.75,
+            2.7
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            0,
+            -0.000004,
+            3.141593
+          ]
+        },
+        "userData": {
+          "objectFlags": 6
+        },
+        "uuid": "5c4b93a2ee4f12de"
       }
     ],
     "editorData": {
@@ -7490,11 +8237,6 @@
           },
           {
             "id": "62d83f5e-8cd2-4a64-80bf-d15569cf6233",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
-            "id": "6905a59086840678",
             "isExpanded": false,
             "nodeType": "actor"
           },
@@ -8099,11 +8841,6 @@
             "nodeType": "actor"
           },
           {
-            "id": "d116553566348ac3",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
             "id": "ae795adacd1af033",
             "isExpanded": false,
             "nodeType": "actor"
@@ -8300,6 +9037,38 @@
           },
           {
             "id": "ea417049db235966",
+            "nodeType": "actor"
+          },
+          {
+            "id": "b131f498e59604a8",
+            "nodeType": "actor"
+          },
+          {
+            "id": "6c62d3df98397240",
+            "nodeType": "actor"
+          },
+          {
+            "id": "e5947a1b6620404d",
+            "nodeType": "actor"
+          },
+          {
+            "id": "c3f41816bfbc541f",
+            "nodeType": "actor"
+          },
+          {
+            "id": "0e3ca3a8756bc955",
+            "nodeType": "actor"
+          },
+          {
+            "id": "7f41ffa41ec75397",
+            "nodeType": "actor"
+          },
+          {
+            "id": "a5603e69-cd24-4667-afe8-ca8a913f3589",
+            "nodeType": "actor"
+          },
+          {
+            "id": "5c4b93a2ee4f12de",
             "nodeType": "actor"
           }
         ],

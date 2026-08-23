@@ -35,7 +35,8 @@
  *  Kiosk); after active, the next kiosk dismantle soft-loops after the parts appear.
  *
  * Flow:
- * 1. Speech bubble + close camera on player (3m) for 5s, then ~2s smooth zoom to 20m
+ * 1. Wide isometric establishing shot (same 45° pitch from floor, orbit yaw for iso,
+ *    far spring-arm) + speech bubble for a few seconds, then ~2s smooth zoom-in to 20m
  * 2. Highlight mailbox (red pulse) + arrow trail
  * 3. Player approaches and left-clicks mailbox to deliver (2.5m, green outline hover)
  * 4. Stepping on MainRoad* / LeftSideRoad* / Yellow Cab / City Tram / LampTrigger, placing a
@@ -61,16 +62,22 @@ import * as THREE from 'three';
 import { createAirmailEnvelope, disposeAirmailEnvelope } from './airmail-envelope.js';
 import { CatMailCourier } from './cat-mail-courier.js';
 import { ThirdPersonPlayer } from './player.js';
+import { ensureOvergrownAveriaFont } from './overgrown-averia-font.js';
+import { playBrushReveal, waitForStartupBrushReveal } from './startup-brush-reveal.js';
+import { TutorialKeysGuide } from './tutorial-keys-guide.js';
 
-const INTRO_CAMERA_DISTANCE = 3;
+/** Wide isometric establishing shot (same pitch from floor; farther than play). */
+const INTRO_CAMERA_DISTANCE = 30;
 const DEFAULT_CAMERA_DISTANCE = 20;
+/** Orbit yaw for the corner-toward-camera isometric framing (pitch stays locked). */
+const INTRO_ISOMETRIC_YAW_DEG = 45;
 /** Close-up cinematic distance in front of mailbox / ordinance models. */
 const MODEL_FOCUS_DISTANCE = 2;
 const SPEECH_DURATION_SEC = 3;
-/** Smooth intro zoom-out from close → default. */
-const INTRO_ZOOM_OUT_SEC = 2;
+/** Smooth intro zoom-in from wide isometric → default play distance. */
+const INTRO_ZOOM_IN_SEC = 2;
 const ORDINANCE_FOCUS_SEC = 2;
-/** Hold after envelope finishes before fading to black. */
+/** Hold after envelope finishes before fading to cream. */
 const DELIVERY_POST_INSERT_SEC = 0.55;
 /** Smooth blend from gameplay cam into model-front cinematic. */
 const CINEMATIC_BLEND_SEC = 1.15;
@@ -78,6 +85,11 @@ const CINEMATIC_BLEND_SEC = 1.15;
 const CINEMATIC_RETURN_SEC = 2.4;
 const FADE_SEC = 0.85;
 const NEXT_DAY_LABEL_SEC = 2;
+const NEXT_DAY_TEXT = 'The Next Day...';
+const TYPEWRITER_CHAR_INTERVAL_SEC = 0.055;
+const NEXT_DAY_PROMPT_DURATION_SEC = 3;
+/** Goal shown on the left HUD counter (delivery / ordinance discovery ways). */
+export const DELIVERY_WAY_GOAL = 20;
 /** Solid road cue after first reveal or breaking active Maintenance / Jaywalking ordinances. */
 const ROAD_HIGHLIGHT_DURATION_SEC = 2;
 /** Black-screen staging: hide scrap, then retire, then restore, then reveal. */
@@ -88,7 +100,7 @@ const DAY_TRANSITION_WORLD_RESTORE_SEC = 0.9;
 const DAY_TRANSITION_REVEAL_COOLDOWN_SEC = 0.35;
 /** Cooldown between revealing assets and starting the cinematic camera work. */
 const DAY_TRANSITION_CINEMATIC_COOLDOWN_SEC = 0.35;
-/** Maximum authored props restored per frame while the screen is black. */
+/** Maximum authored props restored per frame while the screen is cream. */
 const DAY_TRANSITION_RESTORE_BATCH_SIZE = 4;
 const DELIVER_MAX_DISTANCE = 2.5;
 /** Pool capacity; only arrows that fit on the current route are rendered. */
@@ -255,6 +267,8 @@ enum FlowPhase {
   ZoomOutReveal = 'zoomOutReveal',
   AwaitingDelivery = 'awaitingDelivery',
   DeliveryFocus = 'deliveryFocus',
+  /** Successful delivery with no known ordinance — wait for mystery-win HUD choice. */
+  MysteryWinHold = 'mysteryWinHold',
   OrdinanceFocus = 'ordinanceFocus',
   FadeToBlack = 'fadeToBlack',
   HoldBlack = 'holdBlack',
@@ -323,6 +337,33 @@ type DeliveryRouteCandidate =
   | 'doNotStepCar';
 
 type MailDeliveryVia = 'mailboxClick' | 'catUnfed' | 'catPeach';
+
+/** Player-facing titles for broken ordinances (HUD list order). */
+const ORDINANCE_DISPLAY_TITLES: Record<PendingOrdinance, string> = {
+  maintenance: 'Main Road is close for maintenance.',
+  jaywalking: 'No Jaywalking.',
+  doNotStepCar: "Don't step on the car.",
+  doNotStepTram: "Don't step on the tram.",
+  streetLightsClimb: 'No climbing on Street lights.',
+  dontDestroyTheStreetLights: "Don't destroy the street lights.",
+  dontFeedTheCat: "Don't feed the cat.",
+  noCatsOnStreets: 'No cats on streets.',
+  noCratesOnRoads: 'No crates on roads.',
+  noBenchOnRoads: 'No bench on roads.',
+  noLogsOnRoads: 'No logs on roads.',
+  noWoodPlanksOnRoads: 'No wood planks on roads.',
+  dontRemoveTheCones: "Don't move the traffic cones.",
+  noScrapMetalsOnRoads: 'No scrap metals on roads.',
+  dontRemoveThisBush: "Don't remove the bushes.",
+  dontRemoveThisKiosk: "Don't remove the kiosk.",
+  dontCutThisPole: "Don't cut the utility pole.",
+  doNotDestroyThisSign: "Don't destroy the sign board.",
+  dontHitTheFireHydrant: "Don't hit the fire hydrant.",
+  highVoltage: "Don't step on electrical wires.",
+  noClimbingOnTheTree: 'No climbing on trees.',
+  noCuttingOfTrees: 'No cutting of trees.',
+  doNotRemoveTheSigns: "Don't remove the signs.",
+};
 
 type MailboxPulseRecord = {
   mesh: THREE.Mesh;
@@ -408,6 +449,12 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
    * Only one new ordinance can be queued per day.
    */
   private pendingOrdinance: PendingOrdinance | null = null;
+  /** Delivery succeeded with no listed ordinance matched — show mystery-win HUD. */
+  private mysteryDeliveryWinPending = false;
+  /** Envelope cinematic finished; HUD may open the mystery-win modal. */
+  private mysteryDeliveryWinReady = false;
+  /** Ordinances revealed/broken across the run, in discovery order. */
+  private readonly brokenOrdinanceOrder: PendingOrdinance[] = [];
   /** Maintenance board + cones are already in the world. */
   private maintenanceOrdinanceActive = false;
   /** JayWalking board(s) are already in the world. */
@@ -548,6 +595,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private speechEl: HTMLDivElement | null = null;
   private fadeEl: HTMLDivElement | null = null;
   private nextDayEl: HTMLDivElement | null = null;
+  /** True once the next-day splash reveal has finished opening. */
+  private daySplashRevealDone = false;
+  private daySplashRevealStarted = false;
   private trailGroup: THREE.Group | null = null;
   private readonly trailArrows: THREE.Mesh[] = [];
   private trailArrowTexture: THREE.Texture | null = null;
@@ -570,7 +620,18 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private readonly raycaster = new THREE.Raycaster();
   private readonly upAxis = new THREE.Vector3(0, 1, 0);
   private pulseTime = 0;
-  private introSpeechText = 'I need to deliver this mail';
+  private introSpeechText = 'How can I\ndeliver this letter?';
+  private speechTypingText = '';
+  private speechTypingElapsed = 0;
+  private speechAutoHideRemaining = 0;
+  /** Re-plant the pawn for a few frames while physics colliders finish waking. */
+  private introSettleFramesRemaining = 0;
+  private nextDayTypingElapsed = 0;
+  private nextDayTypingActive = false;
+  /** Set only by the completed delivery transition, never by an ordinance reset loop. */
+  private showPromptAfterNextDayTransition = false;
+  /** After the next-day speech bubble auto-hides, pulse the ground tutorial keys. */
+  private pendingTutorialKeysAfterSpeech = false;
   private outlineReady = false;
   private mailboxHovered = false;
   private playableGraceRemaining = 0;
@@ -829,11 +890,16 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.catMailCourier.tick(deltaTime);
     this.updateModelFrontCinematic(deltaTime);
     this.updateEnvelopeInsert(deltaTime);
+    this.updateTypingAnimations(deltaTime);
     this.updateSpeechBubblePosition();
     this.updateTrail();
     this.updateTrailVisibility(deltaTime);
     this.updateMailboxPulse();
     this.updateRoadHighlightPulse(deltaTime);
+    if (this.introSettleFramesRemaining > 0) {
+      this.player?.settleOnGround();
+      this.introSettleFramesRemaining -= 1;
+    }
     this.tickPhase(deltaTime);
   }
 
@@ -921,10 +987,17 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.player.setTrailMapKioskDismantledHandler(() => this.onTrailMapKioskDismantled());
       this.player.setOrdinanceBoardDismantledHandler(() => this.onOrdinanceBoardDismantled());
       this.player.setStreetLampDismantledHandler(() => this.onStreetLampDismantled());
+      this.player.setMovementFrozen(true);
+      this.player.teleportToPlayerStartAndSettle();
+      this.introSettleFramesRemaining = 12;
       this.player.setCinematicCameraLock(true);
-      this.player.setCameraTargetDistance(INTRO_CAMERA_DISTANCE, true);
+      this.player.setIntroWideIsometricCamera(INTRO_CAMERA_DISTANCE, INTRO_ISOMETRIC_YAW_DEG);
     }
 
+    // Keep the tutorial UI quiet while the opening mask reveals the world.
+    // The first speech bubble appears only once the player has full view.
+    await waitForStartupBrushReveal();
+    this.plantPlayerForIntro();
     this.beginIntroSpeech();
   }
 
@@ -952,9 +1025,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private tickPhase(_deltaTime: number): void {
     switch (this.phase) {
       case FlowPhase.IntroSpeech:
-        this.player?.setCameraTargetDistance(INTRO_CAMERA_DISTANCE);
+        this.player?.setMovementFrozen(true);
+        this.player?.setIntroWideIsometricCamera(INTRO_CAMERA_DISTANCE, INTRO_ISOMETRIC_YAW_DEG);
         if (this.phaseElapsed >= SPEECH_DURATION_SEC) {
           this.hideSpeechBubble();
+          this.playTutorialKeysHint();
           this.introZoomElapsed = 0;
           this.setMailboxHighlight(true);
           this.setTrailVisible(true);
@@ -963,19 +1038,22 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         break;
       case FlowPhase.ZoomOutReveal: {
         // Respect player movement: stop the tutorial zoom at its current view
-        // rather than continuing or snapping the camera out to 20m.
+        // rather than continuing or snapping the camera in to 20m.
         if (this.player?.hasMovementInput()) {
-          this.player.setCameraTargetDistance(this.player.getCameraArmLength(), true);
+          this.player.resetGameplayCameraToDefault(this.player.getCameraArmLength());
           this.enterPlayableDay(false, true);
           break;
         }
         this.introZoomElapsed += _deltaTime;
-        const u = Math.min(1, this.introZoomElapsed / INTRO_ZOOM_OUT_SEC);
-        const eased = u * u * (3 - 2 * u);
-        const dist = THREE.MathUtils.lerp(INTRO_CAMERA_DISTANCE, DEFAULT_CAMERA_DISTANCE, eased);
-        this.player?.setCameraTargetDistance(dist, true);
+        const u = Math.min(1, this.introZoomElapsed / INTRO_ZOOM_IN_SEC);
+        this.player?.blendIntroWideCameraToGameplay(
+          INTRO_CAMERA_DISTANCE,
+          DEFAULT_CAMERA_DISTANCE,
+          INTRO_ISOMETRIC_YAW_DEG,
+          u,
+        );
         if (u >= 1) {
-          this.player?.setCameraTargetDistance(DEFAULT_CAMERA_DISTANCE, true);
+          this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
           this.enterPlayableDay(false);
         }
         break;
@@ -994,9 +1072,19 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
           this.envelopeFinishedElapsed += _deltaTime;
           if (this.envelopeFinishedElapsed >= DELIVERY_POST_INSERT_SEC) {
             this.clearEnvelope();
-            this.setPhase(FlowPhase.FadeToBlack);
+            if (this.mysteryDeliveryWinPending) {
+              this.mysteryDeliveryWinReady = true;
+              this.setPhase(FlowPhase.MysteryWinHold);
+            } else {
+              this.setPhase(FlowPhase.FadeToBlack);
+            }
           }
         }
+        break;
+      case FlowPhase.MysteryWinHold:
+        this.player?.setMovementFrozen(true);
+        this.player?.forceIdlePose();
+        this.player?.setCinematicCameraLock(true);
         break;
       case FlowPhase.OrdinanceFocus:
         this.player?.setMovementFrozen(true);
@@ -1029,6 +1117,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         if (t >= 1) {
           this.setFade(1);
           this.performHiddenTeleport();
+          this.showPromptAfterNextDayTransition = true;
           this.showNextDayLabel(true);
           this.setPhase(FlowPhase.HoldBlack);
         }
@@ -1043,6 +1132,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
           this.showNextDayLabel(false);
           this.pendingOrdinance = null;
           this.player?.forceIdlePose();
+          this.daySplashRevealDone = false;
+          this.daySplashRevealStarted = false;
           this.setPhase(FlowPhase.FadeFromBlack);
         }
         break;
@@ -1050,168 +1141,28 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         this.player?.setMovementFrozen(true);
         this.player?.forceIdlePose();
         this.showNextDayLabel(false);
-        const t = Math.min(1, this.phaseElapsed / FADE_SEC);
-        this.setFade(1 - t);
-        if (t >= 1) {
-          this.setFade(0);
-          this.player?.forceIdlePose();
-          if (this.focusOrdinanceOnWake) {
-            this.focusOrdinanceOnWake = false;
-            this.pendingRoadHighlight = 'mainRoad';
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusJaywalkingOnWake) {
-            this.focusJaywalkingOnWake = false;
-            this.pendingRoadHighlight = 'leftSideRoad';
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusDoNotStepCarOnWake) {
-            this.focusDoNotStepCarOnWake = false;
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusDoNotStepTramOnWake) {
-            this.focusDoNotStepTramOnWake = false;
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusStreetLightsClimbOnWake) {
-            this.focusStreetLightsClimbOnWake = false;
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusDontDestroyTheStreetLightsOnWake) {
-            this.focusDontDestroyTheStreetLightsOnWake = false;
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusDontFeedTheCatOnWake) {
-            this.focusDontFeedTheCatOnWake = false;
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusNoCatsOnStreetsOnWake) {
-            this.focusNoCatsOnStreetsOnWake = false;
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusNoCratesOnRoadsOnWake) {
-            this.focusNoCratesOnRoadsOnWake = false;
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusNoBenchOnRoadsOnWake) {
-            this.focusNoBenchOnRoadsOnWake = false;
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusNoLogsOnRoadsOnWake) {
-            this.focusNoLogsOnRoadsOnWake = false;
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusNoWoodPlanksOnRoadsOnWake) {
-            this.focusNoWoodPlanksOnRoadsOnWake = false;
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusDontRemoveTheConesOnWake) {
-            this.focusDontRemoveTheConesOnWake = false;
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusNoScrapMetalsOnRoadsOnWake) {
-            this.focusNoScrapMetalsOnRoadsOnWake = false;
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusDontRemoveThisBushOnWake) {
-            this.focusDontRemoveThisBushOnWake = false;
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusDontRemoveThisKioskOnWake) {
-            this.focusDontRemoveThisKioskOnWake = false;
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusDontCutThisPoleOnWake) {
-            this.focusDontCutThisPoleOnWake = false;
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusDoNotDestroyThisSignOnWake) {
-            this.focusDoNotDestroyThisSignOnWake = false;
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusDontHitTheFireHydrantOnWake) {
-            this.focusDontHitTheFireHydrantOnWake = false;
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusHighVoltageOnWake) {
-            this.focusHighVoltageOnWake = false;
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusNoCuttingOfTreesOnWake) {
-            this.focusNoCuttingOfTreesOnWake = false;
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusNoClimbingOnTheTreeOnWake) {
-            this.focusNoClimbingOnTheTreeOnWake = false;
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else if (this.focusDoNotRemoveTheSignsOnWake) {
-            this.focusDoNotRemoveTheSignsOnWake = false;
-            this.fadeAfterOrdinanceFocus = false;
-            this.ordinanceFocusHoldElapsed = 0;
-            this.player?.setCinematicCameraLock(true);
-            this.setPhase(FlowPhase.OrdinanceFocus);
-          } else {
-            this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
-            this.enterPlayableDay(true);
-          }
+        if (!this.daySplashRevealStarted) {
+          this.daySplashRevealStarted = true;
+          void this.beginDaySplashReveal();
         }
+        if (!this.daySplashRevealDone) {
+          break;
+        }
+        this.setFade(0);
+        this.player?.forceIdlePose();
+        this.continueAfterDayReveal();
         break;
       }
       case FlowPhase.NextDayLabel:
         this.showNextDayLabel(false);
-        this.enterPlayableDay(true);
+        this.finishNextDayIntoPlayable();
         break;
       case FlowPhase.ZoomOutToPlay:
         this.player?.setMovementFrozen(true);
         this.player?.forceIdlePose();
         if (!this.cinematicActive || this.cinematicBlend >= 1 || this.phaseElapsed > 5) {
           this.finishCinematicReturnToPlayer();
-          this.enterPlayableDay(true);
+          this.finishNextDayIntoPlayable();
           // Only reveal the road cue after the camera has returned to gameplay distance.
           this.beginPendingRoadHighlight();
         }
@@ -1228,10 +1179,21 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
   private beginIntroSpeech(): void {
     this.stopModelFrontCinematic();
+    this.plantPlayerForIntro();
     this.player?.setCinematicCameraLock(true);
-    this.player?.setCameraTargetDistance(INTRO_CAMERA_DISTANCE, true);
+    this.player?.setIntroWideIsometricCamera(INTRO_CAMERA_DISTANCE, INTRO_ISOMETRIC_YAW_DEG);
     this.setPhase(FlowPhase.IntroSpeech);
     this.showSpeechBubble(this.introSpeechText);
+  }
+
+  /** Freeze + teleport home + plant on asphalt before the opening shot. */
+  private plantPlayerForIntro(): void {
+    if (!this.player) {
+      return;
+    }
+    this.player.setMovementFrozen(true);
+    this.player.teleportToPlayerStartAndSettle();
+    this.introSettleFramesRemaining = Math.max(this.introSettleFramesRemaining, 12);
   }
 
   private enterPlayableDay(resetPathUsage: boolean, preserveCurrentCamera = false): void {
@@ -1591,6 +1553,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.envelopeStarted = false;
     this.envelopeFinishedElapsed = 0;
     this.clearEnvelope();
+    // No known listed ordinance for this delivery → mystery / unknown win.
+    this.mysteryDeliveryWinPending = this.pendingOrdinance === null;
+    this.mysteryDeliveryWinReady = false;
     this.startModelFrontCinematic(
       this.mailbox,
       MODEL_FOCUS_DISTANCE,
@@ -1605,30 +1570,35 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (this.pendingOrdinance === 'maintenance' && !this.maintenanceOrdinanceActive) {
       this.revealMaintenanceBlockade();
       this.maintenanceOrdinanceActive = true;
+      this.recordBrokenOrdinance('maintenance');
       this.focusOrdinanceOnWake = true;
       return;
     }
     if (this.pendingOrdinance === 'jaywalking' && !this.jaywalkingOrdinanceActive) {
       this.revealJaywalkingOrdinance();
       this.jaywalkingOrdinanceActive = true;
+      this.recordBrokenOrdinance('jaywalking');
       this.focusJaywalkingOnWake = true;
       return;
     }
     if (this.pendingOrdinance === 'doNotStepCar' && !this.doNotStepCarOrdinanceActive) {
       this.revealDoNotStepCarOrdinance();
       this.doNotStepCarOrdinanceActive = true;
+      this.recordBrokenOrdinance('doNotStepCar');
       this.focusDoNotStepCarOnWake = true;
       return;
     }
     if (this.pendingOrdinance === 'doNotStepTram' && !this.doNotStepTramOrdinanceActive) {
       this.revealDoNotStepCityTramOrdinance();
       this.doNotStepTramOrdinanceActive = true;
+      this.recordBrokenOrdinance('doNotStepTram');
       this.focusDoNotStepTramOnWake = true;
       return;
     }
     if (this.pendingOrdinance === 'streetLightsClimb' && !this.streetLightsClimbOrdinanceActive) {
       this.revealStreetLightsClimbOrdinance();
       this.streetLightsClimbOrdinanceActive = true;
+      this.recordBrokenOrdinance('streetLightsClimb');
       this.focusStreetLightsClimbOnWake = true;
       return;
     }
@@ -1638,110 +1608,177 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     ) {
       this.revealDontDestroyTheStreetLightsOrdinance();
       this.dontDestroyTheStreetLightsOrdinanceActive = true;
+      this.recordBrokenOrdinance('dontDestroyTheStreetLights');
       this.focusDontDestroyTheStreetLightsOnWake = true;
       return;
     }
     if (this.pendingOrdinance === 'dontFeedTheCat' && !this.dontFeedTheCatOrdinanceActive) {
       this.revealDontFeedTheCatOrdinance();
       this.dontFeedTheCatOrdinanceActive = true;
+      this.recordBrokenOrdinance('dontFeedTheCat');
       this.focusDontFeedTheCatOnWake = true;
       return;
     }
     if (this.pendingOrdinance === 'noCatsOnStreets' && !this.noCatsOnStreetsOrdinanceActive) {
       this.revealNoCatsOnStreetsOrdinance();
       this.noCatsOnStreetsOrdinanceActive = true;
+      this.recordBrokenOrdinance('noCatsOnStreets');
       this.focusNoCatsOnStreetsOnWake = true;
       return;
     }
     if (this.pendingOrdinance === 'noCratesOnRoads' && !this.noCratesOnRoadsOrdinanceActive) {
       this.revealNoCratesOnRoadsOrdinance();
       this.noCratesOnRoadsOrdinanceActive = true;
+      this.recordBrokenOrdinance('noCratesOnRoads');
       this.focusNoCratesOnRoadsOnWake = true;
       return;
     }
     if (this.pendingOrdinance === 'noBenchOnRoads' && !this.noBenchOnRoadsOrdinanceActive) {
       this.revealNoBenchOnRoadsOrdinance();
       this.noBenchOnRoadsOrdinanceActive = true;
+      this.recordBrokenOrdinance('noBenchOnRoads');
       this.focusNoBenchOnRoadsOnWake = true;
       return;
     }
     if (this.pendingOrdinance === 'noLogsOnRoads' && !this.noLogsOnRoadsOrdinanceActive) {
       this.revealNoLogsOnRoadsOrdinance();
       this.noLogsOnRoadsOrdinanceActive = true;
+      this.recordBrokenOrdinance('noLogsOnRoads');
       this.focusNoLogsOnRoadsOnWake = true;
       return;
     }
     if (this.pendingOrdinance === 'noWoodPlanksOnRoads' && !this.noWoodPlanksOnRoadsOrdinanceActive) {
       this.revealNoWoodPlanksOnRoadsOrdinance();
       this.noWoodPlanksOnRoadsOrdinanceActive = true;
+      this.recordBrokenOrdinance('noWoodPlanksOnRoads');
       this.focusNoWoodPlanksOnRoadsOnWake = true;
       return;
     }
     if (this.pendingOrdinance === 'dontRemoveTheCones' && !this.dontRemoveTheConesOrdinanceActive) {
       this.revealDontRemoveTheConesOrdinance();
       this.dontRemoveTheConesOrdinanceActive = true;
+      this.recordBrokenOrdinance('dontRemoveTheCones');
       this.focusDontRemoveTheConesOnWake = true;
       return;
     }
     if (this.pendingOrdinance === 'noScrapMetalsOnRoads' && !this.noScrapMetalsOnRoadsOrdinanceActive) {
       this.revealNoScrapMetalsOnRoadsOrdinance();
       this.noScrapMetalsOnRoadsOrdinanceActive = true;
+      this.recordBrokenOrdinance('noScrapMetalsOnRoads');
       this.focusNoScrapMetalsOnRoadsOnWake = true;
       return;
     }
     if (this.pendingOrdinance === 'dontRemoveThisBush' && !this.dontRemoveThisBushOrdinanceActive) {
       this.revealDontRemoveThisBushOrdinance();
       this.dontRemoveThisBushOrdinanceActive = true;
+      this.recordBrokenOrdinance('dontRemoveThisBush');
       this.focusDontRemoveThisBushOnWake = true;
       return;
     }
     if (this.pendingOrdinance === 'dontRemoveThisKiosk' && !this.dontRemoveThisKioskOrdinanceActive) {
       this.revealDontRemoveThisKioskOrdinance();
       this.dontRemoveThisKioskOrdinanceActive = true;
+      this.recordBrokenOrdinance('dontRemoveThisKiosk');
       this.focusDontRemoveThisKioskOnWake = true;
       return;
     }
     if (this.pendingOrdinance === 'dontCutThisPole' && !this.dontCutThisPoleOrdinanceActive) {
       this.revealDontCutThisPoleOrdinance();
       this.dontCutThisPoleOrdinanceActive = true;
+      this.recordBrokenOrdinance('dontCutThisPole');
       this.focusDontCutThisPoleOnWake = true;
       return;
     }
     if (this.pendingOrdinance === 'doNotDestroyThisSign' && !this.doNotDestroyThisSignOrdinanceActive) {
       this.revealDoNotDestroyThisSignOrdinance();
       this.doNotDestroyThisSignOrdinanceActive = true;
+      this.recordBrokenOrdinance('doNotDestroyThisSign');
       this.focusDoNotDestroyThisSignOnWake = true;
       return;
     }
     if (this.pendingOrdinance === 'dontHitTheFireHydrant' && !this.dontHitTheFireHydrantOrdinanceActive) {
       this.revealDontHitTheFireHydrantOrdinance();
       this.dontHitTheFireHydrantOrdinanceActive = true;
+      this.recordBrokenOrdinance('dontHitTheFireHydrant');
       this.focusDontHitTheFireHydrantOnWake = true;
       return;
     }
     if (this.pendingOrdinance === 'highVoltage' && !this.highVoltageOrdinanceActive) {
       this.revealHighVoltageOrdinance();
       this.highVoltageOrdinanceActive = true;
+      this.recordBrokenOrdinance('highVoltage');
       this.focusHighVoltageOnWake = true;
       return;
     }
     if (this.pendingOrdinance === 'noCuttingOfTrees' && !this.noCuttingOfTreesOrdinanceActive) {
       this.revealNoCuttingOfTreesOrdinance();
       this.noCuttingOfTreesOrdinanceActive = true;
+      this.recordBrokenOrdinance('noCuttingOfTrees');
       this.focusNoCuttingOfTreesOnWake = true;
       return;
     }
     if (this.pendingOrdinance === 'noClimbingOnTheTree' && !this.noClimbingOnTheTreeOrdinanceActive) {
       this.revealNoClimbingOnTheTreeOrdinance();
       this.noClimbingOnTheTreeOrdinanceActive = true;
+      this.recordBrokenOrdinance('noClimbingOnTheTree');
       this.focusNoClimbingOnTheTreeOnWake = true;
       return;
     }
     if (this.pendingOrdinance === 'doNotRemoveTheSigns' && !this.doNotRemoveTheSignsOrdinanceActive) {
       this.revealDoNotRemoveTheSignsOrdinance();
       this.doNotRemoveTheSignsOrdinanceActive = true;
+      this.recordBrokenOrdinance('doNotRemoveTheSigns');
       this.focusDoNotRemoveTheSignsOnWake = true;
     }
+  }
+
+  private recordBrokenOrdinance(id: PendingOrdinance): void {
+    if (this.brokenOrdinanceOrder.includes(id)) {
+      return;
+    }
+    this.brokenOrdinanceOrder.push(id);
+  }
+
+  /** Count of ordinances broken/revealed so far this run. */
+  public getBrokenOrdinanceCount(): number {
+    return this.brokenOrdinanceOrder.length;
+  }
+
+  /** Broken ordinance titles in discovery order (for the HUD list). */
+  public getBrokenOrdinanceTitlesInOrder(): string[] {
+    return this.brokenOrdinanceOrder.map((id) => ORDINANCE_DISPLAY_TITLES[id]);
+  }
+
+  /** True while the player can freely deliver / explore (post-intro / post-next-day). */
+  public isAwaitingDelivery(): boolean {
+    return this.phase === FlowPhase.AwaitingDelivery;
+  }
+
+  /** Envelope done after an unknown (no listed ordinance) successful delivery. */
+  public isMysteryDeliveryWinReady(): boolean {
+    return this.mysteryDeliveryWinReady && this.phase === FlowPhase.MysteryWinHold;
+  }
+
+  /** Freeze or resume the pawn while a victory / completion modal is open. */
+  public setCompletionInteractionPaused(paused: boolean): void {
+    this.player?.setMovementFrozen(paused);
+    this.player?.setCinematicCameraLock(paused);
+    if (paused) {
+      this.player?.forceIdlePose();
+    }
+  }
+
+  /** Continue Playing — run the next-day transition (from 20/20 or mystery win). */
+  public continuePlayingAfterCompletion(): void {
+    this.mysteryDeliveryWinPending = false;
+    this.mysteryDeliveryWinReady = false;
+    this.setCompletionInteractionPaused(false);
+    this.stopModelFrontCinematic();
+    this.clearEnvelope();
+    this.setFade(0);
+    this.player?.setMovementFrozen(true);
+    this.player?.forceIdlePose();
+    this.setPhase(FlowPhase.FadeToBlack);
   }
 
   private ensureWakeOrdinanceCinematic(): void {
@@ -6190,12 +6227,14 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         'transform:translate(-50%,-100%)',
         'padding:12px 16px',
         'border-radius:16px',
-        'background:rgba(255,255,255,0.96)',
-        'color:#1a1a1a',
-        'font:600 16px/1.35 "Segoe UI",system-ui,sans-serif',
-        'box-shadow:0 8px 22px rgba(0,0,0,0.28)',
+        'background:#f4f1ea',
+        'border:1px solid #c8c2b8',
+        'color:#6b6560',
+        'font:700 16px/1.35 "Overgrown Averia","Segoe UI Rounded","Segoe UI",sans-serif',
+        'box-shadow:0 8px 22px rgba(74,70,63,0.18)',
         'pointer-events:none',
-        'white-space:nowrap',
+        'white-space:pre-line',
+        'text-align:center',
         'display:none',
         'z-index:2000',
         'max-width:min(420px,80vw)',
@@ -6210,7 +6249,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         'height:0',
         'border-left:9px solid transparent',
         'border-right:9px solid transparent',
-        'border-top:9px solid rgba(255,255,255,0.96)',
+        'border-top:9px solid #f4f1ea',
+        'filter:drop-shadow(0 1px 0 #c8c2b8)',
       ].join(';');
       el.appendChild(tail);
       const label = document.createElement('span');
@@ -6225,7 +6265,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       el.style.cssText = [
         'position:absolute',
         'inset:0',
-        'background:#000',
+        'background:#f4f1ea',
         'opacity:0',
         'pointer-events:none',
         'z-index:2100',
@@ -6236,23 +6276,23 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
 
     if (!this.nextDayEl) {
+      void ensureOvergrownAveriaFont();
       const el = document.createElement('div');
       el.style.cssText = [
         'position:absolute',
         'left:50%',
         'top:50%',
         'transform:translate(-50%, -50%)',
-        'color:#f5f5f5',
-        'font:700 34px/1.2 Georgia,"Times New Roman",serif',
-        'letter-spacing:0.02em',
-        'text-shadow:0 2px 14px rgba(0,0,0,0.75)',
+        'color:#B3B3B3',
+        'font:700 42px/1.2 "Overgrown Averia","Segoe UI Rounded","Segoe UI",sans-serif',
+        'letter-spacing:0.01em',
         'pointer-events:none',
         'display:none',
         'z-index:2200',
         'text-align:center',
         'white-space:nowrap',
       ].join(';');
-      el.textContent = 'The Next Day...';
+      el.textContent = '';
       container.appendChild(el);
       this.nextDayEl = el;
     }
@@ -6260,7 +6300,175 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     return true;
   }
 
-  private showSpeechBubble(text: string): void {
+  private async beginDaySplashReveal(): Promise<void> {
+    const world = this.getWorld();
+    try {
+      await playBrushReveal(world, {
+        holdMs: 200,
+        revealMs: 1600,
+        onCoverReady: () => this.setFade(0),
+      });
+    } catch (error) {
+      console.warn('[MailDeliveryFlow] Day splash reveal failed; continuing.', error);
+      this.setFade(0);
+    }
+    this.daySplashRevealDone = true;
+  }
+
+  /** Resume the post-day-transition flow once the cream splash has opened. */
+  private continueAfterDayReveal(): void {
+    if (this.focusOrdinanceOnWake) {
+      this.focusOrdinanceOnWake = false;
+      this.pendingRoadHighlight = 'mainRoad';
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusJaywalkingOnWake) {
+      this.focusJaywalkingOnWake = false;
+      this.pendingRoadHighlight = 'leftSideRoad';
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusDoNotStepCarOnWake) {
+      this.focusDoNotStepCarOnWake = false;
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusDoNotStepTramOnWake) {
+      this.focusDoNotStepTramOnWake = false;
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusStreetLightsClimbOnWake) {
+      this.focusStreetLightsClimbOnWake = false;
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusDontDestroyTheStreetLightsOnWake) {
+      this.focusDontDestroyTheStreetLightsOnWake = false;
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusDontFeedTheCatOnWake) {
+      this.focusDontFeedTheCatOnWake = false;
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusNoCatsOnStreetsOnWake) {
+      this.focusNoCatsOnStreetsOnWake = false;
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusNoCratesOnRoadsOnWake) {
+      this.focusNoCratesOnRoadsOnWake = false;
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusNoBenchOnRoadsOnWake) {
+      this.focusNoBenchOnRoadsOnWake = false;
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusNoLogsOnRoadsOnWake) {
+      this.focusNoLogsOnRoadsOnWake = false;
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusNoWoodPlanksOnRoadsOnWake) {
+      this.focusNoWoodPlanksOnRoadsOnWake = false;
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusDontRemoveTheConesOnWake) {
+      this.focusDontRemoveTheConesOnWake = false;
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusNoScrapMetalsOnRoadsOnWake) {
+      this.focusNoScrapMetalsOnRoadsOnWake = false;
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusDontRemoveThisBushOnWake) {
+      this.focusDontRemoveThisBushOnWake = false;
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusDontRemoveThisKioskOnWake) {
+      this.focusDontRemoveThisKioskOnWake = false;
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusDontCutThisPoleOnWake) {
+      this.focusDontCutThisPoleOnWake = false;
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusDoNotDestroyThisSignOnWake) {
+      this.focusDoNotDestroyThisSignOnWake = false;
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusDontHitTheFireHydrantOnWake) {
+      this.focusDontHitTheFireHydrantOnWake = false;
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusHighVoltageOnWake) {
+      this.focusHighVoltageOnWake = false;
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusNoCuttingOfTreesOnWake) {
+      this.focusNoCuttingOfTreesOnWake = false;
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusNoClimbingOnTheTreeOnWake) {
+      this.focusNoClimbingOnTheTreeOnWake = false;
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else if (this.focusDoNotRemoveTheSignsOnWake) {
+      this.focusDoNotRemoveTheSignsOnWake = false;
+      this.fadeAfterOrdinanceFocus = false;
+      this.ordinanceFocusHoldElapsed = 0;
+      this.player?.setCinematicCameraLock(true);
+      this.setPhase(FlowPhase.OrdinanceFocus);
+    } else {
+      this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+      this.finishNextDayIntoPlayable();
+    }
+  }
+
+  /**
+   * Make the player prompt feel like a thought arriving, rather than a static
+   * HUD element.  The timer is optional because the opening prompt remains up
+   * for the existing intro phase, while later-day prompts dismiss themselves.
+   */
+  private showSpeechBubble(text: string, autoHideSeconds = 0): void {
     const world = this.getWorld();
     if (!this.speechEl && world) {
       this.ensureUi(world);
@@ -6270,10 +6478,13 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     const label = this.speechEl.querySelector('[data-speech-label]') as HTMLSpanElement | null;
     if (label) {
-      label.textContent = text;
+      label.textContent = '';
     } else {
-      this.speechEl.textContent = text;
+      this.speechEl.textContent = '';
     }
+    this.speechTypingText = text;
+    this.speechTypingElapsed = 0;
+    this.speechAutoHideRemaining = autoHideSeconds;
     this.speechEl.style.display = 'block';
     this.speechEl.style.left = '50%';
     this.speechEl.style.top = '18%';
@@ -6285,7 +6496,57 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (this.speechEl) {
       this.speechEl.style.display = 'none';
     }
+    this.speechTypingText = '';
+    this.speechTypingElapsed = 0;
+    this.speechAutoHideRemaining = 0;
     this.player?.setMailEnvelopeHighlightPulsing(false);
+  }
+
+  /** Advance the character-by-character text used by the day card and prompt. */
+  private updateTypingAnimations(deltaTime: number): void {
+    const speechEl = this.speechEl;
+    if (speechEl && speechEl.style.display !== 'none' && this.speechTypingText) {
+      this.speechTypingElapsed += deltaTime;
+      const characterCount = Math.min(
+        this.speechTypingText.length,
+        Math.floor(this.speechTypingElapsed / TYPEWRITER_CHAR_INTERVAL_SEC) + 1,
+      );
+      const label = speechEl.querySelector('[data-speech-label]') as HTMLSpanElement | null;
+      const typedText = this.speechTypingText.slice(0, characterCount);
+      if (label) {
+        label.textContent = typedText;
+      } else {
+        speechEl.textContent = typedText;
+      }
+      if (characterCount >= this.speechTypingText.length) {
+        this.speechTypingText = '';
+      }
+    }
+
+    if (speechEl && speechEl.style.display !== 'none' && this.speechAutoHideRemaining > 0) {
+      this.speechAutoHideRemaining = Math.max(0, this.speechAutoHideRemaining - deltaTime);
+      if (this.speechAutoHideRemaining === 0) {
+        const showTutorialKeys = this.pendingTutorialKeysAfterSpeech;
+        this.pendingTutorialKeysAfterSpeech = false;
+        this.hideSpeechBubble();
+        if (showTutorialKeys) {
+          this.playTutorialKeysHint();
+        }
+      }
+    }
+
+    const nextDayEl = this.nextDayEl;
+    if (nextDayEl && nextDayEl.style.display !== 'none' && this.nextDayTypingActive) {
+      this.nextDayTypingElapsed += deltaTime;
+      const characterCount = Math.min(
+        NEXT_DAY_TEXT.length,
+        Math.floor(this.nextDayTypingElapsed / TYPEWRITER_CHAR_INTERVAL_SEC) + 1,
+      );
+      nextDayEl.textContent = NEXT_DAY_TEXT.slice(0, characterCount);
+      if (characterCount >= NEXT_DAY_TEXT.length) {
+        this.nextDayTypingActive = false;
+      }
+    }
   }
 
   private updateSpeechBubblePosition(): void {
@@ -6345,9 +6606,34 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   }
 
   private showNextDayLabel(visible: boolean): void {
-    if (this.nextDayEl) {
-      this.nextDayEl.style.display = visible ? 'block' : 'none';
+    if (!this.nextDayEl) {
+      return;
     }
+    this.nextDayEl.style.display = visible ? 'block' : 'none';
+    if (visible) {
+      this.nextDayEl.textContent = '';
+      this.nextDayTypingElapsed = 0;
+      this.nextDayTypingActive = true;
+    } else {
+      this.nextDayTypingElapsed = 0;
+      this.nextDayTypingActive = false;
+    }
+  }
+
+  /** Finish a delivery-driven next-day reveal, optionally restoring its prompt. */
+  private finishNextDayIntoPlayable(): void {
+    this.enterPlayableDay(true);
+    if (!this.showPromptAfterNextDayTransition) {
+      return;
+    }
+    this.showPromptAfterNextDayTransition = false;
+    this.pendingTutorialKeysAfterSpeech = true;
+    this.showSpeechBubble(this.introSpeechText, NEXT_DAY_PROMPT_DURATION_SEC);
+  }
+
+  private playTutorialKeysHint(): void {
+    const guide = this.getWorld()?.getNodes(TutorialKeysGuide)[0];
+    guide?.playHint();
   }
 
   private teardownUi(): void {

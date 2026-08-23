@@ -1,0 +1,144 @@
+{
+  "frameCount": 34,
+  "durationSec": 1.0886,
+  "fps": 30,
+  "cream": "#f4f1ea",
+  "frames": [
+    {
+      "file": "cream-00.webp",
+      "opaqueApprox": 0.9995
+    },
+    {
+      "file": "cream-01.webp",
+      "opaqueApprox": 0.9931
+    },
+    {
+      "file": "cream-02.webp",
+      "opaqueApprox": 0.9519
+    },
+    {
+      "file": "cream-03.webp",
+      "opaqueApprox": 0.9519
+    },
+    {
+      "file": "cream-04.webp",
+      "opaqueApprox": 0.8642
+    },
+    {
+      "file": "cream-05.webp",
+      "opaqueApprox": 0.7158
+    },
+    {
+      "file": "cream-06.webp",
+      "opaqueApprox": 0.7157
+    },
+    {
+      "file": "cream-07.webp",
+      "opaqueApprox": 0.4871
+    },
+    {
+      "file": "cream-08.webp",
+      "opaqueApprox": 0.3853
+    },
+    {
+      "file": "cream-09.webp",
+      "opaqueApprox": 0.3853
+    },
+    {
+      "file": "cream-10.webp",
+      "opaqueApprox": 0.291
+    },
+    {
+      "file": "cream-11.webp",
+      "opaqueApprox": 0.2277
+    },
+    {
+      "file": "cream-12.webp",
+      "opaqueApprox": 0.2277
+    },
+    {
+      "file": "cream-13.webp",
+      "opaqueApprox": 0.1262
+    },
+    {
+      "file": "cream-14.webp",
+      "opaqueApprox": 0.0954
+    },
+    {
+      "file": "cream-15.webp",
+      "opaqueApprox": 0.0954
+    },
+    {
+      "file": "cream-16.webp",
+      "opaqueApprox": 0.0753
+    },
+    {
+      "file": "cream-17.webp",
+      "opaqueApprox": 0.0609
+    },
+    {
+      "file": "cream-18.webp",
+      "opaqueApprox": 0.0609
+    },
+    {
+      "file": "cream-19.webp",
+      "opaqueApprox": 0.0292
+    },
+    {
+      "file": "cream-20.webp",
+      "opaqueApprox": 0.0292
+    },
+    {
+      "file": "cream-21.webp",
+      "opaqueApprox": 0.0292
+    },
+    {
+      "file": "cream-22.webp",
+      "opaqueApprox": 0.0219
+    },
+    {
+      "file": "cream-23.webp",
+      "opaqueApprox": 0.0168
+    },
+    {
+      "file": "cream-24.webp",
+      "opaqueApprox": 0.0112
+    },
+    {
+      "file": "cream-25.webp",
+      "opaqueApprox": 0.0112
+    },
+    {
+      "file": "cream-26.webp",
+      "opaqueApprox": 0.0045
+    },
+    {
+      "file": "cream-27.webp",
+      "opaqueApprox": 0.0044
+    },
+    {
+      "file": "cream-28.webp",
+      "opaqueApprox": 0.002
+    },
+    {
+      "file": "cream-29.webp",
+      "opaqueApprox": 0.0004
+    },
+    {
+      "file": "cream-30.webp",
+      "opaqueApprox": 0.0004
+    },
+    {
+      "file": "cream-31.webp",
+      "opaqueApprox": 0.0004
+    },
+    {
+      "file": "cream-32.webp",
+      "opaqueApprox": 0.0
+    },
+    {
+      "file": "cream-33.webp",
+      "opaqueApprox": 0.0
+    }
+  ]
+}

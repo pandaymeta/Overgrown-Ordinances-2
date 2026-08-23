@@ -3,6 +3,7 @@
  */
 
 import * as ENGINE from '@gnsx/genesys.js';
+import * as THREE from 'three';
 
 import { installAnimationOneShotHostPatch } from './animation-oneshot-host-patch.js';
 import { CarryPlayerController } from './carry-player-controller.js';
@@ -18,6 +19,11 @@ import './sharp-sign-board-material.js';
 import { StairWalkRamp } from './stair-walk-ramp.js';
 import { ShophouseCameraOcclusionSystem } from './shophouse-camera-occlusion.js';
 import { AxePickupRingSystem } from './axe-pickup-ring.js';
+import { StartupBrushRevealSystem } from './startup-brush-reveal.js';
+import { DeliveryProgressHudSystem } from './delivery-progress-hud.js';
+import { GameCursorSystem } from './game-cursor.js';
+import { StartupLoadingScreenSystem } from './startup-loading-screen.js';
+import { TutorialKeysGuide } from './tutorial-keys-guide.js';
 
 installAnimationOneShotHostPatch(ENGINE);
 
@@ -42,6 +48,9 @@ class ThirdPersonGameMode extends ENGINE.GameMode {
     if (!super.beginPlay()) {
       return false;
     }
+    // Cream cover before anything else so the world never flashes on the first frames.
+    this.ensureStartupLoadingScreen();
+    this.ensureStartupBrushReveal();
     this.attachAccessStairWalkRamp();
     this.attachClimbableLadders();
     this.ensureOrdinanceSignSharpness();
@@ -49,7 +58,52 @@ class ThirdPersonGameMode extends ENGINE.GameMode {
     this.ensureMailDeliveryFlow();
     this.ensureShophouseCameraOcclusion();
     this.ensureAxePickupRing();
+    this.ensureTutorialKeysGuide();
+    this.ensureDeliveryProgressHud();
+    this.ensureGameCursor();
     return true;
+  }
+
+  private ensureTutorialKeysGuide(): void {
+    const world = this.getWorld();
+    if (!world || world.getNodes(TutorialKeysGuide).length > 0) {
+      return;
+    }
+    // Fallback if the scene was not authored with a guide yet — snap near the
+    // intended RightSideRoad asphalt tile so keys are not at world origin.
+    const guide = TutorialKeysGuide.create();
+    const road = world.getNodes(ENGINE.ModelMeshNode).find((node) => (
+      /RightSideRoad\s+Asphalt\s+Road\s+Tile\s+Straight\s+Both\s+02/i.test(node.name ?? '')
+    ));
+    if (road) {
+      const pos = new THREE.Vector3();
+      road.getWorldPosition(pos);
+      guide.position.set(pos.x, pos.y + 0.05, pos.z);
+    }
+    world.add(guide);
+  }
+
+  private ensureStartupLoadingScreen(): void {
+    const world = this.getWorld();
+    if (!world) {
+      return;
+    }
+    const existing = world.getNodes(StartupLoadingScreenSystem)[0];
+    const loading = existing ?? StartupLoadingScreenSystem.create();
+    if (!existing) {
+      world.add(loading);
+    }
+    // Nodes added from GameMode.beginPlay can miss their own beginPlay call in
+    // some Studio startup paths. Start explicitly so cream covers the first frame.
+    loading.startLoadingSequence();
+  }
+
+  private ensureGameCursor(): void {
+    const world = this.getWorld();
+    if (!world || world.getNodes(GameCursorSystem).length > 0) {
+      return;
+    }
+    world.add(GameCursorSystem.create());
   }
 
   private ensureMailDeliveryFlow(): void {
@@ -69,6 +123,27 @@ class ThirdPersonGameMode extends ENGINE.GameMode {
       return;
     }
     world.add(AxePickupRingSystem.create());
+  }
+
+  private ensureStartupBrushReveal(): void {
+    const world = this.getWorld();
+    if (!world) {
+      return;
+    }
+    const existing = world.getNodes(StartupBrushRevealSystem)[0];
+    if (existing) {
+      return;
+    }
+    // Do not start the splash here — StartupLoadingScreenSystem owns that handoff.
+    world.add(StartupBrushRevealSystem.create());
+  }
+
+  private ensureDeliveryProgressHud(): void {
+    const world = this.getWorld();
+    if (!world || world.getNodes(DeliveryProgressHudSystem).length > 0) {
+      return;
+    }
+    world.add(DeliveryProgressHudSystem.create());
   }
 
   private ensureShophouseCameraOcclusion(): void {

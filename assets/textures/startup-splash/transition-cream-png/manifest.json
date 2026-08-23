@@ -1,0 +1,144 @@
+{
+  "frameCount": 34,
+  "durationSec": 1.0886,
+  "fps": 30,
+  "cream": "#f4f1ea",
+  "frames": [
+    {
+      "file": "cream-00.png",
+      "opaqueApprox": 0.9997
+    },
+    {
+      "file": "cream-01.png",
+      "opaqueApprox": 0.993
+    },
+    {
+      "file": "cream-02.png",
+      "opaqueApprox": 0.951
+    },
+    {
+      "file": "cream-03.png",
+      "opaqueApprox": 0.951
+    },
+    {
+      "file": "cream-04.png",
+      "opaqueApprox": 0.8607
+    },
+    {
+      "file": "cream-05.png",
+      "opaqueApprox": 0.7074
+    },
+    {
+      "file": "cream-06.png",
+      "opaqueApprox": 0.7074
+    },
+    {
+      "file": "cream-07.png",
+      "opaqueApprox": 0.4809
+    },
+    {
+      "file": "cream-08.png",
+      "opaqueApprox": 0.3793
+    },
+    {
+      "file": "cream-09.png",
+      "opaqueApprox": 0.3793
+    },
+    {
+      "file": "cream-10.png",
+      "opaqueApprox": 0.2307
+    },
+    {
+      "file": "cream-11.png",
+      "opaqueApprox": 0.1877
+    },
+    {
+      "file": "cream-12.png",
+      "opaqueApprox": 0.1877
+    },
+    {
+      "file": "cream-13.png",
+      "opaqueApprox": 0.1112
+    },
+    {
+      "file": "cream-14.png",
+      "opaqueApprox": 0.0847
+    },
+    {
+      "file": "cream-15.png",
+      "opaqueApprox": 0.0847
+    },
+    {
+      "file": "cream-16.png",
+      "opaqueApprox": 0.0675
+    },
+    {
+      "file": "cream-17.png",
+      "opaqueApprox": 0.0549
+    },
+    {
+      "file": "cream-18.png",
+      "opaqueApprox": 0.0549
+    },
+    {
+      "file": "cream-19.png",
+      "opaqueApprox": 0.0264
+    },
+    {
+      "file": "cream-20.png",
+      "opaqueApprox": 0.0264
+    },
+    {
+      "file": "cream-21.png",
+      "opaqueApprox": 0.0264
+    },
+    {
+      "file": "cream-22.png",
+      "opaqueApprox": 0.0203
+    },
+    {
+      "file": "cream-23.png",
+      "opaqueApprox": 0.0154
+    },
+    {
+      "file": "cream-24.png",
+      "opaqueApprox": 0.0103
+    },
+    {
+      "file": "cream-25.png",
+      "opaqueApprox": 0.0103
+    },
+    {
+      "file": "cream-26.png",
+      "opaqueApprox": 0.0038
+    },
+    {
+      "file": "cream-27.png",
+      "opaqueApprox": 0.0038
+    },
+    {
+      "file": "cream-28.png",
+      "opaqueApprox": 0.0017
+    },
+    {
+      "file": "cream-29.png",
+      "opaqueApprox": 0.0002
+    },
+    {
+      "file": "cream-30.png",
+      "opaqueApprox": 0.0002
+    },
+    {
+      "file": "cream-31.png",
+      "opaqueApprox": 0.0002
+    },
+    {
+      "file": "cream-32.png",
+      "opaqueApprox": 0.0
+    },
+    {
+      "file": "cream-33.png",
+      "opaqueApprox": 0.0
+    }
+  ]
+}

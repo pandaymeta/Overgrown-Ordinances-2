@@ -46,7 +46,6 @@ export class AxePickupRingSystem extends ENGINE.SceneNode {
 
   public override postLoad(): void {
     super.postLoad();
-    this.applyVisualStyle();
     const world = this.getWorld();
     if (world) {
       this.initializePreview(world);

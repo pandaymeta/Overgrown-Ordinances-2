@@ -14,11 +14,19 @@ const MESH_YAW_OFFSET = 0;
 
 /** Pitch from the horizon: -45 looks down at 45° from the floor. */
 const LOCKED_CAMERA_PITCH_DEGREES = -45;
+/** Flat intro shot (no downward angle). */
+const INTRO_FRONT_CAMERA_PITCH_DEGREES = 0;
+/**
+ * Mesh yaw that turns the avatar toward the camera.
+ * Spring arm stays behind (local +Z); default mesh faces -Z, so π shows the face.
+ */
+const INTRO_FACE_MESH_YAW = Math.PI;
 
 /** Camera spring-arm distances in meters. */
 const INITIAL_CAMERA_DISTANCE = 3;
 const MIN_CAMERA_DISTANCE = 2;
-const MAX_CAMERA_DISTANCE = 40;
+/** Allows the wide isometric intro establishing shot; gameplay still defaults nearer. */
+const MAX_CAMERA_DISTANCE = 55;
 
 const AXE_ATTACK_CLIP = 'Attack 01';
 const AXE_ATTACK_PLAY_RATE = 2;
@@ -91,6 +99,15 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
 
   private cameraYawPivot: ENGINE.SceneNode | null = null;
   private cameraTargetDistance = INITIAL_CAMERA_DISTANCE;
+  /** Current pitch degrees applied to CameraPivot (intro can override the locked -45°). */
+  private cameraPitchDegrees = LOCKED_CAMERA_PITCH_DEGREES;
+  /**
+   * Intro face-cam: keep the spring arm behind the pawn and turn the mesh toward the lens.
+   * Orbit-yaw flips were not reliable on this hierarchy; mesh facing is.
+   */
+  private introFaceCamActive = false;
+  /** 1 = mesh faces camera, 0 = normal (faces away / mesh yaw 0). */
+  private introFaceMeshAmount = 0;
   private cinematicCameraLock = false;
   private movementFrozen = false;
   private mailDeliveryClickHandler: (() => boolean) | null = null;
@@ -292,16 +309,119 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
    * Use after cinematics / next-day teleports so the handoff does not snap.
    */
   public resetGameplayCameraToDefault(distance: number): void {
+    this.introFaceCamActive = false;
+    this.introFaceMeshAmount = 0;
     this.setCameraLookWorldTarget(null);
     this.setCameraTargetDistance(distance, true);
     if (this.cameraYawPivot) {
-      this.cameraYawPivot.rotation.set(0, 0, 0);
+      this.cameraYawPivot.rotation.y = 0;
+      this.cameraYawPivot.rotation.x = 0;
+      this.cameraYawPivot.rotation.z = 0;
     }
+    this.applyIntroMeshFacing();
     this.applyLockedPitch();
     this.updateMatrixWorld(true);
     if (this.camera) {
       this.camera.updateMatrixWorld(true);
     }
+  }
+
+  /**
+   * Opening establishing shot: same locked pitch from the floor, orbit yaw for an
+   * isometric framing, and a wide spring-arm distance (player is not a close focus).
+   */
+  public setIntroWideIsometricCamera(distance: number, yawDegrees: number): void {
+    this.setCameraLookWorldTarget(null);
+    this.setCameraTargetDistance(distance, true);
+    this.introFaceCamActive = false;
+    this.introFaceMeshAmount = 0;
+    if (this.cameraYawPivot) {
+      this.cameraYawPivot.rotation.y = THREE.MathUtils.degToRad(yawDegrees);
+      this.cameraYawPivot.rotation.x = 0;
+      this.cameraYawPivot.rotation.z = 0;
+    }
+    this.applyIntroMeshFacing();
+    this.applyLockedPitch();
+    this.updateMatrixWorld(true);
+    if (this.camera) {
+      this.camera.updateMatrixWorld(true);
+    }
+  }
+
+  /**
+   * Blend from the wide isometric intro into the normal gameplay camera.
+   * Pitch stays locked; distance and orbit yaw ease toward gameplay defaults.
+   * @param t 0 = wide intro, 1 = gameplay default.
+   */
+  public blendIntroWideCameraToGameplay(
+    fromDistance: number,
+    toDistance: number,
+    fromYawDegrees: number,
+    t: number,
+  ): void {
+    const u = Math.min(1, Math.max(0, t));
+    const eased = u * u * (3 - 2 * u);
+    this.setCameraLookWorldTarget(null);
+    this.setCameraTargetDistance(
+      THREE.MathUtils.lerp(fromDistance, toDistance, eased),
+      true,
+    );
+    this.introFaceCamActive = false;
+    this.introFaceMeshAmount = 0;
+    if (this.cameraYawPivot) {
+      this.cameraYawPivot.rotation.y = THREE.MathUtils.degToRad(
+        THREE.MathUtils.lerp(fromYawDegrees, 0, eased),
+      );
+    }
+    this.applyIntroMeshFacing();
+    this.applyLockedPitch();
+  }
+
+  /**
+   * Opening shot: flat camera behind the pawn with the avatar turned to face the lens.
+   * (Orbiting the spring arm 180° was unreliable; facing the mesh is.)
+   */
+  public setIntroFrontCamera(distance: number): void {
+    this.setCameraLookWorldTarget(null);
+    this.setCameraTargetDistance(distance, true);
+    this.introFaceCamActive = true;
+    this.introFaceMeshAmount = 1;
+    // Keep spring arm on the default behind side.
+    if (this.cameraYawPivot) {
+      this.cameraYawPivot.rotation.y = 0;
+      this.cameraYawPivot.rotation.x = 0;
+      this.cameraYawPivot.rotation.z = 0;
+    }
+    this.cameraPitchDegrees = INTRO_FRONT_CAMERA_PITCH_DEGREES;
+    this.applyIntroMeshFacing();
+    this.applyCameraPitch();
+    this.updateMatrixWorld(true);
+    if (this.camera) {
+      this.camera.updateMatrixWorld(true);
+    }
+  }
+
+  /**
+   * Blend from face-on/flat intro into the normal behind-and-down gameplay camera.
+   * @param t 0 = intro front, 1 = gameplay default.
+   */
+  public blendIntroCameraToGameplay(distance: number, t: number): void {
+    const u = Math.min(1, Math.max(0, t));
+    const eased = u * u * (3 - 2 * u);
+    this.setCameraLookWorldTarget(null);
+    this.setCameraTargetDistance(distance, true);
+    this.introFaceCamActive = u < 1;
+    this.introFaceMeshAmount = 1 - eased;
+    if (this.cameraYawPivot) {
+      this.cameraYawPivot.rotation.y = 0;
+    }
+    this.cameraPitchDegrees = THREE.MathUtils.lerp(
+      INTRO_FRONT_CAMERA_PITCH_DEGREES,
+      LOCKED_CAMERA_PITCH_DEGREES,
+      eased,
+    );
+    this.applyIntroMeshFacing();
+    this.applyCameraPitch();
   }
 
   public getCameraTargetDistance(): number {
@@ -516,6 +636,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
   /**
    * Snap the capsule onto the ground under the current XZ (Player Start / teleport).
    * Call after teleport and before long freezes so cinematic return does not show a floater.
+   * Casts from well above the pawn so a sunk spawn still finds the road surface.
    */
   public settleOnGround(): boolean {
     const physicsEngine = this.getPhysicsEngine();
@@ -529,19 +650,43 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     this.getWorldQuaternion(this.yawQuat);
     this.respawnRotation.setFromQuaternion(this.yawQuat, 'YXZ');
 
+    // Start high enough that an already-underground capsule still hits asphalt first.
     const castOrigin = this.settlePosition.copy(this.respawnPosition);
-    castOrigin.y += 3;
-    const hit = physicsEngine?.performHitTest({
+    castOrigin.y = Math.max(this.respawnPosition.y + 12, 12);
+    const hits = physicsEngine?.performHitTest({
       origin: castOrigin,
       direction: this.downDir,
-      maxDistance: 14,
-      stopOnFirstHit: true,
+      maxDistance: 48,
+      stopOnFirstHit: false,
       ignoredRootNodes: [this],
-    })[0];
+    }) ?? [];
 
-    if (hit?.hitLocation) {
+    let bestY = Number.NEGATIVE_INFINITY;
+    let found = false;
+    for (const hit of hits) {
+      const location = hit.hitLocation;
+      if (!location) {
+        continue;
+      }
+      // Prefer walkable tops (skip steep sides / thin overhead hits when possible).
+      const hitNormal = (hit as { hitNormal?: { y?: number } }).hitNormal;
+      const normalY = hitNormal?.y;
+      if (typeof normalY === 'number' && normalY < 0.45) {
+        continue;
+      }
+      // Ignore sky-high props; keep surfaces near/below the cast origin.
+      if (location.y > castOrigin.y - 0.05) {
+        continue;
+      }
+      if (location.y > bestY) {
+        bestY = location.y;
+        found = true;
+      }
+    }
+
+    if (found) {
       // Root is capsule center (~0.9 m above feet).
-      this.respawnPosition.y = hit.hitLocation.y + 0.9;
+      this.respawnPosition.y = bestY + 0.9;
     }
 
     movementNode.setPawnWorldTransform({
@@ -549,10 +694,10 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
       rotation: this.respawnRotation,
     });
     movementNode.setVelocities(0, 0, 0);
-    movementNode.setGrounded(true);
+    movementNode.setGrounded(found);
     this.updateMatrixWorld(true);
     this.forceIdlePose();
-    return Boolean(hit?.hitLocation);
+    return found;
   }
 
   /** Teleport home, plant on the floor, then idle — safe before cinematic freezes. */
@@ -898,23 +1043,36 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     }
 
     const orbitLook = movementNode.consumeOrbitLook();
-    if (this.cameraYawPivot && orbitLook.right !== 0) {
+    if (this.cameraYawPivot && !this.introFaceCamActive && orbitLook.right !== 0) {
       // Match CharacterMovement yaw sign: makeRotation yaw → -Y
       this.cameraYawPivot.rotation.y -= orbitLook.right * movementNode.lookRightSpeed;
     }
 
-    // Pitch stays locked; RMB vertical look is ignored.
-    this.applyLockedPitch();
+    this.applyCameraPitch();
   }
 
-  private applyLockedPitch(): void {
+  /** Turn the avatar toward the lens (amount 1) or back to default mesh yaw (amount 0). */
+  private applyIntroMeshFacing(): void {
+    const mesh = this.visualNode;
+    if (!mesh) {
+      return;
+    }
+    mesh.rotation.y = MESH_YAW_OFFSET + INTRO_FACE_MESH_YAW * this.introFaceMeshAmount;
+  }
+
+  private applyCameraPitch(): void {
     if (!this.cameraPivot) {
       return;
     }
 
     this.cameraPivot.setLocalRotation(
-      ENGINE.MathHelpers.makeRotationDegrees({ pitch: LOCKED_CAMERA_PITCH_DEGREES }),
+      ENGINE.MathHelpers.makeRotationDegrees({ pitch: this.cameraPitchDegrees }),
     );
+  }
+
+  private applyLockedPitch(): void {
+    this.cameraPitchDegrees = LOCKED_CAMERA_PITCH_DEGREES;
+    this.applyCameraPitch();
   }
 
   private updateSmoothCameraZoom(deltaTime: number): void {
@@ -1646,6 +1804,12 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     const mesh = this.visualNode;
     const movementNode = this.movementNode;
     if (!mesh || !(movementNode instanceof ENGINE.CharacterMovementNode)) {
+      return;
+    }
+
+    // Intro speech: hold the avatar facing the camera.
+    if (this.introFaceCamActive) {
+      this.applyIntroMeshFacing();
       return;
     }
 

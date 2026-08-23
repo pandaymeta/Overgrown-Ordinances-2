@@ -5,6 +5,7 @@ import { ThirdPersonPlayer } from './player.js';
 
 const SHOPHOUSE_NAME = /shophouse/i;
 const STANDALONE_OCCLUDER_NAME = /^(?:Cherry Blossom Tree|City Tram$)/i;
+const CLOUD_NAME = /\bcloud\b/i;
 const SHOPHOUSE_DEPENDENT_NAMES = new Map<string, readonly string[]>([
   [
     'Corner Shophouse Ad 15 C 2',
@@ -49,6 +50,8 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
     ENGINE.ModelMeshNode[]
   >();
   private readonly standaloneOccluders: ENGINE.ModelMeshNode[] = [];
+  private readonly clouds: ENGINE.ModelMeshNode[] = [];
+  private readonly cloudAuthoredVisibility = new Map<ENGINE.ModelMeshNode, boolean>();
   private readonly hiddenMaterials = new Map<ENGINE.ModelMeshNode, MaterialSwap[]>();
   private player: ThirdPersonPlayer | null = null;
 
@@ -81,6 +84,12 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
     this.standaloneOccluders.push(
       ...models.filter((node) => STANDALONE_OCCLUDER_NAME.test(node.name)),
     );
+    this.clouds.length = 0;
+    this.clouds.push(...models.filter((node) => CLOUD_NAME.test(node.name)));
+    this.cloudAuthoredVisibility.clear();
+    for (const cloud of this.clouds) {
+      this.cloudAuthoredVisibility.set(cloud, cloud.visible);
+    }
     for (const shophouse of this.shophouses) {
       const names = SHOPHOUSE_DEPENDENT_NAMES.get(shophouse.name) ?? [];
       this.dependentModels.set(
@@ -96,6 +105,7 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
       return false;
     }
     this.restoreAll();
+    this.restoreClouds();
     this.player = null;
     return true;
   }
@@ -119,6 +129,7 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
     const distance = this.rayDirection.length();
     if (distance <= RAYCAST_CLEARANCE) {
       this.restoreAll();
+      this.restoreClouds();
       return;
     }
 
@@ -126,6 +137,13 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
     this.raycaster.set(this.cameraPosition, this.rayDirection);
     this.raycaster.near = RAYCAST_CLEARANCE;
     this.raycaster.far = distance - RAYCAST_CLEARANCE;
+
+    // Test clouds in their authored visible state every frame. A cloud that
+    // was hidden in the previous frame must still be eligible to reappear as
+    // soon as the camera/player line is clear again.
+    for (const cloud of this.clouds) {
+      cloud.visible = this.cloudAuthoredVisibility.get(cloud) ?? true;
+    }
 
     const occluding = new Set<ENGINE.ModelMeshNode>();
     for (const shophouse of this.shophouses) {
@@ -151,6 +169,13 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
       } else {
         this.restoreModel(occluder);
       }
+    }
+    for (const cloud of this.clouds) {
+      const blocksPlayer = cloud.visible
+        && this.raycaster.intersectObjects(cloud.getAllMeshes(), true).length > 0;
+      // Clouds should disappear completely—not become translucent—so the
+      // player never has a pale cloud layer covering them.
+      cloud.visible = !blocksPlayer;
     }
   }
 
@@ -209,6 +234,12 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
   private restoreAll(): void {
     for (const model of [...this.hiddenMaterials.keys()]) {
       this.restoreModel(model);
+    }
+  }
+
+  private restoreClouds(): void {
+    for (const cloud of this.clouds) {
+      cloud.visible = this.cloudAuthoredVisibility.get(cloud) ?? true;
     }
   }
 }

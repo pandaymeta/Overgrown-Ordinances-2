@@ -1,0 +1,116 @@
+{
+  "frames": [
+    {
+      "file": "splash-00.png",
+      "hole": 0.0084
+    },
+    {
+      "file": "splash-01.png",
+      "hole": 0.009
+    },
+    {
+      "file": "splash-02.png",
+      "hole": 0.0106
+    },
+    {
+      "file": "splash-03.png",
+      "hole": 0.0116
+    },
+    {
+      "file": "splash-04.png",
+      "hole": 0.0132
+    },
+    {
+      "file": "splash-05.png",
+      "hole": 0.0145
+    },
+    {
+      "file": "splash-06.png",
+      "hole": 0.0171
+    },
+    {
+      "file": "splash-07.png",
+      "hole": 0.0193
+    },
+    {
+      "file": "splash-08.png",
+      "hole": 0.0222
+    },
+    {
+      "file": "splash-09.png",
+      "hole": 0.0245
+    },
+    {
+      "file": "splash-10.png",
+      "hole": 0.0288
+    },
+    {
+      "file": "splash-11.png",
+      "hole": 0.0318
+    },
+    {
+      "file": "splash-12.png",
+      "hole": 0.0369
+    },
+    {
+      "file": "splash-13.png",
+      "hole": 0.0424
+    },
+    {
+      "file": "splash-14.png",
+      "hole": 0.0525
+    },
+    {
+      "file": "splash-15.png",
+      "hole": 0.0633
+    },
+    {
+      "file": "splash-16.png",
+      "hole": 0.0898
+    },
+    {
+      "file": "splash-17.png",
+      "hole": 0.1138
+    },
+    {
+      "file": "splash-18.png",
+      "hole": 0.1795
+    },
+    {
+      "file": "splash-19.png",
+      "hole": 0.2514
+    },
+    {
+      "file": "splash-20.png",
+      "hole": 0.3616
+    },
+    {
+      "file": "splash-21.png",
+      "hole": 0.4264
+    },
+    {
+      "file": "splash-22.png",
+      "hole": 0.5301
+    },
+    {
+      "file": "splash-23.png",
+      "hole": 0.5835
+    },
+    {
+      "file": "splash-24.png",
+      "hole": 0.6587
+    },
+    {
+      "file": "splash-25.png",
+      "hole": 0.7203
+    },
+    {
+      "file": "splash-26.png",
+      "hole": 0.8046
+    },
+    {
+      "file": "splash-27.png",
+      "hole": 0.8502
+    }
+  ]
+}
