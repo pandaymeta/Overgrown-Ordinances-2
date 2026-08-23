@@ -9,7 +9,10 @@ type SurfaceStyle = {
 };
 
 const TEXTURE_ANISOTROPY = 8;
-const STYLED_FLAG = 'summerAfternoonSurfaceStyle';
+/** Bump when retuning so already-styled materials get the lighter sharp-mesh pass. */
+const STYLED_FLAG = 'civicAfternoonSurfaceStyleV3b';
+/** Spawned scrap that already received a source-prop material copy. */
+export const SKIP_ENVIRONMENT_ART_FLAG = 'skipEnvironmentArtDirection';
 const ORDINANCE_MODEL_PATH = /PolyforkAssets\/Ordinances\//i;
 const PAINTERLY_DETAIL_TEXTURE_PATH =
   '@project/assets/textures/style/painterly-brush-detail-v1.png';
@@ -18,44 +21,52 @@ let painterlyDetailTexture: THREE.Texture | null | undefined;
 const paintedTextureCache = new WeakMap<THREE.Texture, Map<SurfaceStyle, THREE.Texture>>();
 const meshLoadHooks = new WeakSet<ENGINE.ModelMeshNode>();
 
+/**
+ * Light-touch grading for restored sharp Overgrown-Rules meshes.
+ * Cool roads / warm plaster / alive greens — keep edges crisp.
+ */
 const SURFACE_STYLES: Record<string, SurfaceStyle> = {
   asphalt: {
-    tint: new THREE.Color('#8ba9b9'),
-    tintAmount: 0.34,
+    tint: new THREE.Color('#7d98aa'),
+    tintAmount: 0.2,
     roughness: 0.9,
-    exposure: 1,
+    exposure: 0.96,
   },
   road: {
-    // Matches the Tram Track Tile's blue-grey presentation so the left,
-    // right, and main road surfaces sit in the same visual family.
-    tint: new THREE.Color('#b3cbd1'),
-    tintAmount: 0.28,
-    roughness: 0.76,
-    exposure: 1.12,
+    tint: new THREE.Color('#8aa8b4'),
+    tintAmount: 0.18,
+    roughness: 0.82,
+    exposure: 1.0,
   },
   vegetation: {
-    tint: new THREE.Color('#76b985'),
-    tintAmount: 0.34,
-    roughness: 0.95,
-    exposure: 1.13,
+    tint: new THREE.Color('#58a46c'),
+    tintAmount: 0.22,
+    roughness: 0.94,
+    exposure: 1.05,
   },
   building: {
-    tint: new THREE.Color('#f4cea9'),
-    tintAmount: 0.3,
-    roughness: 0.82,
-    exposure: 1.15,
+    tint: new THREE.Color('#f0c292'),
+    tintAmount: 0.16,
+    roughness: 0.84,
+    exposure: 1.05,
   },
   metal: {
-    tint: new THREE.Color('#b3cbd1'),
-    tintAmount: 0.28,
-    roughness: 0.76,
-    exposure: 1.12,
+    tint: new THREE.Color('#9aafbb'),
+    tintAmount: 0.15,
+    roughness: 0.8,
+    exposure: 1.0,
   },
   prop: {
-    tint: new THREE.Color('#ead1aa'),
-    tintAmount: 0.22,
+    tint: new THREE.Color('#e4cbaa'),
+    tintAmount: 0.08,
     roughness: 0.88,
-    exposure: 1.1,
+    exposure: 1.02,
+  },
+  cloud: {
+    tint: new THREE.Color('#f2ebe2'),
+    tintAmount: 0.22,
+    roughness: 1,
+    exposure: 1.06,
   },
 };
 
@@ -76,8 +87,12 @@ function classifySurface(node: ENGINE.ModelMeshNode): SurfaceStyle {
   if (/asphalt|pavement|road|ground tile/.test(label)) {
     return SURFACE_STYLES.asphalt;
   }
-  if (/grass|bush|tree|cherry|dirt|cloud/.test(label)) {
+  if (/grass|bush|tree|cherry|dirt/.test(label)) {
     return SURFACE_STYLES.vegetation;
+  }
+  // Soft cream cloud masses — support haze without green vegetation tint.
+  if (/\bcloud\b/.test(label)) {
+    return SURFACE_STYLES.cloud;
   }
   if (/shop|house|shophouse|roof|awning/.test(label)) {
     return SURFACE_STYLES.building;
@@ -148,14 +163,13 @@ function createPaintedMap(
     }
 
     context.drawImage(baseImage, 0, 0, width, height);
-    // Keep the original artwork, but lift its mid-tones so painted detail does
-    // not make low-poly shaded faces read as black in the outdoor sun.
+    // Very light mid-tone lift + soft brush — sharp restored meshes stay crisp.
     context.globalCompositeOperation = 'screen';
-    context.globalAlpha = 0.1;
+    context.globalAlpha = 0.04;
     context.fillStyle = '#ffffff';
     context.fillRect(0, 0, width, height);
     context.globalCompositeOperation = 'soft-light';
-    context.globalAlpha = 0.28;
+    context.globalAlpha = 0.12;
     context.drawImage(detailImage, 0, 0, width, height);
 
     const painted = new THREE.CanvasTexture(canvas);
@@ -209,11 +223,10 @@ function styleMaterial(
     textured.color.lerp(style.tint, style.tintAmount);
     textured.color.multiplyScalar(style.exposure);
   }
-  // A very small, tinted emissive lift replaces harsh black fill with the
-  // soft coloured bounce characteristic of the painted reference.
+  // Soft coloured bounce — keep tiny so sharp albedo stays dominant.
   if (textured.emissive) {
-    textured.emissive.copy(style.tint).multiplyScalar(0.035);
-    textured.emissiveIntensity = Math.max(textured.emissiveIntensity ?? 0, 0.16);
+    textured.emissive.copy(style.tint).multiplyScalar(0.015);
+    textured.emissiveIntensity = Math.max(textured.emissiveIntensity ?? 0, 0.08);
   }
   if (typeof textured.roughness === 'number') {
     textured.roughness = Math.max(textured.roughness, style.roughness);
@@ -226,7 +239,18 @@ function styleMaterial(
 }
 
 function styleModel(node: ENGINE.ModelMeshNode, detailTexture: THREE.Texture | null): void {
+  if (node.userData[SKIP_ENVIRONMENT_ART_FLAG]) {
+    return;
+  }
   if (ORDINANCE_MODEL_PATH.test(node.modelUrl ?? '')) {
+    return;
+  }
+  // Keep player beacons / authored accents out of the wash.
+  const label = `${node.name} ${node.modelUrl ?? ''}`;
+  if (/bench[_\s-]?scrapt/i.test(label)) {
+    return;
+  }
+  if (/mailbox/i.test(label) || /^axe$/i.test(node.name ?? '')) {
     return;
   }
 
