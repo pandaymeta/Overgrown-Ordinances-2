@@ -11,6 +11,7 @@ import './environment-art-direction.js';
 import './face-movement-character-movement.js';
 import './game-cursor.js';
 import './game-data.js';
+import './hover-silhouette.js';
 import './hydrant-water-stream.js';
 import './mail-delivery-flow.js';
 import './ordinance-sign-sharpness.js';

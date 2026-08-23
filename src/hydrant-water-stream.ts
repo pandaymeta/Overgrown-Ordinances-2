@@ -77,8 +77,7 @@ export class HydrantWaterStream {
     }
     this.elapsed += deltaTime;
     camera.getWorldPosition(this.cameraPosition);
-    this.ribbon.geometry.dispose();
-    this.ribbon.geometry = this.createStreamGeometry();
+    this.updateStreamGeometryInPlace();
     if (this.splash) {
       const pulse = 0.55 + 0.45 * Math.abs(Math.sin(this.elapsed * 9));
       this.splash.scale.setScalar(0.55 + pulse * 0.35);
@@ -452,8 +451,69 @@ export class HydrantWaterStream {
   }
 
   private createStreamGeometry(): THREE.BufferGeometry {
-    const positions: number[] = [];
-    const indices: number[] = [];
+    const geometry = new THREE.BufferGeometry();
+    this.ensureStreamBuffers(geometry);
+    this.fillStreamPositions();
+    geometry.computeBoundingSphere();
+    return geometry;
+  }
+
+  /** Rebuild ribbon vertices in place — avoids dispose/alloc every frame. */
+  private updateStreamGeometryInPlace(): void {
+    if (!this.ribbon) {
+      return;
+    }
+    const geometry = this.ribbon.geometry;
+    this.ensureStreamBuffers(geometry);
+    this.fillStreamPositions();
+    const position = geometry.getAttribute('position');
+    if (position) {
+      position.needsUpdate = true;
+    }
+    geometry.computeBoundingSphere();
+  }
+
+  private ensureStreamBuffers(geometry: THREE.BufferGeometry): void {
+    const pointCount = this.points.length;
+    const vertexCount = pointCount * 2;
+    const positionCount = vertexCount * 3;
+    const indexCount = Math.max(0, pointCount - 1) * 6;
+    const positionAttr = geometry.getAttribute('position');
+    if (
+      !(positionAttr instanceof THREE.BufferAttribute)
+      || positionAttr.array.length !== positionCount
+    ) {
+      geometry.setAttribute(
+        'position',
+        new THREE.BufferAttribute(new Float32Array(positionCount), 3),
+      );
+    }
+    const indexAttr = geometry.getIndex();
+    if (!indexAttr || indexAttr.array.length !== indexCount) {
+      const indices = new Uint16Array(indexCount);
+      for (let index = 0; index < pointCount - 1; index++) {
+        const base = index * 2;
+        const offset = index * 6;
+        indices[offset] = base;
+        indices[offset + 1] = base + 1;
+        indices[offset + 2] = base + 2;
+        indices[offset + 3] = base + 1;
+        indices[offset + 4] = base + 3;
+        indices[offset + 5] = base + 2;
+      }
+      geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+    }
+  }
+
+  private fillStreamPositions(): void {
+    if (!this.ribbon) {
+      return;
+    }
+    const positionAttr = this.ribbon.geometry.getAttribute('position');
+    if (!(positionAttr instanceof THREE.BufferAttribute)) {
+      return;
+    }
+    const positions = positionAttr.array as Float32Array;
     for (let index = 0; index < this.points.length; index++) {
       const point = this.points[index];
       const previous = this.points[Math.max(0, index - 1)];
@@ -480,24 +540,13 @@ export class HydrantWaterStream {
       const progress = this.points.length > 1 ? index / (this.points.length - 1) : 1;
       const pulse = 0.7 + 0.3 * Math.sin(progress * 16 - this.elapsed * 12);
       const halfWidth = (0.11 * (1 - progress * 0.55) + 0.03) * pulse;
-      positions.push(
-        point.x + this.side.x * halfWidth,
-        point.y + this.side.y * halfWidth,
-        point.z + this.side.z * halfWidth,
-        point.x - this.side.x * halfWidth,
-        point.y - this.side.y * halfWidth,
-        point.z - this.side.z * halfWidth,
-      );
-      if (index < this.points.length - 1) {
-        const base = index * 2;
-        indices.push(base, base + 1, base + 2, base + 1, base + 3, base + 2);
-      }
+      const offset = index * 6;
+      positions[offset] = point.x + this.side.x * halfWidth;
+      positions[offset + 1] = point.y + this.side.y * halfWidth;
+      positions[offset + 2] = point.z + this.side.z * halfWidth;
+      positions[offset + 3] = point.x - this.side.x * halfWidth;
+      positions[offset + 4] = point.y - this.side.y * halfWidth;
+      positions[offset + 5] = point.z - this.side.z * halfWidth;
     }
-
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setIndex(indices);
-    geometry.computeBoundingSphere();
-    return geometry;
   }
 }

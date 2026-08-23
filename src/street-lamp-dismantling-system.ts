@@ -1,6 +1,8 @@
 import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 import { CarryableCrateNode } from './carryable-crate-node.js';
+import { SKIP_ENVIRONMENT_ART_FLAG } from './environment-art-direction.js';
+import { HoverSilhouette } from './hover-silhouette.js';
 import { HydrantWaterStream } from './hydrant-water-stream.js';
 
 const STREET_LAMP_NAME = /^Street Lamp(?:\s|$)/i;
@@ -30,6 +32,11 @@ const SMALL_ROCK_MODEL = /small-rock-457be8/i;
 const PEACH_PROJECTILE_MODEL = /peach-100232/i;
 const AXE_MODEL_NAME = /(?:^|\/)Axe\.glb$/i;
 const OUTLINE_GREEN = 0x39ff63;
+/**
+ * Camera→hit ray can be much longer than player interaction range in iso view.
+ * Proximity is checked against the player, not this length.
+ */
+const AIM_RAY_MAX = 40;
 const INTERACTION_RANGE = 2;
 const BUSH_INTERACTION_RANGE = 5;
 const KANJI_SIGN_INTERACTION_RANGE = 10;
@@ -147,6 +154,8 @@ interface BushAppearAnimation {
 
 /** Axe-gated proximity outline and dismantling for authored breakable environment props. */
 export class StreetLampDismantlingSystem {
+  constructor(private readonly hoverSilhouette: HoverSilhouette) {}
+
   private readonly playerPosition = new THREE.Vector3();
   private readonly targetBounds = new THREE.Box3();
   private readonly targetCenter = new THREE.Vector3();
@@ -163,6 +172,8 @@ export class StreetLampDismantlingSystem {
   private readonly dismantledTargets = new Set<ENGINE.SceneNode>();
   private readonly dismantledPhysics = new Map<ENGINE.SceneNode, ENGINE.NodePhysicsOptions>();
   private readonly spawnedScrapRoots: ENGINE.SceneNode[] = [];
+  /** Fallen utility poles stay in scrap tracking for day-reset, but are not pickups. */
+  private readonly nonPickupableScrapRoots = new Set<ENGINE.SceneNode>();
   /**
    * Scrap roots retired from the world but not destroyed yet — destroying heavy
    * scrap in the same frame as a cinematic/reset can lose the WebGPU device.
@@ -223,11 +234,18 @@ export class StreetLampDismantlingSystem {
   private treeHealthBar: ENGINE.ProgressBar | null = null;
   private treeHealthBarReady = false;
   private destroyed = false;
+  private dismantleCandidateCache: ENGINE.ModelMeshNode[] = [];
+  private dismantleCandidateCacheDirty = true;
+  /** Aim outline recheck interval — avoids per-frame mesh scans while hovering. */
+  private aimOutlineElapsed = 0;
+  private static readonly AIM_OUTLINE_INTERVAL = 0.1;
 
   public initialize(world: ENGINE.World): void {
     this.destroyed = false;
+    this.dismantleCandidateCacheDirty = true;
+    // Keep ObjectOutline off — hover uses a cheap AABB wireframe instead.
     world.postProcessManager.configureEffect(ENGINE.PostProcessPass.ObjectOutline, {
-      enabled: true,
+      enabled: false,
       edgeStrength: 2,
       edgeThickness: 1.5,
       visibleEdgeColor: OUTLINE_GREEN,
@@ -236,6 +254,7 @@ export class StreetLampDismantlingSystem {
       useRootGrouping: true,
       edgeBlur: 0,
     });
+    this.hoverSilhouette.setTarget(null, null);
 
     const healthBar = new ENGINE.ProgressBar(world.uiManager, {
       currentValue: CHERRY_TREE_MAX_HEALTH,
@@ -292,17 +311,28 @@ export class StreetLampDismantlingSystem {
     if (this.healthDisplayTime <= 0) {
       this.healthDisplayTarget = null;
     }
+    // Axe outline sequence:
+    // 1) holding axe → 2) cursor hit → 3) destructible → 4) in range → 5) green outline
     if (!world || !this.isAxe(carriedObject)) {
+      this.aimOutlineElapsed = 0;
       this.setTarget(world, null);
       this.updateTreeHealthBar(world, camera, this.healthDisplayTarget);
       return;
     }
 
-    this.setTarget(
-      world,
-      this.findPointedDismantleTarget(player, carriedObject, camera, aimNdc),
-    );
-    this.updateTreeHealthBar(world, camera, this.targetObject ?? this.healthDisplayTarget);
+    this.aimOutlineElapsed += deltaTime;
+    if (this.aimOutlineElapsed >= StreetLampDismantlingSystem.AIM_OUTLINE_INTERVAL) {
+      this.aimOutlineElapsed = 0;
+      const target = this.findPointedDismantleTarget(
+        player,
+        carriedObject,
+        camera,
+        aimNdc,
+        { meshFallback: false },
+      );
+      this.setTarget(world, target);
+    }
+    this.updateTreeHealthBar(world, camera, this.healthDisplayTarget ?? this.targetObject);
   }
 
   /**
@@ -354,6 +384,7 @@ export class StreetLampDismantlingSystem {
       return;
     }
 
+    this.dismantleCandidateCacheDirty = true;
     this.setTarget(world, null);
     this.pendingDismantle = null;
     this.restoreHitFlash();
@@ -423,7 +454,7 @@ export class StreetLampDismantlingSystem {
     this.finishDayReset(world);
   }
 
-  /** Dismantles the pointed target; otherwise leaves left-click available for carry/throw. */
+  /** Dismantles the pointed in-range target on click; otherwise leaves LMB for carry/throw. */
   public handlePrimaryAction(
     player: ENGINE.SceneNode,
     carriedObject: ENGINE.PrimitiveNode | null,
@@ -440,8 +471,13 @@ export class StreetLampDismantlingSystem {
       return false;
     }
 
-    const target = this.findPointedDismantleTarget(player, carriedObject, camera, aimNdc);
-    this.setTarget(world, target);
+    // Prefer outlined aim; otherwise full resolve (physics + mesh) on click only.
+    const target = (this.targetObject
+      && this.isValidDismantleTarget(player, this.targetObject))
+      ? this.targetObject
+      : this.findPointedDismantleTarget(player, carriedObject, camera, aimNdc, {
+        meshFallback: true,
+      });
     if (!target) {
       return false;
     }
@@ -460,6 +496,7 @@ export class StreetLampDismantlingSystem {
   public clear(world: ENGINE.World | null): void {
     this.destroyed = true;
     this.setTarget(world, null);
+    this.hoverSilhouette.clear();
     this.pendingDismantle = null;
     this.restoreHitFlash();
     this.bushAppearAnimations.length = 0;
@@ -483,6 +520,7 @@ export class StreetLampDismantlingSystem {
     this.meshSwapRecords.length = 0;
     this.dismantledTargets.clear();
     this.dismantledPhysics.clear();
+    this.nonPickupableScrapRoots.clear();
     this.poseFallHomePoses.clear();
     this.clearAllTargetHealth();
   }
@@ -499,6 +537,7 @@ export class StreetLampDismantlingSystem {
   }
 
   private retireScrapRoot(scrap: ENGINE.SceneNode): void {
+    this.nonPickupableScrapRoots.delete(scrap);
     this.disableScrapShadows(scrap);
     // Disable physics only while retiring for destroy — do not convert motion types
     // during normal play (poles must keep falling / settling dynamically).
@@ -641,6 +680,59 @@ export class StreetLampDismantlingSystem {
     return this.targetObject !== null;
   }
 
+  /**
+   * Resolve a spawned dismantle scrap piece (metal scraps, planks, rocks, …)
+   * under the cursor hit for pickup / hover outline.
+   */
+  public findPickupableScrapPiece(from: THREE.Object3D | null): ENGINE.PrimitiveNode | null {
+    let current: THREE.Object3D | null = from;
+    while (current) {
+      if (current instanceof ENGINE.PrimitiveNode) {
+        for (const root of this.spawnedScrapRoots) {
+          if (!root.parent) {
+            continue;
+          }
+          if (this.isNonPickupableFallenUtilityPole(root)) {
+            continue;
+          }
+          if (current === root || this.isNodeUnderRoot(current, root)) {
+            return current;
+          }
+        }
+      }
+      current = current.parent;
+    }
+    return null;
+  }
+
+  /** Fallen utility poles are platforms, not carryables. */
+  private isNonPickupableFallenUtilityPole(root: ENGINE.SceneNode): boolean {
+    if (this.nonPickupableScrapRoots.has(root)) {
+      return true;
+    }
+    if (/Utility Pole Fallen/i.test(root.name ?? '')) {
+      return true;
+    }
+    for (const model of root.getNodes(ENGINE.ModelMeshNode)) {
+      const url = model.modelUrl ?? '';
+      if (/utilitypole\/utility-pole/i.test(url)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private isNodeUnderRoot(node: THREE.Object3D, root: ENGINE.SceneNode): boolean {
+    let current: THREE.Object3D | null = node;
+    while (current) {
+      if (current === root) {
+        return true;
+      }
+      current = current.parent;
+    }
+    return false;
+  }
+
   private enableBushAxeHits(world: ENGINE.World): void {
     for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
       if (!BUSH_8_BB_NAME.test(node.name ?? '')) {
@@ -733,6 +825,24 @@ export class StreetLampDismantlingSystem {
   }
 
   private updateHydrantProjectileHits(world: ENGINE.World): void {
+    const flyingCrates: ReturnType<typeof CarryableCrateNode.getActiveInstances> = [];
+    for (const crate of CarryableCrateNode.getActiveInstances(world)) {
+      const parent = crate.parent;
+      const projectile = this.getProjectileHitKey(
+        parent instanceof ENGINE.PrimitiveNode
+          ? parent
+          : crate.getCrateRoot(),
+      );
+      if (!projectile || crate.isCarried() || !this.isHydrantProjectile(projectile)) {
+        continue;
+      }
+      flyingCrates.push(crate);
+    }
+    // No thrown props in flight — skip hydrant mesh scans entirely.
+    if (flyingCrates.length === 0) {
+      return;
+    }
+
     const hydrants: ENGINE.ModelMeshNode[] = [];
     for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
       if (
@@ -747,14 +857,14 @@ export class StreetLampDismantlingSystem {
       return;
     }
 
-    for (const crate of CarryableCrateNode.getActiveInstances(world)) {
+    for (const crate of flyingCrates) {
       const parent = crate.parent;
       const projectile = this.getProjectileHitKey(
         parent instanceof ENGINE.PrimitiveNode
           ? parent
           : crate.getCrateRoot(),
       );
-      if (!projectile || crate.isCarried() || !this.isHydrantProjectile(projectile)) {
+      if (!projectile) {
         continue;
       }
       const speed = this.getProjectileSpeed(projectile);
@@ -959,33 +1069,42 @@ export class StreetLampDismantlingSystem {
     carriedObject: ENGINE.PrimitiveNode | null,
     camera: THREE.Camera,
     aimNdc: THREE.Vector2,
+    options: { meshFallback: boolean } = { meshFallback: true },
   ): ENGINE.ModelMeshNode | null {
     const world = player.getWorld();
     if (!world) {
       return null;
     }
 
+    // Step 2: what is under the cursor (camera ray — iso length ≠ player range).
     camera.updateMatrixWorld(true);
     this.aimRaycaster.setFromCamera(aimNdc, camera);
-    this.aimRaycaster.far = 200;
+    this.aimRaycaster.far = AIM_RAY_MAX;
 
     const physicsEngine = player.getPhysicsEngine();
     const physicsHit = physicsEngine?.performHitTest({
       origin: this.aimRaycaster.ray.origin,
       direction: this.aimRaycaster.ray.direction,
-      maxDistance: 200,
+      maxDistance: AIM_RAY_MAX,
       stopOnFirstHit: true,
       ignoredRootNodes: [player, carriedObject].filter(
         (node): node is ENGINE.SceneNode => node !== null,
       ),
     })[0];
+
+    // Step 3: is that hit a destructible prop?
     const physicsTarget = this.findDismantleTargetAncestor(
       physicsHit?.hitNode ?? physicsHit?.hitRoot ?? null,
     );
-    if (physicsTarget && this.isValidDismantleTarget(player, physicsTarget)) {
+    // Step 4: close enough for this prop's range?
+    if (physicsTarget && this.isCloseEnoughDismantleTarget(player, physicsTarget)) {
       return physicsTarget;
     }
 
+    // Mesh scan of every breakable is expensive — click only (still steps 3–4).
+    if (!options.meshFallback) {
+      return null;
+    }
     return this.findMeshRaycastDismantleTarget(world, player);
   }
 
@@ -993,12 +1112,7 @@ export class StreetLampDismantlingSystem {
     world: ENGINE.World,
     player: ENGINE.SceneNode,
   ): ENGINE.ModelMeshNode | null {
-    const candidates: ENGINE.ModelMeshNode[] = [];
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
-      if (this.isDismantleTargetNode(node) && this.isValidDismantleTarget(player, node)) {
-        candidates.push(node);
-      }
-    }
+    const candidates = this.getDismantleCandidates(world, player);
     if (candidates.length === 0) {
       return null;
     }
@@ -1006,14 +1120,48 @@ export class StreetLampDismantlingSystem {
     const hits = this.aimRaycaster.intersectObjects(candidates, true);
     for (const hit of hits) {
       const target = this.findDismantleTargetAncestor(hit.object);
-      if (target && this.isValidDismantleTarget(player, target)) {
+      if (target && this.isCloseEnoughDismantleTarget(player, target)) {
         return target;
       }
     }
     return null;
   }
 
+  private getDismantleCandidates(
+    world: ENGINE.World,
+    player: ENGINE.SceneNode,
+  ): ENGINE.ModelMeshNode[] {
+    if (this.dismantleCandidateCacheDirty) {
+      this.dismantleCandidateCache = [];
+      for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+        if (this.isDismantleTargetNode(node)) {
+          this.dismantleCandidateCache.push(node);
+        }
+      }
+      this.dismantleCandidateCacheDirty = false;
+    }
+    return this.dismantleCandidateCache.filter(
+      (node) => this.isCloseEnoughDismantleTarget(player, node),
+    );
+  }
+
+  public invalidateDismantleCandidates(): void {
+    this.dismantleCandidateCacheDirty = true;
+  }
+
+  /** Kept for click validation / callers that expect the old name. */
   private isValidDismantleTarget(
+    player: ENGINE.SceneNode,
+    target: ENGINE.ModelMeshNode,
+  ): boolean {
+    return this.isCloseEnoughDismantleTarget(player, target);
+  }
+
+  /**
+   * Cheap proximity check (no mesh AABB rebuild). Tall props use horizontal
+   * distance so tree/lamp height does not push the player "out of range".
+   */
+  private isCloseEnoughDismantleTarget(
     player: ENGINE.SceneNode,
     target: ENGINE.ModelMeshNode,
   ): boolean {
@@ -1024,9 +1172,35 @@ export class StreetLampDismantlingSystem {
       return false;
     }
 
-    const distance = this.getPlayerToTargetDistance(player, target);
     const range = this.getDismantleInteractionRange(target);
-    return distance <= range;
+    player.getWorldPosition(this.playerPosition);
+    const name = target.name ?? '';
+
+    if (this.isUtilityPoleTarget(name)) {
+      target.updateMatrixWorld(true);
+      target.getWorldPosition(this.targetCenter);
+      const minX = this.targetCenter.x - UTILITY_POLE_FOOTPRINT_HALF;
+      const maxX = this.targetCenter.x + UTILITY_POLE_FOOTPRINT_HALF;
+      const minZ = this.targetCenter.z - UTILITY_POLE_FOOTPRINT_HALF;
+      const maxZ = this.targetCenter.z + UTILITY_POLE_FOOTPRINT_HALF;
+      const closestX = THREE.MathUtils.clamp(this.playerPosition.x, minX, maxX);
+      const closestZ = THREE.MathUtils.clamp(this.playerPosition.z, minZ, maxZ);
+      return Math.hypot(
+        this.playerPosition.x - closestX,
+        this.playerPosition.z - closestZ,
+      ) <= range;
+    }
+
+    target.getWorldPosition(this.targetCenter);
+    const pad = CHERRY_BLOSSOM_TREE_NAME.test(name) ? 3.5
+      : BUSH_8_BB_NAME.test(name) ? 2
+        : TRAIL_MAP_KIOSK_NAME.test(name) ? 2
+          : 1;
+    const horizontal = Math.hypot(
+      this.playerPosition.x - this.targetCenter.x,
+      this.playerPosition.z - this.targetCenter.z,
+    );
+    return horizontal <= range + pad;
   }
 
   private getPlayerToTargetDistance(
@@ -1303,19 +1477,24 @@ export class StreetLampDismantlingSystem {
   }
 
   private setTarget(world: ENGINE.World | null, target: ENGINE.ModelMeshNode | null): void {
-    if (this.targetObject === target) {
+    const previous = this.targetObject;
+    if (previous === target) {
       return;
     }
     this.targetObject = target;
     if (!target) {
       this.treeHealthBar?.hide();
+      // Do not clear a pickup/scrap silhouette — only dismiss our dismantle outline.
+      if (previous && this.hoverSilhouette.activeTarget === previous) {
+        this.hoverSilhouette.setTarget(world, null);
+      }
+      return;
     }
-    if (world) {
-      world.postProcessManager.setOutlineSelection(target ? [target] : []);
-    }
+    this.hoverSilhouette.setTarget(world, target);
   }
 
   private dismantleTarget(world: ENGINE.World, target: ENGINE.ModelMeshNode): void {
+    this.dismantleCandidateCacheDirty = true;
     if (this.flashedTarget === target) {
       this.restoreHitFlash();
     }
@@ -1409,9 +1588,14 @@ export class StreetLampDismantlingSystem {
     const isStreetLamp = STREET_LAMP_NAME.test(targetName);
     const isCherryTree = CHERRY_BLOSSOM_TREE_NAME.test(targetName);
     const isTrailMapKiosk = TRAIL_MAP_KIOSK_NAME.test(targetName);
+    const isParkBench = PARK_BENCH_NAME.test(targetName);
     const poleOrdinanceDrops = notifyPoleCut
       ? this.collectPoleOrdinanceDropFlags(target)
       : undefined;
+    // Capture before hide — scrap prefab GLBs use a different baked palette.
+    const parkBenchMaterials = isParkBench
+      ? this.captureModelMaterials(target)
+      : null;
 
     if (isStreetLamp) {
       this.hideStreetLampOrdinanceBoards(target);
@@ -1428,6 +1612,7 @@ export class StreetLampDismantlingSystem {
       this.targetCenter.clone(),
       this.targetRotation.clone(),
       poleOrdinanceDrops,
+      parkBenchMaterials,
     ).then(() => {
       if (notifyPoleCut) {
         this.utilityPoleDismantledHandler?.();
@@ -1450,6 +1635,7 @@ export class StreetLampDismantlingSystem {
     position: THREE.Vector3,
     rotation: THREE.Quaternion,
     poleOrdinanceDrops?: { poleCut: boolean; highVoltage: boolean },
+    sourceMaterials?: THREE.Material[] | null,
   ): Promise<void> {
     try {
       const scraps = await ENGINE.spawnAsync<ENGINE.SceneNode>(prefabPath);
@@ -1457,8 +1643,24 @@ export class StreetLampDismantlingSystem {
       scraps.quaternion.copy(rotation);
       world.add(scraps);
       this.spawnedScrapRoots.push(scraps);
+      if (FALLEN_UTILITY_POLE_PREFABS.has(prefabPath)) {
+        this.nonPickupableScrapRoots.add(scraps);
+      }
+      this.dismantleCandidateCacheDirty = true;
       // WebGPU: scrap GLBs with castShadow are a major device-loss source.
       this.disableScrapShadows(scraps);
+      // Late-loaded child meshes can re-enable shadows — clear again next ticks.
+      queueMicrotask(() => this.disableScrapShadows(scraps));
+      window.setTimeout(() => this.disableScrapShadows(scraps), 250);
+      if (sourceMaterials && sourceMaterials.length > 0) {
+        this.markScrapSkipEnvironmentArt(scraps);
+        await this.waitForScrapModels(scraps);
+        this.applySourceMaterialsToScrap(scraps, sourceMaterials);
+        this.bindScrapMaterialReapply(scraps, sourceMaterials);
+        queueMicrotask(() => this.applySourceMaterialsToScrap(scraps, sourceMaterials));
+        window.setTimeout(() => this.applySourceMaterialsToScrap(scraps, sourceMaterials), 250);
+        window.setTimeout(() => this.applySourceMaterialsToScrap(scraps, sourceMaterials), 1000);
+      }
       if (prefabPath === BUSH_8_BB_DROP_PREFAB) {
         this.playBushTransformAnimation(scraps);
       }
@@ -1467,6 +1669,93 @@ export class StreetLampDismantlingSystem {
       }
     } catch (error) {
       console.error('[StreetLampDismantlingSystem] Failed to spawn scrap prefab.', error);
+    }
+  }
+
+  private async waitForScrapModels(scraps: ENGINE.SceneNode): Promise<void> {
+    const models = scraps instanceof ENGINE.ModelMeshNode
+      ? [scraps]
+      : scraps.getNodes(ENGINE.ModelMeshNode);
+    await Promise.all(models.map((model) => model.waitForLoad()));
+  }
+
+  private markScrapSkipEnvironmentArt(scraps: ENGINE.SceneNode): void {
+    const models = scraps instanceof ENGINE.ModelMeshNode
+      ? [scraps]
+      : scraps.getNodes(ENGINE.ModelMeshNode);
+    for (const model of models) {
+      model.userData[SKIP_ENVIRONMENT_ART_FLAG] = true;
+    }
+  }
+
+  private bindScrapMaterialReapply(
+    scraps: ENGINE.SceneNode,
+    sourceMaterials: THREE.Material[],
+  ): void {
+    const models = scraps instanceof ENGINE.ModelMeshNode
+      ? [scraps]
+      : scraps.getNodes(ENGINE.ModelMeshNode);
+    for (const model of models) {
+      model.userData[SKIP_ENVIRONMENT_ART_FLAG] = true;
+      model.onMeshLoaded.add(() => {
+        model.userData[SKIP_ENVIRONMENT_ART_FLAG] = true;
+        this.applySourceMaterialsToScrap(scraps, sourceMaterials);
+      });
+    }
+  }
+
+  /** Full material clones from the standing prop (keeps green albedo maps). */
+  private captureModelMaterials(source: ENGINE.ModelMeshNode): THREE.Material[] {
+    const materials: THREE.Material[] = [];
+    for (const mesh of source.getAllMeshes()) {
+      const list = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      for (const material of list) {
+        if (!material) {
+          continue;
+        }
+        const cloned = material.clone();
+        cloned.userData.summerAfternoonSurfaceStyle = true;
+        materials.push(cloned);
+      }
+    }
+    return materials;
+  }
+
+  private applySourceMaterialsToScrap(
+    scraps: ENGINE.SceneNode,
+    sourceMaterials: THREE.Material[],
+  ): void {
+    if (sourceMaterials.length === 0) {
+      return;
+    }
+    let materialIndex = 0;
+    const models = scraps instanceof ENGINE.ModelMeshNode
+      ? [scraps]
+      : scraps.getNodes(ENGINE.ModelMeshNode);
+    for (const model of models) {
+      model.userData[SKIP_ENVIRONMENT_ART_FLAG] = true;
+      for (const mesh of model.getAllMeshes()) {
+        const slots = Array.isArray(mesh.material) ? mesh.material.length : 1;
+        if (slots <= 1) {
+          const source = sourceMaterials[materialIndex % sourceMaterials.length]!;
+          materialIndex += 1;
+          const cloned = source.clone();
+          cloned.userData.summerAfternoonSurfaceStyle = true;
+          cloned.needsUpdate = true;
+          mesh.material = cloned;
+          continue;
+        }
+        const next: THREE.Material[] = [];
+        for (let slot = 0; slot < slots; slot += 1) {
+          const source = sourceMaterials[materialIndex % sourceMaterials.length]!;
+          materialIndex += 1;
+          const cloned = source.clone();
+          cloned.userData.summerAfternoonSurfaceStyle = true;
+          cloned.needsUpdate = true;
+          next.push(cloned);
+        }
+        mesh.material = next;
+      }
     }
   }
 
@@ -1590,11 +1879,13 @@ export class StreetLampDismantlingSystem {
     if (originalUrl && !this.meshSwapRecords.some((record) => record.node === pole)) {
       this.meshSwapRecords.push({ node: pole, modelUrl: originalUrl });
     }
-    this.markDismantled(pole);
+    // Visual-only swap for the linked standing pole — do NOT mark dismantled,
+    // or that pole becomes untargetable (e.g. Pole 16 after chopping Pole 17).
 
     try {
       await pole.loadModel(ENGINE.AssetPath.fromString(UTILITY_POLE_18_MODEL_URL));
       await pole.waitForLoad();
+      this.dismantleCandidateCacheDirty = true;
     } catch (error) {
       console.error('[StreetLampDismantlingSystem] Failed to swap utility pole mesh.', error);
     }

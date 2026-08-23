@@ -26,6 +26,8 @@ const SHOPHOUSE_DEPENDENT_NAMES = new Map<string, readonly string[]>([
 ]);
 const PLAYER_TARGET_LIFT = 0.9;
 const RAYCAST_CLEARANCE = 0.1;
+/** Skip full mesh tests when the camera/player barely moved. */
+const MOVE_EPSILON_SQ = 0.0025;
 
 type MaterialSwap = {
   mesh: THREE.Mesh;
@@ -44,6 +46,9 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
   private readonly cameraPosition = new THREE.Vector3();
   private readonly playerPosition = new THREE.Vector3();
   private readonly rayDirection = new THREE.Vector3();
+  private readonly lastCameraPosition = new THREE.Vector3();
+  private readonly lastPlayerPosition = new THREE.Vector3();
+  private readonly occluderBounds = new THREE.Box3();
   private readonly shophouses: ENGINE.ModelMeshNode[] = [];
   private readonly dependentModels = new Map<
     ENGINE.ModelMeshNode,
@@ -52,8 +57,12 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
   private readonly standaloneOccluders: ENGINE.ModelMeshNode[] = [];
   private readonly clouds: ENGINE.ModelMeshNode[] = [];
   private readonly cloudAuthoredVisibility = new Map<ENGINE.ModelMeshNode, boolean>();
+  private readonly meshCache = new Map<ENGINE.ModelMeshNode, THREE.Mesh[]>();
   private readonly hiddenMaterials = new Map<ENGINE.ModelMeshNode, MaterialSwap[]>();
+  private readonly sharedHiddenByOriginal = new WeakMap<THREE.Material, THREE.Material>();
   private player: ThirdPersonPlayer | null = null;
+  private tickCounter = 0;
+  private hasSampledPose = false;
 
   constructor() {
     super();
@@ -87,6 +96,7 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
     this.clouds.length = 0;
     this.clouds.push(...models.filter((node) => CLOUD_NAME.test(node.name)));
     this.cloudAuthoredVisibility.clear();
+    this.meshCache.clear();
     for (const cloud of this.clouds) {
       this.cloudAuthoredVisibility.set(cloud, cloud.visible);
     }
@@ -97,6 +107,7 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
         models.filter((node) => names.includes(node.name)),
       );
     }
+    this.hasSampledPose = false;
     return true;
   }
 
@@ -107,6 +118,7 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
     this.restoreAll();
     this.restoreClouds();
     this.player = null;
+    this.meshCache.clear();
     return true;
   }
 
@@ -125,6 +137,19 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
     camera.getWorldPosition(this.cameraPosition);
     this.player.getWorldPosition(this.playerPosition);
     this.playerPosition.y += PLAYER_TARGET_LIFT;
+
+    this.tickCounter += 1;
+    const moved = !this.hasSampledPose
+      || this.cameraPosition.distanceToSquared(this.lastCameraPosition) > MOVE_EPSILON_SQ
+      || this.playerPosition.distanceToSquared(this.lastPlayerPosition) > MOVE_EPSILON_SQ;
+    // When the view is still, only re-test every other frame.
+    if (!moved && (this.tickCounter & 1) === 1) {
+      return;
+    }
+    this.lastCameraPosition.copy(this.cameraPosition);
+    this.lastPlayerPosition.copy(this.playerPosition);
+    this.hasSampledPose = true;
+
     this.rayDirection.subVectors(this.playerPosition, this.cameraPosition);
     const distance = this.rayDirection.length();
     if (distance <= RAYCAST_CLEARANCE) {
@@ -138,20 +163,13 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
     this.raycaster.near = RAYCAST_CLEARANCE;
     this.raycaster.far = distance - RAYCAST_CLEARANCE;
 
-    // Test clouds in their authored visible state every frame. A cloud that
-    // was hidden in the previous frame must still be eligible to reappear as
-    // soon as the camera/player line is clear again.
     for (const cloud of this.clouds) {
       cloud.visible = this.cloudAuthoredVisibility.get(cloud) ?? true;
     }
 
     const occluding = new Set<ENGINE.ModelMeshNode>();
     for (const shophouse of this.shophouses) {
-      const meshes = shophouse.getAllMeshes();
-      if (meshes.length === 0) {
-        continue;
-      }
-      if (this.raycaster.intersectObjects(meshes, true).length > 0) {
+      if (this.rayHitsModel(shophouse)) {
         occluding.add(shophouse);
       }
     }
@@ -164,19 +182,37 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
       }
     }
     for (const occluder of this.standaloneOccluders) {
-      if (this.raycaster.intersectObjects(occluder.getAllMeshes(), true).length > 0) {
+      if (this.rayHitsModel(occluder)) {
         this.makeModelTranslucent(occluder);
       } else {
         this.restoreModel(occluder);
       }
     }
     for (const cloud of this.clouds) {
-      const blocksPlayer = cloud.visible
-        && this.raycaster.intersectObjects(cloud.getAllMeshes(), true).length > 0;
-      // Clouds should disappear completely—not become translucent—so the
-      // player never has a pale cloud layer covering them.
+      const blocksPlayer = cloud.visible && this.rayHitsModel(cloud);
       cloud.visible = !blocksPlayer;
     }
+  }
+
+  private rayHitsModel(model: ENGINE.ModelMeshNode): boolean {
+    const meshes = this.getCachedMeshes(model);
+    if (meshes.length === 0) {
+      return false;
+    }
+    this.occluderBounds.setFromObject(model);
+    if (!this.occluderBounds.isEmpty() && !this.raycaster.ray.intersectsBox(this.occluderBounds)) {
+      return false;
+    }
+    return this.raycaster.intersectObjects(meshes, false).length > 0;
+  }
+
+  private getCachedMeshes(model: ENGINE.ModelMeshNode): THREE.Mesh[] {
+    let meshes = this.meshCache.get(model);
+    if (!meshes || meshes.length === 0) {
+      meshes = model.getAllMeshes();
+      this.meshCache.set(model, meshes);
+    }
+    return meshes;
   }
 
   private makeTranslucent(shophouse: ENGINE.ModelMeshNode): void {
@@ -190,23 +226,29 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
       return;
     }
     const swaps: MaterialSwap[] = [];
-    for (const mesh of model.getAllMeshes()) {
+    for (const mesh of this.getCachedMeshes(model)) {
       const original = mesh.material;
       const hidden = Array.isArray(original)
-        ? original.map((material) => this.createHiddenMaterial(material))
-        : this.createHiddenMaterial(original);
+        ? original.map((material) => this.getSharedHiddenMaterial(material))
+        : this.getSharedHiddenMaterial(original);
       mesh.material = hidden;
       swaps.push({ mesh, original, hidden });
     }
     this.hiddenMaterials.set(model, swaps);
   }
 
-  private createHiddenMaterial(material: THREE.Material): THREE.Material {
+  /** One translucent clone per source material — avoids per-toggle GPU churn. */
+  private getSharedHiddenMaterial(material: THREE.Material): THREE.Material {
+    const existing = this.sharedHiddenByOriginal.get(material);
+    if (existing) {
+      return existing;
+    }
     const hidden = material.clone();
     hidden.transparent = true;
     hidden.opacity = 0.12;
     hidden.depthWrite = false;
     hidden.needsUpdate = true;
+    this.sharedHiddenByOriginal.set(material, hidden);
     return hidden;
   }
 
@@ -223,10 +265,7 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
     }
     for (const swap of swaps) {
       swap.mesh.material = swap.original;
-      const hiddenMaterials = Array.isArray(swap.hidden) ? swap.hidden : [swap.hidden];
-      for (const material of hiddenMaterials) {
-        material.dispose();
-      }
+      // Shared translucent materials are reused — do not dispose here.
     }
     this.hiddenMaterials.delete(model);
   }

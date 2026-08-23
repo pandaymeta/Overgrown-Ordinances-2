@@ -91,7 +91,21 @@ export class AxePickupRingSystem extends ENGINE.SceneNode {
       this.destroyRing();
       return;
     }
+  }
 
+  /** Show the ring again at the axe after a next-day reset (axe is put back). */
+  public resetForNewDay(): void {
+    this.pickedUp = false;
+    const world = this.getWorld();
+    if (!world) {
+      return;
+    }
+    this.axe = null;
+    this.player = world.getNodes(ThirdPersonPlayer)[0] ?? null;
+    this.initializePreview(world);
+    if (this.ring) {
+      this.ring.visible = true;
+    }
   }
 
   private applyVisualStyle(): void {

@@ -60,7 +60,9 @@ import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
 import { createAirmailEnvelope, disposeAirmailEnvelope } from './airmail-envelope.js';
+import { AxePickupRingSystem } from './axe-pickup-ring.js';
 import { CatMailCourier } from './cat-mail-courier.js';
+import { HoverSilhouette } from './hover-silhouette.js';
 import { ThirdPersonPlayer } from './player.js';
 import { ensureOvergrownAveriaFont } from './overgrown-averia-font.js';
 import { playBrushReveal, waitForStartupBrushReveal } from './startup-brush-reveal.js';
@@ -72,7 +74,7 @@ const DEFAULT_CAMERA_DISTANCE = 20;
 /** Orbit yaw for the corner-toward-camera isometric framing (pitch stays locked). */
 const INTRO_ISOMETRIC_YAW_DEG = 45;
 /** Close-up cinematic distance in front of mailbox / ordinance models. */
-const MODEL_FOCUS_DISTANCE = 2;
+const MODEL_FOCUS_DISTANCE = 2.2;
 const SPEECH_DURATION_SEC = 3;
 /** Smooth intro zoom-in from wide isometric → default play distance. */
 const INTRO_ZOOM_IN_SEC = 2;
@@ -82,7 +84,7 @@ const DELIVERY_POST_INSERT_SEC = 0.55;
 /** Smooth blend from gameplay cam into model-front cinematic. */
 const CINEMATIC_BLEND_SEC = 1.15;
 /** Smooth blend from ordinance cinematic back to the player cam. */
-const CINEMATIC_RETURN_SEC = 2.4;
+const CINEMATIC_RETURN_SEC = 2.8;
 const FADE_SEC = 0.85;
 const NEXT_DAY_LABEL_SEC = 2;
 const NEXT_DAY_TEXT = 'The Next Day...';
@@ -379,6 +381,12 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private phaseElapsed = 0;
   private player: ThirdPersonPlayer | null = null;
   private mailbox: ENGINE.ModelMeshNode | null = null;
+  /** Cached AABB / meshes so near-mailbox hover does not rebuild bounds every frame. */
+  private readonly mailboxBounds = new THREE.Box3();
+  private readonly mailboxCenter = new THREE.Vector3();
+  private mailboxRangeRadius = DELIVER_MAX_DISTANCE;
+  private mailboxMeshes: THREE.Mesh[] = [];
+  private mailboxBoundsReady = false;
   private maintenance: ENGINE.ModelMeshNode | null = null;
   private jaywalking: ENGINE.ModelMeshNode | null = null;
   private doNotStepCar: ENGINE.ModelMeshNode | null = null;
@@ -620,6 +628,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private readonly raycaster = new THREE.Raycaster();
   private readonly upAxis = new THREE.Vector3(0, 1, 0);
   private pulseTime = 0;
+  private prePhysicsTickId = 0;
+  private cachedModelMeshes: ENGINE.ModelMeshNode[] = [];
+  private modelMeshCacheTick = -1;
+  private readonly mailboxPulseTint = new THREE.Color();
+  private readonly mailboxPulseSoft = new THREE.Color(0xff7777);
   private introSpeechText = 'How can I\ndeliver this letter?';
   private speechTypingText = '';
   private speechTypingElapsed = 0;
@@ -633,7 +646,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   /** After the next-day speech bubble auto-hides, pulse the ground tutorial keys. */
   private pendingTutorialKeysAfterSpeech = false;
   private outlineReady = false;
+  private outlinePassEnabled = false;
   private mailboxHovered = false;
+  private readonly mailboxHoverSilhouette = new HoverSilhouette();
   private playableGraceRemaining = 0;
   private mainRoadLoopTriggered = false;
   private leftSideRoadLoopTriggered = false;
@@ -821,6 +836,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.setMailboxHighlight(false);
     this.clearRoadHighlight();
     this.setMailboxHoverOutline(false);
+    this.mailboxHoverSilhouette.clear();
     // Restore authored edit-mode visibility so ordinance boards stay visible in the editor.
     this.restoreOrdinanceVisibilityForEditMode();
     this.catMailCourier.dispose();
@@ -843,11 +859,15 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   public override tickPrePhysics(deltaTime: number): void {
     super.tickPrePhysics(deltaTime);
     this.lastPrePhysicsDeltaTime = Math.max(deltaTime, 1e-5);
+    this.prePhysicsTickId += 1;
     if (this.phase === FlowPhase.Boot) {
       return;
     }
 
     const world = this.getWorld();
+    if (world) {
+      this.refreshModelMeshCache(world);
+    }
     if (world && !this.speechEl) {
       this.ensureUi(world);
       if (this.phase === FlowPhase.IntroSpeech) {
@@ -917,7 +937,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     if (this.phase === FlowPhase.AwaitingDelivery || this.phase === FlowPhase.ZoomOutReveal) {
       this.updateMailboxHoverOutline();
+      this.mailboxHoverSilhouette.syncTransforms();
       this.catMailCourier.tickHoverOutline();
+    } else {
+      this.setMailboxHoverOutline(false);
     }
   }
 
@@ -931,6 +954,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.player = await this.waitForPlayer(world, controller ?? null);
     this.player?.setMailEnvelopeCarried(true);
     this.mailbox = this.findModelByName(MAILBOX_NAME);
+    this.refreshMailboxCache();
     this.maintenance = this.findModelByName(MAINTENANCE_NAME);
     this.jaywalking = this.findModelByName(JAYWALKING_NAME);
     this.doNotStepCar = this.findModelByName(DO_NOT_STEP_CAR_NAME);
@@ -1235,6 +1259,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.treeCutSoftLoopDelayRemaining = 0;
       this.signsSoftLoopDelayRemaining = 0;
       this.streetLampDestroySoftLoopDelayRemaining = 0;
+      this.getWorld()?.getNodes(AxePickupRingSystem).forEach((ring) => ring.resetForNewDay());
     }
     this.stopModelFrontCinematic();
     this.playableGraceRemaining = 1.35;
@@ -1288,7 +1313,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.player?.setMailEnvelopeCarried(false);
       return true;
     }
-    if (!this.isMailboxInRange() || !this.isAimingAtMailbox()) {
+    // Only evaluate mailbox on click: far away → ignore (no hover/outline work).
+    if (!this.isMailboxInRange()) {
+      return false;
+    }
+    if (!this.isAimingAtMailbox()) {
       return false;
     }
     this.deliveryVia = 'mailboxClick';
@@ -1499,16 +1528,17 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return false;
     }
     this.player.getWorldPosition(this.tmpPlayerPos);
-    this.tmpBounds.setFromObject(this.mailbox);
-    if (this.tmpBounds.isEmpty()) {
+    if (!this.mailboxBoundsReady) {
+      this.refreshMailboxCache();
+    }
+    if (!this.mailboxBoundsReady) {
       this.mailbox.getWorldPosition(this.tmpMailboxPos);
       return this.tmpPlayerPos.distanceTo(this.tmpMailboxPos) <= DELIVER_MAX_DISTANCE;
     }
-    this.tmpBounds.clampPoint(this.tmpPlayerPos, this.tmpMailboxPos);
-    return this.tmpPlayerPos.distanceTo(this.tmpMailboxPos) <= DELIVER_MAX_DISTANCE;
+    return this.tmpPlayerPos.distanceTo(this.mailboxCenter) <= this.mailboxRangeRadius;
   }
 
-  /** Cursor aims at mailbox meshes or their expanded bounds (top-down friendly). */
+  /** Cursor aims at mailbox meshes or their expanded bounds (top-down friendly). Click-only. */
   private isAimingAtMailbox(): boolean {
     if (!this.player || !this.mailbox) {
       return false;
@@ -1519,24 +1549,45 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     this.player.getAimNdc(this.tmpNdc);
     this.raycaster.setFromCamera(this.tmpNdc, camera);
-    this.raycaster.far = 200;
+    this.raycaster.far = 40;
 
-    const meshes = this.mailbox.getAllMeshes();
-    if (meshes.length > 0) {
-      const hits = this.raycaster.intersectObjects(meshes, true);
+    if (!this.mailboxBoundsReady) {
+      this.refreshMailboxCache();
+    }
+    if (this.mailboxMeshes.length > 0) {
+      const hits = this.raycaster.intersectObjects(this.mailboxMeshes, true);
       if (hits.length > 0) {
         return true;
       }
     }
 
-    this.tmpBounds.setFromObject(this.mailbox);
+    this.tmpBounds.copy(this.mailboxBounds);
     if (this.tmpBounds.isEmpty()) {
-      this.mailbox.getWorldPosition(this.tmpMailboxPos);
-      this.tmpBounds.setFromCenterAndSize(this.tmpMailboxPos, new THREE.Vector3(1.2, 2.2, 1.2));
+      this.tmpBounds.setFromCenterAndSize(this.mailboxCenter, new THREE.Vector3(1.2, 2.2, 1.2));
     } else {
       this.tmpBounds.expandByScalar(0.35);
     }
     return this.raycaster.ray.intersectBox(this.tmpBounds, this.tmpHitPoint) !== null;
+  }
+
+  private refreshMailboxCache(): void {
+    this.mailboxBoundsReady = false;
+    this.mailboxMeshes = [];
+    this.mailboxRangeRadius = DELIVER_MAX_DISTANCE;
+    if (!this.mailbox) {
+      return;
+    }
+    this.mailbox.getWorldPosition(this.mailboxCenter);
+    this.mailboxBounds.setFromObject(this.mailbox);
+    this.mailboxMeshes = this.mailbox.getAllMeshes();
+    if (!this.mailboxBounds.isEmpty()) {
+      this.mailboxBounds.getCenter(this.mailboxCenter);
+      const size = this.tmpDir;
+      this.mailboxBounds.getSize(size);
+      const halfSpan = 0.5 * Math.max(size.x, size.z);
+      this.mailboxRangeRadius = DELIVER_MAX_DISTANCE + halfSpan;
+    }
+    this.mailboxBoundsReady = true;
   }
 
   private completeDelivery(): void {
@@ -3593,7 +3644,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     this.ensureRestrictedRoadCaches();
 
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!CARGO_CRATE_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -3630,7 +3681,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     this.ensureRestrictedRoadCaches();
 
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!PARK_BENCH_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -3668,7 +3719,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.ensureRestrictedRoadCaches();
 
     // Prefab-spawned logs are named "Log" / "Log 2"… (see cherry-blossom-tree-drops).
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!this.isCarryableLogProp(node)) {
         continue;
       }
@@ -3713,7 +3764,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     this.ensureRestrictedRoadCaches();
 
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!this.isWoodPlanksRoadProp(node)) {
         continue;
       }
@@ -3771,7 +3822,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     this.ensureRestrictedRoadCaches();
 
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!this.isScrapMetalRoadProp(node)) {
         continue;
       }
@@ -4283,7 +4334,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.player.getWorldPosition(this.tmpPlayerPos);
     this.tmpPlayerPos.y -= this.pawnFeetBelowRoot;
 
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!this.isKioskWoodProp(node) || !node.visible || !node.parent) {
         continue;
       }
@@ -4565,7 +4616,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!CLIMB_CAR_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -4586,7 +4637,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!CITY_TRAM_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -4672,7 +4723,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!STANDING_UTILITY_POLE_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -4686,7 +4737,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!KANJI_SIGN_PLATFORM_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -4701,7 +4752,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!STREET_LIGHTS_CLIMB_ANY_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -4749,7 +4800,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!STREET_LIGHTS_DESTROY_ANY_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -4794,7 +4845,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!DONT_FEED_THE_CAT_ANY_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -4839,7 +4890,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!NO_CATS_ON_STREETS_ANY_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -4884,7 +4935,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!NO_CRATES_ON_ROADS_ANY_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -4932,7 +4983,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!NO_BENCH_ON_ROADS_ANY_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -4980,7 +5031,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!NO_LOGS_ON_ROADS_ANY_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -5028,7 +5079,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!NO_WOOD_PLANKS_ON_ROADS_ANY_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -5076,7 +5127,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!DONT_REMOVE_THE_CONES_ANY_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -5120,7 +5171,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!NO_SCRAP_METALS_ON_ROADS_ANY_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -5167,7 +5218,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!DONT_REMOVE_THIS_BUSH_ANY_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -5212,7 +5263,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!DONT_REMOVE_THIS_KIOSK_ANY_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -5257,7 +5308,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!DONT_CUT_THIS_POLE_ANY_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -5302,7 +5353,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!DO_NOT_DESTROY_THIS_SIGN_ANY_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -5347,7 +5398,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!DONT_HIT_THE_FIRE_HYDRANT_ANY_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -5392,7 +5443,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!HIGH_VOLTAGE_ANY_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -5437,7 +5488,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!NO_CUTTING_OF_TREES_ANY_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -5482,7 +5533,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!NO_CLIMBING_ON_THE_TREE_ANY_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -5529,7 +5580,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!DO_NOT_REMOVE_THE_SIGNS_ANY_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -5573,7 +5624,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!TRAFFIC_CONE_PLATFORM_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -5587,7 +5638,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!FALLEN_UTILITY_POLE_PLATFORM_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -5601,7 +5652,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       const name = node.name ?? '';
       if (!FALLEN_ORDINANCE_SIGN_PLATFORM_NAME.test(name)) {
         continue;
@@ -5623,7 +5674,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (!STREET_LAMP_SCRAP_PLATFORM_NAME.test(node.name ?? '')) {
         continue;
       }
@@ -5711,7 +5762,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       const name = node.name ?? '';
       if (TRAFFIC_CONE_NAME.test(name) || CONES_NAME.test(name)) {
         this.trafficCones.push(node);
@@ -5725,7 +5776,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
     this.hiddenOrdinances = [];
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       const url = node.modelUrl ?? '';
       const name = node.name ?? '';
       const isOrdinanceModel = ORDINANCE_MODEL_PATH.test(url);
@@ -5758,7 +5809,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       const name = node.name ?? '';
       if (
         DONT_CUT_THIS_POLE_ANY_NAME.test(name)
@@ -5846,7 +5897,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!world) {
       return null;
     }
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       if (pattern.test(node.name ?? '')) {
         return node;
       }
@@ -5859,7 +5910,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
     world.postProcessManager.configureEffect(ENGINE.PostProcessPass.ObjectOutline, {
-      enabled: true,
+      enabled: false,
       edgeStrength: 2.5,
       edgeThickness: 1.75,
       visibleEdgeColor: OUTLINE_GREEN,
@@ -5869,20 +5920,34 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       edgeBlur: 0,
     });
     this.outlineReady = true;
+    this.outlinePassEnabled = false;
+  }
+
+  private setOutlinePassEnabled(world: ENGINE.World, enabled: boolean): void {
+    this.ensureGreenOutline(world);
+    if (this.outlinePassEnabled === enabled) {
+      return;
+    }
+    world.postProcessManager.configureEffect(ENGINE.PostProcessPass.ObjectOutline, {
+      enabled,
+      edgeStrength: 2.5,
+      edgeThickness: 1.75,
+      visibleEdgeColor: OUTLINE_GREEN,
+      hiddenEdgeColor: OUTLINE_GREEN,
+      showHiddenEdge: false,
+      useRootGrouping: true,
+      edgeBlur: 0,
+    });
+    this.outlinePassEnabled = enabled;
   }
 
   private updateMailboxHoverOutline(): void {
-    if (this.catMailCourier.isInteractable()) {
-      // Cat outline is applied in tickHoverOutline after this call.
+    if (this.phase !== FlowPhase.AwaitingDelivery) {
       this.setMailboxHoverOutline(false);
       return;
     }
-    const canHover = this.phase === FlowPhase.AwaitingDelivery
-      || this.phase === FlowPhase.ZoomOutReveal;
-    const hovered = canHover
-      && this.isMailboxInRange()
-      && this.isAimingAtMailbox();
-    this.setMailboxHoverOutline(hovered);
+    const show = this.isMailboxInRange() && this.isAimingAtMailbox();
+    this.setMailboxHoverOutline(show);
   }
 
   private setMailboxHoverOutline(enabled: boolean): void {
@@ -5892,14 +5957,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.mailboxHovered = enabled;
     const world = this.getWorld();
     if (!world || !this.mailbox) {
+      this.mailboxHoverSilhouette.setTarget(null, null);
       return;
     }
-    this.ensureGreenOutline(world);
-    if (enabled) {
-      world.postProcessManager.setOutlineSelection([this.mailbox]);
-    } else {
-      world.postProcessManager.clearOutlineSelection();
-    }
+    this.mailboxHoverSilhouette.setTarget(world, enabled ? this.mailbox : null);
   }
 
   private setMailboxHighlight(enabled: boolean): void {
@@ -5960,7 +6021,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       }
     }
     const pulse = 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(this.pulseTime * 4.5));
-    const tint = HIGHLIGHT_RED.clone().lerp(new THREE.Color(0xff7777), pulse);
+    this.mailboxPulseTint.copy(HIGHLIGHT_RED).lerp(this.mailboxPulseSoft, pulse);
     for (const record of this.mailboxPulseRecords) {
       const mats = Array.isArray(record.pulseMaterial)
         ? record.pulseMaterial
@@ -5971,16 +6032,28 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
           emissive?: THREE.Color;
           emissiveIntensity?: number;
         };
-        m.color?.copy(tint);
+        m.color?.copy(this.mailboxPulseTint);
         if (m.emissive) {
           m.emissive.copy(HIGHLIGHT_EMISSIVE).multiplyScalar(0.55 + pulse * 0.9);
           if (typeof m.emissiveIntensity === 'number') {
             m.emissiveIntensity = 0.55 + pulse * 1.6;
           }
         }
-        m.needsUpdate = true;
       }
     }
+  }
+
+  /** Refresh once per prePhysics tick so ordinance polls do not re-walk the world graph. */
+  private refreshModelMeshCache(world: ENGINE.World): void {
+    this.cachedModelMeshes = world.getNodes(ENGINE.ModelMeshNode);
+    this.modelMeshCacheTick = this.prePhysicsTickId;
+  }
+
+  private getModelMeshes(world: ENGINE.World): ENGINE.ModelMeshNode[] {
+    if (this.modelMeshCacheTick !== this.prePhysicsTickId) {
+      this.refreshModelMeshCache(world);
+    }
+    return this.cachedModelMeshes;
   }
 
   private restoreMailboxMaterials(): void {
@@ -6785,7 +6858,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.pushDaySnapshot(root);
     }
 
-    for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    for (const node of this.getModelMeshes(world)) {
       this.pushDaySnapshot(node);
     }
 
@@ -7151,11 +7224,14 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.cinematicReturningToPlayer = false;
     this.resolveOrdinanceCinematicLookAt(target, this.cinematicLookAt);
 
+    // Most boards read on local +Z. Lit red boards (PoleCut / Wires / StreetLightsDestroy)
+    // are authored with readable text on local -Z — +Z shows a mirrored double-sided face.
+    const localForwardZ = this.isLitRedOrdinanceBoard(target) ? -1 : 1;
     target.getWorldQuaternion(this.tmpQuat);
-    this.tmpForward.set(0, 0, 1).applyQuaternion(this.tmpQuat);
+    this.tmpForward.set(0, 0, localForwardZ).applyQuaternion(this.tmpQuat);
     this.tmpForward.y = 0;
     if (this.tmpForward.lengthSq() < 1e-6) {
-      this.tmpForward.set(0, 0, 1);
+      this.tmpForward.set(0, 0, localForwardZ);
     } else {
       this.tmpForward.normalize();
     }
@@ -7196,6 +7272,20 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     camNode.setActive(true);
     this.cinematicActive = true;
     this.updateModelFrontCinematic(0);
+  }
+
+  /** PoleCut / Wires / StreetLightsDestroy — readable face is local -Z. */
+  private isLitRedOrdinanceBoard(target: ENGINE.SceneNode): boolean {
+    const redBoardUrl = /PolyforkAssets\/Ordinances\/(PoleCut|Wires|StreetLightsDestroy)\.glb/i;
+    const redBoardName =
+      /^(?:DontCutThisPole|Dont Cut this pole|Pole Cut|Wires|Street Lights Destroy)(?:\s+\d+)?$/i;
+    // Only the focused node — do not scan descendants/world (that pulled in red boards
+    // and flipped Maintenance / JayWalking / Bench focus shots).
+    if (redBoardName.test(target.name ?? '')) {
+      return true;
+    }
+    return target instanceof ENGINE.ModelMeshNode
+      && redBoardUrl.test(target.modelUrl ?? '');
   }
 
   /**
@@ -7324,26 +7414,22 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
   /** Seamless handoff: align to gameplay pose, then drop the view-target override. */
   private finishCinematicReturnToPlayer(): void {
-    if (this.cinematicReturningToPlayer) {
-      this.syncCinematicReturnEndPose(false);
-      if (this.viewTargetCam) {
-        this.viewTargetCam.position.copy(this.cinematicEndPos);
-        this.viewTargetCam.quaternion.copy(this.cinematicEndQuat);
-        this.viewTargetCam.updateMatrixWorld(true);
-      }
+    if (this.cinematicReturningToPlayer && this.viewTargetCam) {
+      this.viewTargetCam.position.copy(this.cinematicEndPos);
+      this.viewTargetCam.quaternion.copy(this.cinematicEndQuat);
+      this.viewTargetCam.updateMatrixWorld(true);
     }
     this.stopModelFrontCinematic();
-    this.player?.resetGameplayCameraToDefault(this.cinematicReturnDistance);
+    // End pose was captured once — avoid a second resetGameplayCamera snap that causes jitter.
+    this.player?.setCameraTargetDistance(this.cinematicReturnDistance, true);
+    this.player?.resetSmoothCameraFollowHeight();
   }
 
   private updateModelFrontCinematic(deltaTime: number): void {
     if (!this.cinematicActive || !this.viewTargetCam) {
       return;
     }
-    if (this.cinematicReturningToPlayer) {
-      // Keep the prepared gameplay end pose stable so the return blend stays smooth.
-      this.syncCinematicReturnEndPose(false);
-    }
+    // Do not re-sample the gameplay end pose every frame — that makes the return jitter.
     const blendSec = this.cinematicReturningToPlayer ? CINEMATIC_RETURN_SEC : CINEMATIC_BLEND_SEC;
     if (blendSec <= 0) {
       this.cinematicBlend = 1;
@@ -7351,7 +7437,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.cinematicBlend = Math.min(1, this.cinematicBlend + deltaTime / blendSec);
     }
     const t = this.cinematicBlend;
-    const eased = t * t * (3 - 2 * t);
+    // Smoothstep then ease-out so the last stretch into 20m settles gently.
+    const smooth = t * t * (3 - 2 * t);
+    const eased = 1 - (1 - smooth) * (1 - smooth);
     this.viewTargetCam.position.lerpVectors(
       this.cinematicStartPos,
       this.cinematicEndPos,

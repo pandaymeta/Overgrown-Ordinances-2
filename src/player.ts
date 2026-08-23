@@ -5,6 +5,7 @@ import { createAirmailEnvelope, disposeAirmailEnvelope } from './airmail-envelop
 import { installAnimationOneShotHostPatch } from './animation-oneshot-host-patch.js';
 import { CarryableCrateNode } from './carryable-crate-node.js';
 import { FaceMovementCharacterMovementNode } from './face-movement-character-movement.js';
+import { HoverSilhouette } from './hover-silhouette.js';
 import { StreetLampDismantlingSystem } from './street-lamp-dismantling-system.js';
 
 installAnimationOneShotHostPatch(ENGINE);
@@ -41,6 +42,9 @@ const MAIL_ENVELOPE_LEFT_HAND_ROTATION = new THREE.Euler(
 );
 const MAIL_ENVELOPE_HIGHLIGHT_RED = new THREE.Color(0xff2f2f);
 const MAIL_ENVELOPE_HIGHLIGHT_EMISSIVE = new THREE.Color(0xff0000);
+/** Pickup hover aim recheck — matches axe outline cadence. */
+const PICKUP_AIM_RAY_MAX = 40;
+const PICKUP_OUTLINE_INTERVAL = 0.1;
 
 type LocomotionAnimationParameters = {
   isClimbing: boolean;
@@ -80,7 +84,8 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
   private readonly settleForward = new THREE.Vector3();
   private readonly settleQuaternion = new THREE.Quaternion();
   private readonly downDir = new THREE.Vector3(0, -1, 0);
-  private readonly streetLampDismantling = new StreetLampDismantlingSystem();
+  private readonly hoverSilhouette = new HoverSilhouette();
+  private readonly streetLampDismantling = new StreetLampDismantlingSystem(this.hoverSilhouette);
   private readonly playAxeAttackAnimation = (): void => {
     if (!this.animationNode?.isReady()) {
       return;
@@ -99,6 +104,11 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
 
   private cameraYawPivot: ENGINE.SceneNode | null = null;
   private cameraTargetDistance = INITIAL_CAMERA_DISTANCE;
+  /** Smooth follow height so stepping onto ledges does not yank the orbit camera. */
+  private smoothedCameraFollowY = 0;
+  private hasSmoothedCameraFollowY = false;
+  private readonly cameraFollowYSmoothing = 7;
+  private readonly cameraFollowWorldPos = new THREE.Vector3();
   /** Current pitch degrees applied to CameraPivot (intro can override the locked -45°). */
   private cameraPitchDegrees = LOCKED_CAMERA_PITCH_DEGREES;
   /**
@@ -125,6 +135,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
   private readonly mailEnvelopeOffset = new THREE.Vector3();
   private readonly mailEnvelopeBaseColors: THREE.Color[] = [];
   private hoveredCarryable: ENGINE.PrimitiveNode | null = null;
+  private pickupOutlineElapsed = 0;
   private calculatedThrowFlightTime: number = 0.65;
   private readonly thrownGravityRestores: Array<{
     crate: ENGINE.PrimitiveNode;
@@ -133,6 +144,18 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     settleFlat: boolean;
   }> = [];
   private trajectoryRibbon: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial> | null = null;
+  private readonly trajectoryPoints: THREE.Vector3[] = Array.from(
+    { length: 61 },
+    () => new THREE.Vector3(),
+  );
+  private readonly trajectoryOrigin = new THREE.Vector3();
+  private readonly trajectoryVelocity = new THREE.Vector3();
+  private readonly trajectoryNext = new THREE.Vector3();
+  private readonly trajectoryTangent = new THREE.Vector3();
+  private readonly trajectoryView = new THREE.Vector3();
+  private readonly trajectorySide = new THREE.Vector3();
+  private readonly trajectoryCameraPosition = new THREE.Vector3();
+  private trajectoryPointCount = 0;
 
   /** Radians/sec toward the target body facing. Higher = snappier turn. */
   @ENGINE.property({ type: 'number', min: 1, max: 40, step: 0.5, category: 'Movement' })
@@ -320,6 +343,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     }
     this.applyIntroMeshFacing();
     this.applyLockedPitch();
+    this.resetSmoothCameraFollowHeight();
     this.updateMatrixWorld(true);
     if (this.camera) {
       this.camera.updateMatrixWorld(true);
@@ -696,6 +720,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     movementNode.setVelocities(0, 0, 0);
     movementNode.setGrounded(found);
     this.updateMatrixWorld(true);
+    this.resetSmoothCameraFollowHeight();
     this.forceIdlePose();
     return found;
   }
@@ -769,6 +794,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
   public override tickPrePhysics(deltaTime: number): void {
     this.applyMovementFreeze();
     this.updateSmoothCameraZoom(deltaTime);
+    this.updateSmoothCameraFollowHeight(deltaTime);
     this.updateSmoothCameraLook(deltaTime);
     this.updateMoveBasisFromCamera();
     super.tickPrePhysics(deltaTime);
@@ -786,7 +812,8 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
       this.carryAimNdc,
       deltaTime,
     );
-    this.updateHoveredCarryable();
+    this.updateHoveredCarryable(deltaTime);
+    this.hoverSilhouette.syncTransforms();
     this.respawnIfBelowWorld();
   }
 
@@ -810,6 +837,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     }
 
     this.streetLampDismantling.clear(this.getWorld());
+    this.hoverSilhouette.clear();
     this.getWorld()?.postProcessManager.clearOutlineSelection();
     this.hoveredCarryable = null;
     this.releaseCarriedCrate();
@@ -1088,8 +1116,54 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
       : nextDistance;
   }
 
-  private updateHoveredCarryable(): void {
-    const target = this.carriedCrate ? null : this.findPointedCarryable();
+  /**
+   * Counter-offset the yaw pivot so parent Y steps (ledges / shop bases) ease
+   * into the camera instead of snapping.
+   */
+  private updateSmoothCameraFollowHeight(deltaTime: number): void {
+    if (!this.cameraYawPivot || this.cinematicCameraLock) {
+      return;
+    }
+    this.getWorldPosition(this.cameraFollowWorldPos);
+    const playerY = this.cameraFollowWorldPos.y;
+    if (!this.hasSmoothedCameraFollowY) {
+      this.smoothedCameraFollowY = playerY;
+      this.hasSmoothedCameraFollowY = true;
+    }
+    const blend = 1 - Math.exp(-this.cameraFollowYSmoothing * deltaTime);
+    this.smoothedCameraFollowY += (playerY - this.smoothedCameraFollowY) * blend;
+    this.cameraYawPivot.position.y = this.smoothedCameraFollowY - playerY;
+  }
+
+  /** Snap follow height (teleport / settle) so the camera does not lag behind. */
+  public resetSmoothCameraFollowHeight(): void {
+    this.getWorldPosition(this.cameraFollowWorldPos);
+    this.smoothedCameraFollowY = this.cameraFollowWorldPos.y;
+    this.hasSmoothedCameraFollowY = true;
+    if (this.cameraYawPivot) {
+      this.cameraYawPivot.position.y = 0;
+    }
+  }
+
+  private updateHoveredCarryable(deltaTime: number): void {
+    // In-hand crate: nothing else to hover-pick.
+    if (this.carriedCrate) {
+      this.pickupOutlineElapsed = 0;
+      this.setHoveredCarryable(null);
+      return;
+    }
+    this.pickupOutlineElapsed += deltaTime;
+    if (this.pickupOutlineElapsed < PICKUP_OUTLINE_INTERVAL) {
+      return;
+    }
+    this.pickupOutlineElapsed = 0;
+    // Sequence: cursor hit → pickupable (incl. dismantle scrap) → in range → outline.
+    // Still works while holding the axe so scrap on the ground can outline.
+    const target = this.findPointedCarryable();
+    if (target && this.heldTool && this.isToolObject(target)) {
+      this.setHoveredCarryable(null);
+      return;
+    }
     this.setHoveredCarryable(target);
   }
 
@@ -1103,10 +1177,13 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     if (!world) {
       return;
     }
+    // Shared wireframe silhouette — no ObjectOutline post-process.
     if (target) {
-      world.postProcessManager.setOutlineSelection([target]);
-    } else if (!this.streetLampDismantling.hasTargetLamp()) {
-      world.postProcessManager.clearOutlineSelection();
+      this.hoverSilhouette.setTarget(world, target);
+      return;
+    }
+    if (!this.streetLampDismantling.hasTargetLamp()) {
+      this.hoverSilhouette.setTarget(world, null);
     }
   }
 
@@ -1117,39 +1194,57 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
       return null;
     }
     if (!physicsEngine) {
-      return this.findNearestBodyCover();
+      return null;
     }
 
+    // Cursor ray from camera (iso distance ≠ player distance).
     this.camera.updateMatrixWorld(true);
     this.carryAimRaycaster.setFromCamera(this.carryAimNdc, this.camera);
     const hit = physicsEngine.performHitTest({
       origin: this.carryAimRaycaster.ray.origin,
       direction: this.carryAimRaycaster.ray.direction,
-      maxDistance: 200,
+      maxDistance: PICKUP_AIM_RAY_MAX,
       stopOnFirstHit: true,
       ignoredRootNodes: [this, this.heldTool].filter(
         (node): node is ENGINE.PrimitiveNode => node !== null,
       ),
     })[0];
-    const carryable = this.findCarryableAncestor(hit?.hitNode ?? hit?.hitRoot ?? null);
+
+    const hitObject = hit?.hitNode ?? hit?.hitRoot ?? null;
+    const carryable = this.findPickupableAncestor(hitObject);
     if (!carryable || carryable === this.heldTool) {
-      return this.findNearestBodyCover();
+      return null;
     }
 
+    // Only outline when the player is close enough (scrap may use marker range).
     const playerPosition = this.getWorldPosition(new THREE.Vector3());
     const distance = carryable.getWorldPosition(new THREE.Vector3()).distanceTo(playerPosition);
-    return distance <= this.pickupRange ? carryable : this.findNearestBodyCover();
+    const range = this.getPickupRangeFor(carryable);
+    return distance <= range ? carryable : null;
   }
 
-  private findCarryableAncestor(node: THREE.Object3D | null): ENGINE.PrimitiveNode | null {
+  private findPickupableAncestor(node: THREE.Object3D | null): ENGINE.PrimitiveNode | null {
     let current = node;
     while (current) {
-      if (current instanceof ENGINE.PrimitiveNode && this.isDesignatedCarryableCrate(current)) {
+      if (
+        current instanceof ENGINE.PrimitiveNode
+        && (this.isDesignatedCarryableCrate(current) || this.isToolObject(current))
+      ) {
         return current;
       }
       current = current.parent;
     }
-    return null;
+    // Dismantled scrap pieces (metal scraps, planks, rocks, cones, …).
+    return this.streetLampDismantling.findPickupableScrapPiece(node);
+  }
+
+  private getPickupRangeFor(carryable: ENGINE.PrimitiveNode): number {
+    const marker = carryable.getNodesByPredicate(
+      (node) => node instanceof CarryableCrateNode || 'pickupRange' in node,
+      1,
+    )[0] as (ENGINE.SceneNode & { pickupRange?: number }) | undefined;
+    const override = marker?.pickupRange;
+    return typeof override === 'number' && override > 0 ? override : this.pickupRange;
   }
 
   private findNearestTool(): ENGINE.PrimitiveNode | null {
@@ -1235,8 +1330,8 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
       return;
     }
 
+    // Drop carried crates on fall-death, but keep the axe in-hand through respawn.
     this.releaseCarriedCrate();
-    this.releaseHeldTool();
     playerStart.getWorldPosition(this.respawnPosition);
     playerStart.getWorldQuaternion(this.yawQuat);
     this.respawnRotation.setFromQuaternion(this.yawQuat);
@@ -1248,6 +1343,8 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
       this.movementNode.setVelocities(0, 0, 0);
       this.movementNode.setGrounded(false);
     }
+    this.updateHeldTool();
+    this.resetSmoothCameraFollowHeight();
   }
 
   private getCarriedObjectCarryHeight(): number {
@@ -1685,20 +1782,21 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
       world.add(this.trajectoryRibbon);
     }
 
-    const origin = root.getWorldPosition(new THREE.Vector3());
-    const velocity = this.calculateThrowVelocity(new THREE.Vector3(), origin);
+    root.getWorldPosition(this.trajectoryOrigin);
+    this.calculateThrowVelocity(this.trajectoryVelocity, this.trajectoryOrigin);
     const gravityScale = this.carriedPhysicsOptions?.gravityScale ?? 1;
     const gravityY = (physicsEngine.getOptions()?.gravity.y ?? -9.81) * gravityScale;
-    const points: THREE.Vector3[] = [origin.clone()];
-    let previous = origin;
+    this.trajectoryPoints[0].copy(this.trajectoryOrigin);
+    this.trajectoryPointCount = 1;
+    let previous = this.trajectoryOrigin;
 
     for (let step = 1; step <= 60; step++) {
       const time = step * 0.05;
-      const next = origin.clone()
-        .addScaledVector(velocity, time);
-      next.y += 0.5 * gravityY * time * time;
+      this.trajectoryNext.copy(this.trajectoryOrigin)
+        .addScaledVector(this.trajectoryVelocity, time);
+      this.trajectoryNext.y += 0.5 * gravityY * time * time;
 
-      this.trajectorySegment.copy(next).sub(previous);
+      this.trajectorySegment.copy(this.trajectoryNext).sub(previous);
       const segmentLength = this.trajectorySegment.length();
       const hit = segmentLength > 1e-6
         ? physicsEngine.performHitTest({
@@ -1711,59 +1809,90 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
         : undefined;
 
       if (hit) {
-        points.push(hit.hitLocation.clone());
+        this.trajectoryPoints[this.trajectoryPointCount].copy(hit.hitLocation);
+        this.trajectoryPointCount += 1;
         break;
       }
-      points.push(next);
-      previous = next;
+      this.trajectoryPoints[this.trajectoryPointCount].copy(this.trajectoryNext);
+      this.trajectoryPointCount += 1;
+      previous = this.trajectoryPoints[this.trajectoryPointCount - 1];
     }
 
-    const geometry = this.createTaperedTrajectoryGeometry(points);
-    this.trajectoryRibbon.geometry.dispose();
-    this.trajectoryRibbon.geometry = geometry;
+    this.updateTaperedTrajectoryGeometryInPlace();
     this.trajectoryRibbon.visible = true;
   }
 
-  private createTaperedTrajectoryGeometry(points: THREE.Vector3[]): THREE.BufferGeometry {
-    const positions: number[] = [];
-    const indices: number[] = [];
-    const cameraPosition = this.camera.getWorldPosition(new THREE.Vector3());
+  private updateTaperedTrajectoryGeometryInPlace(): void {
+    if (!this.trajectoryRibbon) {
+      return;
+    }
+    const geometry = this.trajectoryRibbon.geometry;
+    const pointCount = this.trajectoryPointCount;
+    const vertexCount = pointCount * 2;
+    const positionCount = vertexCount * 3;
+    const indexCount = Math.max(0, pointCount - 1) * 6;
 
-    for (let index = 0; index < points.length; index++) {
-      const point = points[index];
-      const previous = points[Math.max(0, index - 1)];
-      const next = points[Math.min(points.length - 1, index + 1)];
-      const tangent = next.clone().sub(previous).normalize();
-      const viewDirection = cameraPosition.clone().sub(point).normalize();
-      const side = new THREE.Vector3().crossVectors(tangent, viewDirection);
-      if (side.lengthSq() < 1e-8) {
-        side.copy(this.cameraRight);
-      } else {
-        side.normalize();
-      }
-
-      const progress = points.length > 1 ? index / (points.length - 1) : 1;
-      const halfWidth = 0.14 * Math.pow(1 - progress, 0.8);
-      positions.push(
-        point.x + side.x * halfWidth,
-        point.y + side.y * halfWidth,
-        point.z + side.z * halfWidth,
-        point.x - side.x * halfWidth,
-        point.y - side.y * halfWidth,
-        point.z - side.z * halfWidth,
-      );
-
-      if (index < points.length - 1) {
+    let positionAttr = geometry.getAttribute('position');
+    if (
+      !(positionAttr instanceof THREE.BufferAttribute)
+      || positionAttr.array.length !== positionCount
+    ) {
+      positionAttr = new THREE.BufferAttribute(new Float32Array(positionCount), 3);
+      geometry.setAttribute('position', positionAttr);
+    }
+    const indexAttr = geometry.getIndex();
+    if (!indexAttr || indexAttr.array.length !== indexCount) {
+      const indices = new Uint16Array(indexCount);
+      for (let index = 0; index < pointCount - 1; index++) {
         const base = index * 2;
-        indices.push(base, base + 1, base + 2, base + 1, base + 3, base + 2);
+        const offset = index * 6;
+        indices[offset] = base;
+        indices[offset + 1] = base + 1;
+        indices[offset + 2] = base + 2;
+        indices[offset + 3] = base + 1;
+        indices[offset + 4] = base + 3;
+        indices[offset + 5] = base + 2;
       }
+      geometry.setIndex(new THREE.BufferAttribute(indices, 1));
     }
 
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setIndex(indices);
+    this.camera.getWorldPosition(this.trajectoryCameraPosition);
+    const positions = (positionAttr as THREE.BufferAttribute).array as Float32Array;
+    for (let index = 0; index < pointCount; index++) {
+      const point = this.trajectoryPoints[index];
+      const previous = this.trajectoryPoints[Math.max(0, index - 1)];
+      const next = this.trajectoryPoints[Math.min(pointCount - 1, index + 1)];
+      this.trajectoryTangent.copy(next).sub(previous);
+      if (this.trajectoryTangent.lengthSq() < 1e-8) {
+        this.trajectoryTangent.copy(this.cameraRight);
+      } else {
+        this.trajectoryTangent.normalize();
+      }
+      this.trajectoryView.copy(this.trajectoryCameraPosition).sub(point);
+      if (this.trajectoryView.lengthSq() < 1e-8) {
+        this.trajectorySide.copy(this.cameraRight);
+      } else {
+        this.trajectoryView.normalize();
+        this.trajectorySide.crossVectors(this.trajectoryTangent, this.trajectoryView);
+        if (this.trajectorySide.lengthSq() < 1e-8) {
+          this.trajectorySide.copy(this.cameraRight);
+        } else {
+          this.trajectorySide.normalize();
+        }
+      }
+
+      const progress = pointCount > 1 ? index / (pointCount - 1) : 1;
+      const halfWidth = 0.14 * Math.pow(1 - progress, 0.8);
+      const offset = index * 6;
+      positions[offset] = point.x + this.trajectorySide.x * halfWidth;
+      positions[offset + 1] = point.y + this.trajectorySide.y * halfWidth;
+      positions[offset + 2] = point.z + this.trajectorySide.z * halfWidth;
+      positions[offset + 3] = point.x - this.trajectorySide.x * halfWidth;
+      positions[offset + 4] = point.y - this.trajectorySide.y * halfWidth;
+      positions[offset + 5] = point.z - this.trajectorySide.z * halfWidth;
+    }
+    (positionAttr as THREE.BufferAttribute).needsUpdate = true;
     geometry.computeBoundingSphere();
-    return geometry;
   }
 
   private hideTrajectory(): void {
