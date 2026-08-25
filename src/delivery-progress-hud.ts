@@ -1,7 +1,7 @@
 /**
  * Left-side delivery progress HUD (Summer Afternoon style):
  * info tip + broken-ordinance counter, each opening a cream modal panel.
- * At 20/20, or on an unknown successful delivery, shows Continue Playing / Victory.
+ * At goal/goal, or on an unknown successful delivery, shows Continue Playing / Victory.
  */
 
 import * as ENGINE from '@gnsx/genesys.js';
@@ -14,13 +14,13 @@ import { ensureOvergrownAveriaFont } from './overgrown-averia-font.js';
 
 const INFO_TITLE = 'Overgrown Rules';
 const INFO_BODY =
-  'There were at least 20 ways you can deliver the letter to mailbox. Let\'s see how many you can find.';
+  `There were at least ${DELIVERY_WAY_GOAL} ways you can deliver the letter to mailbox without breaking an ordinance. Let's see how many you can find.`;
 const INFO_SIGNATURE = '-Entenium';
 const LIST_TITLE = 'Overgrown Ordinances';
 const LIST_EMPTY = 'No ordinances broken yet. Keep exploring.';
 const COMPLETION_TITLE = 'Congratulations!';
 const COMPLETION_BODY =
-  'You just created 20 ordinances. You may still find crazy ways to deliver the letter.';
+  `You just created ${DELIVERY_WAY_GOAL} ordinances!\n\nHowever, that’s only half of them. Can you find the remaining ways?`;
 const MYSTERY_MESSAGE = 'We don\'t know how you deliver it. You won!';
 const COMPLETION_CONTINUE = 'Continue Playing';
 const COMPLETION_VICTORY = 'Victory';
@@ -99,7 +99,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       this.openInfoModal();
     });
 
-    const countBtn = this.createHudButton('0/20');
+    const countBtn = this.createHudButton(`0/${DELIVERY_WAY_GOAL}`);
     countBtn.setAttribute('aria-label', 'Ordinances broken');
     countBtn.style.background = 'transparent';
     countBtn.style.boxShadow = 'none';

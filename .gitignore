@@ -31,3 +31,6 @@
 # These will be preserved during SDK updates
 # ============================================
 
+# Local scratch space (asset-cleanup staging copies of removed assets).
+.tmp/
+

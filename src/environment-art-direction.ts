@@ -1,6 +1,8 @@
 import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
+import { refreshStreetLampGroundLights } from './street-lamp-ground-lights.js';
+
 type SurfaceStyle = {
   tint: THREE.Color;
   tintAmount: number;
@@ -197,6 +199,18 @@ function styleMaterial(
   style: SurfaceStyle,
   detailTexture: THREE.Texture | null,
 ): THREE.Material {
+  // Keep author/export emissive accents (e.g. street-lamp lens) out of the wash.
+  const emissiveProbe = source as THREE.Material & {
+    emissiveIntensity?: number;
+    name?: string;
+  };
+  if (
+    (emissiveProbe.emissiveIntensity ?? 0) >= 0.35
+    || /lens|emissive|glow/i.test(emissiveProbe.name ?? '')
+  ) {
+    return source;
+  }
+
   if (source.userData[STYLED_FLAG]) {
     return source;
   }
@@ -282,6 +296,8 @@ export async function refreshEnvironmentArtDirection(
     }
     styleModel(node, detailTexture);
   }));
+  // Re-assert lamp spots after surface grading (glazing lives on the GLB lens).
+  refreshStreetLampGroundLights(world);
   return models.length;
 }
 

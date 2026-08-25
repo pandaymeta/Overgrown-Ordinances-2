@@ -10,12 +10,7 @@ import { CarryPlayerController } from './carry-player-controller.js';
 import { ClimbableLadder } from './climbable-ladder.js';
 import { ThirdPersonPlayer } from './player.js';
 import { patchTrimeshColliderScale } from './rapier-trimesh-patch.js';
-import {
-  OrdinanceSignSharpnessSystem,
-  refreshOrdinanceSignSharpness,
-} from './ordinance-sign-sharpness.js';
 import { MailDeliveryFlowSystem } from './mail-delivery-flow.js';
-import './sharp-sign-board-material.js';
 import { StairWalkRamp } from './stair-walk-ramp.js';
 import { ShophouseCameraOcclusionSystem } from './shophouse-camera-occlusion.js';
 import { AxePickupRingSystem } from './axe-pickup-ring.js';
@@ -24,6 +19,7 @@ import { DeliveryProgressHudSystem } from './delivery-progress-hud.js';
 import { GameCursorSystem } from './game-cursor.js';
 import { StartupLoadingScreenSystem } from './startup-loading-screen.js';
 import { TutorialKeysGuide } from './tutorial-keys-guide.js';
+import { StreetLampGroundLightsSystem } from './street-lamp-ground-lights.js';
 
 installAnimationOneShotHostPatch(ENGINE);
 
@@ -53,8 +49,7 @@ class ThirdPersonGameMode extends ENGINE.GameMode {
     this.ensureStartupBrushReveal();
     this.attachAccessStairWalkRamp();
     this.attachClimbableLadders();
-    this.ensureOrdinanceSignSharpness();
-    void refreshOrdinanceSignSharpness(this.getWorld());
+    this.ensureStreetLampGroundLights();
     this.ensureMailDeliveryFlow();
     this.ensureShophouseCameraOcclusion();
     this.ensureAxePickupRing();
@@ -154,15 +149,15 @@ class ThirdPersonGameMode extends ENGINE.GameMode {
     world.add(ShophouseCameraOcclusionSystem.create());
   }
 
-  private ensureOrdinanceSignSharpness(): void {
+  private ensureStreetLampGroundLights(): void {
     const world = this.getWorld();
     if (!world) {
       return;
     }
-    if (world.getNodes(OrdinanceSignSharpnessSystem).length > 0) {
+    if (world.getNodes(StreetLampGroundLightsSystem).length > 0) {
       return;
     }
-    world.add(OrdinanceSignSharpnessSystem.create());
+    world.add(StreetLampGroundLightsSystem.create());
   }
 
   private attachClimbableLadders(): void {

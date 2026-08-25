@@ -917,6 +917,13 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     if (pointedCarryable) {
       return this.pickUpCarryable(pointedCarryable);
     }
+    // Body-cover bushes may miss the cursor ray; allow proximity pickup without the axe.
+    if (!this.heldTool) {
+      const hidingBush = this.findNearestBodyCover();
+      if (hidingBush) {
+        return this.pickUpCarryable(hidingBush);
+      }
+    }
     return this.throwCarriedCrate();
   }
 
@@ -1159,7 +1166,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     this.pickupOutlineElapsed = 0;
     // Sequence: cursor hit → pickupable (incl. dismantle scrap) → in range → outline.
     // Still works while holding the axe so scrap on the ground can outline.
-    const target = this.findPointedCarryable();
+    const target = this.findPointedCarryable() ?? (!this.heldTool ? this.findNearestBodyCover() : null);
     if (target && this.heldTool && this.isToolObject(target)) {
       this.setHoveredCarryable(null);
       return;
@@ -1287,7 +1294,8 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
         continue;
       }
       const distance = primitive.getWorldPosition(new THREE.Vector3()).distanceTo(playerPosition);
-      if (distance <= this.pickupRange && distance < nearestDistance) {
+      const range = Math.max(this.pickupRange, this.getPickupRangeFor(primitive), 3.5);
+      if (distance <= range && distance < nearestDistance) {
         nearest = primitive;
         nearestDistance = distance;
       }

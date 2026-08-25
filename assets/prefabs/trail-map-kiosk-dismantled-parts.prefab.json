@@ -1,7 +1,7 @@
 {
   "$root": {
     "$bc": "ENGINE.Prefab",
-    "$uuid": "d3a255da0867e370",
+    "$uuid": "dc022f080da40a8d",
     "rootNode": {
       "$bc": "ENGINE.SceneNode",
       "children": [

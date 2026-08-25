@@ -10,7 +10,12 @@ import { StartupBrushRevealSystem } from './startup-brush-reveal.js';
 
 const CREAM_CSS = '#f4f1ea';
 const TEXT_CSS = '#6b6560';
-const LOADING_COPY = 'Find crazy ways to deliver this letter.';
+const LOADING_MESSAGES = [
+  'You\'re playing Overgrown Ordinances...',
+  'Find ways to deliver the letter without breaking an ordinance...',
+] as const;
+const TYPEWRITER_CHAR_INTERVAL_MS = 55;
+const LOADING_MESSAGE_GAP_MS = 1000;
 const MIN_VISIBLE_MS = 1400;
 const PRELOAD_CONCURRENCY = 8;
 /** Slower cream splash so the open reads clearly after loading. */
@@ -164,6 +169,8 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
   private styleEl: HTMLStyleElement | null = null;
   private progressFill: HTMLDivElement | null = null;
   private progressLabel: HTMLParagraphElement | null = null;
+  private copyEl: HTMLParagraphElement | null = null;
+  private typingGeneration = 0;
   private started = false;
   private sequenceGeneration = 0;
 
@@ -222,6 +229,7 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
 
     // Cream cover first — font can load underneath so the world never flashes.
     this.mountUi(container);
+    void this.runLoadingCopyTypewriter(this.typingGeneration);
     await ensureOvergrownAveriaFont();
     if (generation !== this.sequenceGeneration) {
       return;
@@ -363,7 +371,7 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     stage.appendChild(letter);
 
     const copy = document.createElement('p');
-    copy.textContent = LOADING_COPY;
+    copy.textContent = '';
     copy.style.cssText = [
       'margin:0',
       'max-width:min(520px,86vw)',
@@ -428,7 +436,35 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     this.overlay = overlay;
     this.progressFill = fill;
     this.progressLabel = label;
+    this.copyEl = copy;
     this.setProgress(0);
+  }
+
+  private async runLoadingCopyTypewriter(typingGeneration: number): Promise<void> {
+    if (!this.copyEl) {
+      return;
+    }
+    for (let messageIndex = 0; messageIndex < LOADING_MESSAGES.length; messageIndex += 1) {
+      if (typingGeneration !== this.typingGeneration) {
+        return;
+      }
+      const message = LOADING_MESSAGES[messageIndex];
+      this.copyEl.textContent = '';
+      for (let charIndex = 0; charIndex < message.length; charIndex += 1) {
+        if (typingGeneration !== this.typingGeneration || !this.copyEl) {
+          return;
+        }
+        this.copyEl.textContent = message.slice(0, charIndex + 1);
+        await new Promise<void>((resolve) => {
+          window.setTimeout(resolve, TYPEWRITER_CHAR_INTERVAL_MS);
+        });
+      }
+      if (messageIndex < LOADING_MESSAGES.length - 1) {
+        await new Promise<void>((resolve) => {
+          window.setTimeout(resolve, LOADING_MESSAGE_GAP_MS);
+        });
+      }
+    }
   }
 
   private setProgress(ratio: number): void {
@@ -447,10 +483,12 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
   }
 
   private teardownUi(): void {
+    this.typingGeneration += 1;
     this.overlay?.remove();
     this.overlay = null;
     this.progressFill = null;
     this.progressLabel = null;
+    this.copyEl = null;
   }
 
   private async waitForContainer(): Promise<HTMLElement | null> {

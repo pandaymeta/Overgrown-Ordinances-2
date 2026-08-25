@@ -2,6 +2,7 @@ import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
 import { createAirmailEnvelope, disposeAirmailEnvelope } from './airmail-envelope.js';
+import { HoverSilhouette } from './hover-silhouette.js';
 import type { ThirdPersonPlayer } from './player.js';
 
 const CAT_NAME = /^Cat$/i;
@@ -49,8 +50,11 @@ export type CatMailCourierHooks = {
   onCatReachedPeach: () => void;
   /** Fired when the cat arrives at the mailbox with mail. */
   onCatDeliveredMail: (via: 'peach' | 'unfed') => void;
-  /** Fired when the player clicks the cat without feeding it a peach. */
-  onCatClickedUnfed: () => void;
+  /**
+   * Fired when the player clicks the cat without a peach-feed credit.
+   * Return true if the click was consumed (e.g. soft-loop) and delivery must not start.
+   */
+  onCatClickedUnfed: () => boolean;
 };
 
 enum CatState {
@@ -108,6 +112,12 @@ export class CatMailCourier {
   private patrolResumeIndex = 1;
   /** After eating a peach, wait then resume roam if not clicked for mail. */
   private peachWaitRemaining = 0;
+  /**
+   * Sticky credit after the cat reaches a thrown peach. Survives the post-eat wait /
+   * resume-patrol so a later click still counts as peach-fed (Dont feed the cat).
+   */
+  private peachFedPending = false;
+  private readonly hoverSilhouette = new HoverSilhouette();
   private jumpElapsed = 0;
   private jumpDuration = 0.01;
   /** Peak height above the linear start→end path for the current jump. */
@@ -165,6 +175,7 @@ export class CatMailCourier {
     this.patrolStayRemaining = this.waypoints[0]?.staySec ?? PATROL_STAY_SEC;
     this.patrolResumeIndex = 1;
     this.peachWaitRemaining = 0;
+    this.peachFedPending = false;
     this.interactable = false;
     this.streetsClickable = false;
     this.clearEnvelope();
@@ -178,6 +189,7 @@ export class CatMailCourier {
     this.targetPeach = null;
     this.interactable = false;
     this.streetsClickable = false;
+    this.peachFedPending = false;
     this.setHovered(false);
     this.clearEnvelope();
     this.cat.position.copy(this.homePosition);
@@ -194,6 +206,8 @@ export class CatMailCourier {
 
   public dispose(): void {
     this.setHovered(false);
+    this.hoverSilhouette.clear();
+    this.peachFedPending = false;
     this.clearEnvelope();
     this.mixer?.stopAllAction();
     this.mixer = null;
@@ -210,6 +224,7 @@ export class CatMailCourier {
     }
 
     this.mixer?.update(deltaTime);
+    this.hoverSilhouette.syncTransforms();
 
     switch (this.state) {
       case CatState.Idle:
@@ -254,8 +269,9 @@ export class CatMailCourier {
   }
 
   /**
-   * Left-click in range: hand the envelope for mailbox delivery (peach optional).
-   * Clicking without a peach also queues No cats on streets.
+   * Left-click in range: hand the envelope for mailbox delivery.
+   * A peach-fed credit (sticky) always counts as peach delivery — even after the
+   * post-eat wait resumes patrol — so Dont feed the cat unlocks correctly.
    */
   public tryInteractByClick(): boolean {
     if (!this.cat || this.state === CatState.DeliverToMailbox) {
@@ -264,28 +280,39 @@ export class CatMailCourier {
     if (!this.isAimingAtCat()) {
       return false;
     }
-    const peachReady = this.state === CatState.WaitingNearPeach && this.interactable;
-    const unfedReady = this.state !== CatState.WaitingNearPeach
-      && this.state !== CatState.WalkToPeach
-      && this.streetsClickable;
-    if (!peachReady && !unfedReady) {
+    const inRange = this.isPlayerInInteractRange();
+    if (!inRange || this.state === CatState.WalkToPeach) {
       return false;
     }
-    if (unfedReady) {
-      this.hooks.onCatClickedUnfed();
+
+    // Sticky peach credit beats "unfed" even after WaitingNearPeach timed out.
+    if (this.peachFedPending) {
+      this.beginMailboxDelivery('peach');
+      return true;
     }
-    this.beginMailboxDelivery(unfedReady ? 'unfed' : 'peach');
+
+    // Unfed click — soft-loop (when No cats is live) must not also start a delivery.
+    if (this.hooks.onCatClickedUnfed()) {
+      return true;
+    }
+    this.beginMailboxDelivery('unfed');
     return true;
   }
 
+  /** Drop sticky peach credit (e.g. when Dont feed soft-loops on lure). */
+  public clearPeachFedCredit(): void {
+    this.peachFedPending = false;
+    this.peachWaitRemaining = 0;
+  }
+
   public isInteractable(): boolean {
-    return (this.interactable && this.state === CatState.WaitingNearPeach)
-      || (
-        this.streetsClickable
-        && this.state !== CatState.WaitingNearPeach
-        && this.state !== CatState.WalkToPeach
-        && this.state !== CatState.DeliverToMailbox
-      );
+    if (this.state === CatState.DeliverToMailbox || this.state === CatState.WalkToPeach) {
+      return false;
+    }
+    if (!this.isPlayerInInteractRange()) {
+      return false;
+    }
+    return this.peachFedPending || this.streetsClickable || this.interactable;
   }
 
   private buildPatrolWaypoints(world: ENGINE.World): void {
@@ -790,6 +817,7 @@ export class CatMailCourier {
     this.cat.getWorldPosition(this.tmpCatPos);
     this.restWorldY = this.traversalRootYAt(this.tmpCatPos.x, this.tmpCatPos.z);
     this.peachWaitRemaining = PATROL_STAY_SEC;
+    this.peachFedPending = true;
     this.state = CatState.WaitingNearPeach;
     this.setAnimIdle();
     this.hooks.onCatReachedPeach();
@@ -831,6 +859,7 @@ export class CatMailCourier {
     this.interactable = false;
     this.streetsClickable = false;
     this.peachWaitRemaining = 0;
+    this.peachFedPending = false;
     this.setHovered(false);
     this.attachEnvelope();
     this.state = CatState.DeliverToMailbox;
@@ -1008,31 +1037,34 @@ export class CatMailCourier {
   }
 
   private updateHoverOutline(): void {
-    const peachReady = this.interactable
-      && this.state === CatState.WaitingNearPeach
-      && this.isAimingAtCat();
-    const mailReady = this.streetsClickable
-      && this.state !== CatState.WaitingNearPeach
-      && this.state !== CatState.WalkToPeach
-      && this.state !== CatState.DeliverToMailbox
-      && this.isAimingAtCat();
-    this.setHovered(peachReady || mailReady);
+    const ready = this.isInteractable() && this.isAimingAtCat();
+    this.setHovered(ready);
+  }
+
+  private isPlayerInInteractRange(): boolean {
+    const player = this.hooks.getPlayer();
+    if (!player || !this.cat) {
+      return false;
+    }
+    this.cat.getWorldPosition(this.tmpCatPos);
+    player.getWorldPosition(this.tmpPlayerPos);
+    return this.tmpCatPos.distanceTo(this.tmpPlayerPos) <= PLAYER_INTERACT_RANGE;
   }
 
   private setHovered(enabled: boolean): void {
     if (this.hovered === enabled) {
+      if (enabled) {
+        this.hoverSilhouette.syncTransforms();
+      }
       return;
     }
     this.hovered = enabled;
     const world = this.cat?.getWorld();
     if (!world || !this.cat) {
+      this.hoverSilhouette.setTarget(null, null);
       return;
     }
-    if (enabled) {
-      world.postProcessManager.setOutlineSelection([this.cat]);
-    } else {
-      world.postProcessManager.clearOutlineSelection();
-    }
+    this.hoverSilhouette.setTarget(world, enabled ? this.cat : null);
   }
 
   private isAimingAtCat(): boolean {

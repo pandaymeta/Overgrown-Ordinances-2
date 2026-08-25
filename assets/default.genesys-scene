@@ -9,11 +9,11 @@
             "$bc": "c",
             "_": [
               1,
-              0.686685,
-              0.434154
+              0.527115,
+              0.278894
             ]
           },
-          2.9
+          2.85
         ]
       }
     },
@@ -25,44 +25,149 @@
       }
     },
     {
-      "$bc": "THREE.HemisphereLight",
+      "$bc": "THREE.SpotLight",
       "$id": 3,
       "$value": {
         "_": [
           {
             "$bc": "c",
             "_": [
-              0.508881,
+              1,
               0.64448,
-              0.806952
+              0.351533
             ]
           },
-          {
-            "$bc": "c",
-            "_": [
-              0.791298,
-              0.57758,
-              0.391572
-            ]
-          },
-          1.7
+          52,
+          14,
+          0.44,
+          0.4,
+          1.55
         ]
       }
     },
     {
-      "$bc": "THREE.AmbientLight",
+      "$bc": "THREE.SpotLight",
       "$id": 4,
       "$value": {
         "_": [
           {
             "$bc": "c",
             "_": [
-              0.723055,
-              0.799103,
-              0.887923
+              1,
+              0.64448,
+              0.351533
             ]
           },
-          0.75
+          52,
+          14,
+          0.44,
+          0.4,
+          1.55
+        ]
+      }
+    },
+    {
+      "$bc": "THREE.SpotLight",
+      "$id": 5,
+      "$value": {
+        "_": [
+          {
+            "$bc": "c",
+            "_": [
+              1,
+              0.64448,
+              0.351533
+            ]
+          },
+          52,
+          14,
+          0.44,
+          0.4,
+          1.55
+        ]
+      }
+    },
+    {
+      "$bc": "THREE.SpotLight",
+      "$id": 6,
+      "$value": {
+        "_": [
+          {
+            "$bc": "c",
+            "_": [
+              1,
+              0.64448,
+              0.351533
+            ]
+          },
+          52,
+          14,
+          0.44,
+          0.4,
+          1.55
+        ]
+      }
+    },
+    {
+      "$bc": "THREE.SpotLight",
+      "$id": 7,
+      "$value": {
+        "_": [
+          {
+            "$bc": "c",
+            "_": [
+              1,
+              0.64448,
+              0.351533
+            ]
+          },
+          52,
+          14,
+          0.44,
+          0.4,
+          1.55
+        ]
+      }
+    },
+    {
+      "$bc": "THREE.HemisphereLight",
+      "$id": 8,
+      "$value": {
+        "_": [
+          {
+            "$bc": "c",
+            "_": [
+              0.208637,
+              0.40724,
+              0.708376
+            ]
+          },
+          {
+            "$bc": "c",
+            "_": [
+              0.584078,
+              0.296138,
+              0.127438
+            ]
+          },
+          1.15
+        ]
+      }
+    },
+    {
+      "$bc": "THREE.AmbientLight",
+      "$id": 9,
+      "$value": {
+        "_": [
+          {
+            "$bc": "c",
+            "_": [
+              0.47932,
+              0.57758,
+              0.715694
+            ]
+          },
+          0.4
         ]
       }
     }
@@ -447,12 +552,12 @@
         "children": {
           "$length": 1
         },
-        "cloudCoverage": 0.15,
+        "cloudCoverage": 0.12,
         "cloudDensity": 0.2,
         "cloudElevation": 0.45,
         "cloudSpeed": 0.00003,
-        "mieCoefficient": 0.0025,
-        "mieDirectionalG": 0.78,
+        "mieCoefficient": 0.003,
+        "mieDirectionalG": 0.75,
         "name": "Sky",
         "nodeId": 35256,
         "position": {
@@ -463,6 +568,7 @@
             -3.7
           ]
         },
+        "rayleigh": 1.15,
         "scale": {
           "$bc": "v3",
           "_": [
@@ -475,12 +581,12 @@
         "sunPosition": {
           "$bc": "v3",
           "_": [
-            -0.55,
-            0.5,
-            -0.35
+            -0.65,
+            0.42,
+            -0.4
           ]
         },
-        "turbidity": 3.2,
+        "turbidity": 4.5,
         "userData": {
           "objectFlags": 6
         },
@@ -1718,7 +1824,7 @@
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/wide-shophouse-089f20.glb",
         "name": "Wide Shophouse 089 F 20",
-        "nodeId": 37708,
+        "nodeId": 38870,
         "physicsOptions": {
           "collisionMeshType": "trimesh"
         },
@@ -1727,7 +1833,7 @@
           "_": [
             -14.7,
             -0.095,
-            -13.4
+            -14.125
           ]
         },
         "receiveShadow": true,
@@ -2612,7 +2718,36 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/TreesCutting.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "canEverTick": false,
+                "frustumCulled": false,
+                "modelMaterials": [],
+                "modelUrl": "@project/assets/generated/OrdinanceCards/v5/TreesCutting_Card_BackOnly_v5.glb",
+                "name": "TreesCutting Card Upright v5",
+                "navigationGeometryRole": "none",
+                "nodeId": 58805,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "tickEnabled": false,
+                "uuid": "0c88ddc8c6a355e7"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/TreesCutting_Clean.glb",
             "name": "Trees Cutting 02",
             "nodeId": 24763,
             "physicsOptions": {
@@ -2627,7 +2762,6 @@
                 0.394755
               ]
             },
-            "receiveShadow": true,
             "scale": {
               "$bc": "v3",
               "_": [
@@ -2720,7 +2854,36 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/TreesCutting.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "canEverTick": false,
+                "frustumCulled": false,
+                "modelMaterials": [],
+                "modelUrl": "@project/assets/generated/OrdinanceCards/v5/TreesCutting_Card_BackOnly_v5.glb",
+                "name": "TreesCutting Card Upright v5",
+                "navigationGeometryRole": "none",
+                "nodeId": 29181,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "tickEnabled": false,
+                "uuid": "e25acd044f8b07e6"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/TreesCutting_Clean.glb",
             "name": "Trees Cutting",
             "nodeId": 20655,
             "physicsOptions": {
@@ -2735,7 +2898,6 @@
                 -0.185022
               ]
             },
-            "receiveShadow": true,
             "rotation": {
               "$bc": "e",
               "_": [
@@ -2887,217 +3049,6 @@
             "rotation": {
               "$bc": "e",
               "_": [
-                3.141592,
-                0,
-                3.141592
-              ]
-            },
-            "scale": {
-              "$bc": "v3",
-              "_": [
-                0.87,
-                0.4,
-                1.76
-              ]
-            },
-            "uuid": "b245bf3a57413245",
-            "visible": false
-          },
-          {
-            "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsDestroy.glb",
-            "name": "Street Lights Destroy 07",
-            "nodeId": 64117,
-            "physicsOptions": {
-              "enabled": false,
-              "ignoreForInputCollision": true
-            },
-            "position": {
-              "$bc": "v3",
-              "_": [
-                -0.066667,
-                2.966667,
-                -0.816667
-              ]
-            },
-            "receiveShadow": true,
-            "rotation": {
-              "$bc": "e",
-              "_": [
-                -3.141592,
-                0,
-                -3.141592
-              ]
-            },
-            "scale": {
-              "$bc": "v3",
-              "_": [
-                0.666667,
-                0.666667,
-                0.666667
-              ]
-            },
-            "uuid": "87b612ec3620419c"
-          },
-          {
-            "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsDestroy.glb",
-            "name": "Street Lights Destroy 08",
-            "nodeId": 27035,
-            "physicsOptions": {
-              "enabled": false,
-              "ignoreForInputCollision": true
-            },
-            "position": {
-              "$bc": "v3",
-              "_": [
-                0.066667,
-                2.966667,
-                -0.616667
-              ]
-            },
-            "receiveShadow": true,
-            "scale": {
-              "$bc": "v3",
-              "_": [
-                0.666667,
-                0.666667,
-                0.666667
-              ]
-            },
-            "uuid": "e2136b58e52becc3"
-          },
-          {
-            "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsClimb.glb",
-            "name": "Street Lights Climb 07",
-            "nodeId": 13523,
-            "physicsOptions": {
-              "enabled": false,
-              "ignoreForInputCollision": true
-            },
-            "position": {
-              "$bc": "v3",
-              "_": [
-                -0.133333,
-                1.566667,
-                -0.683333
-              ]
-            },
-            "receiveShadow": true,
-            "rotation": {
-              "$bc": "e",
-              "_": [
-                0,
-                -1.570796,
-                0
-              ]
-            },
-            "scale": {
-              "$bc": "v3",
-              "_": [
-                0.666667,
-                0.666667,
-                0.666667
-              ]
-            },
-            "uuid": "eb593e6528cd2ea1"
-          },
-          {
-            "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsClimb.glb",
-            "name": "Street Lights Climb 08",
-            "nodeId": 17441,
-            "physicsOptions": {
-              "enabled": false,
-              "ignoreForInputCollision": true
-            },
-            "position": {
-              "$bc": "v3",
-              "_": [
-                0.133333,
-                1.566667,
-                -0.816667
-              ]
-            },
-            "receiveShadow": true,
-            "rotation": {
-              "$bc": "e",
-              "_": [
-                0,
-                1.570796,
-                0
-              ]
-            },
-            "scale": {
-              "$bc": "v3",
-              "_": [
-                0.666667,
-                0.666667,
-                0.666667
-              ]
-            },
-            "uuid": "4b274437f8cfa6ab"
-          }
-        ],
-        "modelUrl": "@project/assets/PolyforkAssets/street-lamp-29f365.glb",
-        "name": "Street Lamp 29 F 365",
-        "nodeId": 6233,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
-        "position": {
-          "$bc": "v3",
-          "_": [
-            -22.5,
-            -0.1,
-            -8
-          ]
-        },
-        "receiveShadow": true,
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1.5,
-            1.5,
-            1.5
-          ]
-        },
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "62d83f5e-8cd2-4a64-80bf-d15569cf6233"
-      },
-      {
-        "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
-        "children": [
-          {
-            "$bc": "ENGINE.MeshNode",
-            "children": {
-              "$length": 1
-            },
-            "name": "LampTrigger",
-            "nodeId": 44394,
-            "physicsOptions": {
-              "collisionProfile": "NoCollision",
-              "enabled": false
-            },
-            "position": {
-              "$bc": "v3",
-              "_": [
-                0,
-                4.9,
-                0.1
-              ]
-            },
-            "rotation": {
-              "$bc": "e",
-              "_": [
                 -3.141593,
                 0,
                 -3.141593
@@ -3117,7 +3068,32 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsDestroy.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "modelUrl": "@project/assets/generated/OrdinanceCards/streetlights/StreetLightsDestroy_Card_ShopSignStyle.glb",
+                "name": "StreetLightsDestroy Card (ShopSign setup)",
+                "navigationGeometryRole": "none",
+                "nodeId": 36728,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "uuid": "d454a56a6e6e0460"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsDestroy_Clean.glb",
             "name": "Street Lights Destroy 05",
             "nodeId": 60288,
             "physicsOptions": {
@@ -3154,7 +3130,32 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsDestroy.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "modelUrl": "@project/assets/generated/OrdinanceCards/streetlights/StreetLightsDestroy_Card_ShopSignStyle.glb",
+                "name": "StreetLightsDestroy Card (ShopSign setup)",
+                "navigationGeometryRole": "none",
+                "nodeId": 43424,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "uuid": "b6affd2345b6640f"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsDestroy_Clean.glb",
             "name": "Street Lights Destroy 06",
             "nodeId": 23826,
             "physicsOptions": {
@@ -3169,7 +3170,6 @@
                 -0.616667
               ]
             },
-            "receiveShadow": true,
             "scale": {
               "$bc": "v3",
               "_": [
@@ -3183,7 +3183,32 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsClimb.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "modelUrl": "@project/assets/generated/OrdinanceCards/streetlights/StreetLightsClimb_Card_ShopSignStyle.glb",
+                "name": "StreetLightsClimb Card (ShopSign setup)",
+                "navigationGeometryRole": "none",
+                "nodeId": 14805,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "uuid": "2c4754c7b523b586"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsClimb_Clean.glb",
             "name": "Street Lights Climb 05",
             "nodeId": 45649,
             "physicsOptions": {
@@ -3220,7 +3245,32 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsClimb.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "modelUrl": "@project/assets/generated/OrdinanceCards/streetlights/StreetLightsClimb_Card_ShopSignStyle.glb",
+                "name": "StreetLightsClimb Card (ShopSign setup)",
+                "navigationGeometryRole": "none",
+                "nodeId": 10449,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "uuid": "d26b77f421fe0c04"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsClimb_Clean.glb",
             "name": "Street Lights Climb 06",
             "nodeId": 45045,
             "physicsOptions": {
@@ -3235,7 +3285,6 @@
                 -0.816667
               ]
             },
-            "receiveShadow": true,
             "rotation": {
               "$bc": "e",
               "_": [
@@ -3253,6 +3302,39 @@
               ]
             },
             "uuid": "fdbaa21b57d53b4e"
+          },
+          {
+            "$bc": "ENGINE.SpotLightNode",
+            "children": [
+              {
+                "$ref": 3
+              }
+            ],
+            "light": {
+              "$ref": 3
+            },
+            "name": "Lamp Ground Spot",
+            "nodeId": 12255,
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                4.55,
+                0.6
+              ]
+            },
+            "rotation": {
+              "$bc": "e",
+              "_": [
+                1.570796,
+                0,
+                0
+              ]
+            },
+            "shadowFar": 20,
+            "shadowMapSize": 1024,
+            "shadowNear": 0.2,
+            "uuid": "652412a53c4d9132"
           }
         ],
         "modelUrl": "@project/assets/PolyforkAssets/street-lamp-29f365.glb",
@@ -3292,6 +3374,348 @@
             "children": {
               "$length": 1
             },
+            "name": "LampTrigger 02",
+            "nodeId": 44394,
+            "physicsOptions": {
+              "collisionProfile": "NoCollision",
+              "enabled": false
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                4.9,
+                0.1
+              ]
+            },
+            "rotation": {
+              "$bc": "e",
+              "_": [
+                -3.141593,
+                0,
+                -3.141593
+              ]
+            },
+            "scale": {
+              "$bc": "v3",
+              "_": [
+                0.87,
+                0.4,
+                1.76
+              ]
+            },
+            "uuid": "f147c8b15a3d93df",
+            "visible": false
+          },
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "castShadow": true,
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "modelUrl": "@project/assets/generated/OrdinanceCards/streetlights/StreetLightsDestroy_Card_ShopSignStyle.glb",
+                "name": "StreetLightsDestroy Card (ShopSign setup)",
+                "navigationGeometryRole": "none",
+                "nodeId": 4324,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "uuid": "4454f69a8ca93bac"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsDestroy_Clean.glb",
+            "name": "Street Lights Destroy 07",
+            "nodeId": 60288,
+            "physicsOptions": {
+              "enabled": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                -0.066667,
+                2.966667,
+                -0.816667
+              ]
+            },
+            "receiveShadow": true,
+            "rotation": {
+              "$bc": "e",
+              "_": [
+                -3.141592,
+                0,
+                -3.141592
+              ]
+            },
+            "scale": {
+              "$bc": "v3",
+              "_": [
+                0.666667,
+                0.666667,
+                0.666667
+              ]
+            },
+            "uuid": "b203fe10aadec862"
+          },
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "castShadow": true,
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "modelUrl": "@project/assets/generated/OrdinanceCards/streetlights/StreetLightsDestroy_Card_ShopSignStyle.glb",
+                "name": "StreetLightsDestroy Card (ShopSign setup)",
+                "navigationGeometryRole": "none",
+                "nodeId": 14407,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "uuid": "80b344ff15df8da0"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsDestroy_Clean.glb",
+            "name": "Street Lights Destroy 08",
+            "nodeId": 23826,
+            "physicsOptions": {
+              "enabled": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0.066667,
+                2.966667,
+                -0.616667
+              ]
+            },
+            "scale": {
+              "$bc": "v3",
+              "_": [
+                0.666667,
+                0.666667,
+                0.666667
+              ]
+            },
+            "uuid": "a10f1651ac194772"
+          },
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "castShadow": true,
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "modelUrl": "@project/assets/generated/OrdinanceCards/streetlights/StreetLightsClimb_Card_ShopSignStyle.glb",
+                "name": "StreetLightsClimb Card (ShopSign setup)",
+                "navigationGeometryRole": "none",
+                "nodeId": 19719,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "uuid": "445e46b452198e9d"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsClimb_Clean.glb",
+            "name": "Street Lights Climb 07",
+            "nodeId": 45649,
+            "physicsOptions": {
+              "enabled": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                -0.133333,
+                1.566667,
+                -0.683333
+              ]
+            },
+            "receiveShadow": true,
+            "rotation": {
+              "$bc": "e",
+              "_": [
+                0,
+                -1.570796,
+                0
+              ]
+            },
+            "scale": {
+              "$bc": "v3",
+              "_": [
+                0.666667,
+                0.666667,
+                0.666667
+              ]
+            },
+            "uuid": "89f021069f18e54e"
+          },
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "castShadow": true,
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "modelUrl": "@project/assets/generated/OrdinanceCards/streetlights/StreetLightsClimb_Card_ShopSignStyle.glb",
+                "name": "StreetLightsClimb Card (ShopSign setup)",
+                "navigationGeometryRole": "none",
+                "nodeId": 246,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "uuid": "4fbba1a9551958d3"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsClimb_Clean.glb",
+            "name": "Street Lights Climb 08",
+            "nodeId": 45045,
+            "physicsOptions": {
+              "enabled": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0.133333,
+                1.566667,
+                -0.816667
+              ]
+            },
+            "rotation": {
+              "$bc": "e",
+              "_": [
+                0,
+                1.570796,
+                0
+              ]
+            },
+            "scale": {
+              "$bc": "v3",
+              "_": [
+                0.666667,
+                0.666667,
+                0.666667
+              ]
+            },
+            "uuid": "d54060a7bd2f3a0e"
+          },
+          {
+            "$bc": "ENGINE.SpotLightNode",
+            "children": [
+              {
+                "$ref": 4
+              }
+            ],
+            "light": {
+              "$ref": 4
+            },
+            "name": "Lamp Ground Spot 02",
+            "nodeId": 12255,
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                4.55,
+                0.6
+              ]
+            },
+            "rotation": {
+              "$bc": "e",
+              "_": [
+                1.570796,
+                0,
+                0
+              ]
+            },
+            "shadowFar": 20,
+            "shadowMapSize": 1024,
+            "shadowNear": 0.2,
+            "uuid": "f39ae99d3d13ec18"
+          }
+        ],
+        "modelUrl": "@project/assets/PolyforkAssets/street-lamp-29f365.glb",
+        "name": "Street Lamp 29 F 370",
+        "nodeId": 50129,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -22.7,
+            -0.1,
+            -8
+          ]
+        },
+        "receiveShadow": true,
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1.5,
+            1.5,
+            1.5
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "38baaca05e7293b9"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "castShadow": true,
+        "children": [
+          {
+            "$bc": "ENGINE.MeshNode",
+            "children": {
+              "$length": 1
+            },
             "name": "LampTrigger",
             "nodeId": 44394,
             "physicsOptions": {
@@ -3320,7 +3744,32 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsDestroy.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "modelUrl": "@project/assets/generated/OrdinanceCards/streetlights/StreetLightsDestroy_Card_ShopSignStyle.glb",
+                "name": "StreetLightsDestroy Card (ShopSign setup)",
+                "navigationGeometryRole": "none",
+                "nodeId": 12474,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "uuid": "db20f1ba395c2274"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsDestroy_Clean.glb",
             "name": "Street Lights Destroy",
             "nodeId": 41081,
             "physicsOptions": {
@@ -3349,7 +3798,32 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsDestroy.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "modelUrl": "@project/assets/generated/OrdinanceCards/streetlights/StreetLightsDestroy_Card_ShopSignStyle.glb",
+                "name": "StreetLightsDestroy Card (ShopSign setup)",
+                "navigationGeometryRole": "none",
+                "nodeId": 22432,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "uuid": "ffd33ca87844e2ac"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsDestroy_Clean.glb",
             "name": "Street Lights Destroy 02",
             "nodeId": 65416,
             "physicsOptions": {
@@ -3364,7 +3838,6 @@
                 -0.8
               ]
             },
-            "receiveShadow": true,
             "rotation": {
               "$bc": "e",
               "_": [
@@ -3386,7 +3859,32 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsClimb.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "modelUrl": "@project/assets/generated/OrdinanceCards/streetlights/StreetLightsClimb_Card_ShopSignStyle.glb",
+                "name": "StreetLightsClimb Card (ShopSign setup)",
+                "navigationGeometryRole": "none",
+                "nodeId": 17268,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "uuid": "f31e3d2eb406cfb7"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsClimb_Clean.glb",
             "name": "Street Lights Climb",
             "nodeId": 55986,
             "physicsOptions": {
@@ -3401,7 +3899,6 @@
                 -0.733333
               ]
             },
-            "receiveShadow": true,
             "rotation": {
               "$bc": "e",
               "_": [
@@ -3423,7 +3920,32 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsClimb.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "modelUrl": "@project/assets/generated/OrdinanceCards/streetlights/StreetLightsClimb_Card_ShopSignStyle.glb",
+                "name": "StreetLightsClimb Card (ShopSign setup)",
+                "navigationGeometryRole": "none",
+                "nodeId": 47582,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "uuid": "5042a6e79b486c82"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsClimb_Clean.glb",
             "name": "Street Lights Climb 02",
             "nodeId": 47126,
             "physicsOptions": {
@@ -3456,11 +3978,44 @@
               ]
             },
             "uuid": "87263f02315bdbb9"
+          },
+          {
+            "$bc": "ENGINE.SpotLightNode",
+            "children": [
+              {
+                "$ref": 5
+              }
+            ],
+            "light": {
+              "$ref": 5
+            },
+            "name": "Lamp Ground Spot",
+            "nodeId": 57434,
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                4.55,
+                0.567456
+              ]
+            },
+            "rotation": {
+              "$bc": "e",
+              "_": [
+                1.570796,
+                0,
+                0
+              ]
+            },
+            "shadowFar": 20,
+            "shadowMapSize": 1024,
+            "shadowNear": 0.2,
+            "uuid": "94d9390748e39195"
           }
         ],
         "modelUrl": "@project/assets/PolyforkAssets/street-lamp-29f365.glb",
         "name": "Street Lamp 29 F 366",
-        "nodeId": 8379,
+        "nodeId": 11331,
         "physicsOptions": {
           "collisionMeshType": "trimesh"
         },
@@ -3531,7 +4086,32 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsDestroy.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "modelUrl": "@project/assets/generated/OrdinanceCards/streetlights/StreetLightsDestroy_Card_ShopSignStyle.glb",
+                "name": "StreetLightsDestroy Card (ShopSign setup)",
+                "navigationGeometryRole": "none",
+                "nodeId": 12994,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "uuid": "cad1190f1a8fec81"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsDestroy_Clean.glb",
             "name": "Street Lights Destroy 03",
             "nodeId": 60651,
             "physicsOptions": {
@@ -3546,7 +4126,6 @@
                 -0.6
               ]
             },
-            "receiveShadow": true,
             "scale": {
               "$bc": "v3",
               "_": [
@@ -3560,7 +4139,32 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsDestroy.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "modelUrl": "@project/assets/generated/OrdinanceCards/streetlights/StreetLightsDestroy_Card_ShopSignStyle.glb",
+                "name": "StreetLightsDestroy Card (ShopSign setup)",
+                "navigationGeometryRole": "none",
+                "nodeId": 29130,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "uuid": "3fc34e142d418bba"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsDestroy_Clean.glb",
             "name": "Street Lights Destroy 04",
             "nodeId": 56471,
             "physicsOptions": {
@@ -3597,7 +4201,32 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsClimb.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "modelUrl": "@project/assets/generated/OrdinanceCards/streetlights/StreetLightsClimb_Card_ShopSignStyle.glb",
+                "name": "StreetLightsClimb Card (ShopSign setup)",
+                "navigationGeometryRole": "none",
+                "nodeId": 39590,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "uuid": "77622bc8b204edcb"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsClimb_Clean.glb",
             "name": "Street Lights Climb 03",
             "nodeId": 37181,
             "physicsOptions": {
@@ -3612,7 +4241,6 @@
                 -0.733333
               ]
             },
-            "receiveShadow": true,
             "rotation": {
               "$bc": "e",
               "_": [
@@ -3634,7 +4262,32 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsClimb.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "modelUrl": "@project/assets/generated/OrdinanceCards/streetlights/StreetLightsClimb_Card_ShopSignStyle.glb",
+                "name": "StreetLightsClimb Card (ShopSign setup)",
+                "navigationGeometryRole": "none",
+                "nodeId": 23953,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "uuid": "875ec97bd27fcf4c"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsClimb_Clean.glb",
             "name": "Street Lights Climb 04",
             "nodeId": 32030,
             "physicsOptions": {
@@ -3667,6 +4320,39 @@
               ]
             },
             "uuid": "465659b64f401f52"
+          },
+          {
+            "$bc": "ENGINE.SpotLightNode",
+            "children": [
+              {
+                "$ref": 6
+              }
+            ],
+            "light": {
+              "$ref": 6
+            },
+            "name": "Lamp Ground Spot",
+            "nodeId": 8850,
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                4.55,
+                0.599527
+              ]
+            },
+            "rotation": {
+              "$bc": "e",
+              "_": [
+                1.570796,
+                0,
+                0
+              ]
+            },
+            "shadowFar": 20,
+            "shadowMapSize": 1024,
+            "shadowNear": 0.2,
+            "uuid": "5600bd9ae213f290"
           }
         ],
         "modelUrl": "@project/assets/PolyforkAssets/street-lamp-29f365.glb",
@@ -3742,7 +4428,32 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsDestroy.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "modelUrl": "@project/assets/generated/OrdinanceCards/streetlights/StreetLightsDestroy_Card_ShopSignStyle.glb",
+                "name": "StreetLightsDestroy Card (ShopSign setup)",
+                "navigationGeometryRole": "none",
+                "nodeId": 40600,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "uuid": "75eb9fe4875b6f29"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsDestroy_Clean.glb",
             "name": "Street Lights Destroy 09",
             "nodeId": 62974,
             "physicsOptions": {
@@ -3771,7 +4482,32 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsDestroy.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "modelUrl": "@project/assets/generated/OrdinanceCards/streetlights/StreetLightsDestroy_Card_ShopSignStyle.glb",
+                "name": "StreetLightsDestroy Card (ShopSign setup)",
+                "navigationGeometryRole": "none",
+                "nodeId": 44881,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "uuid": "ca2ba2d525d5cdbd"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsDestroy_Clean.glb",
             "name": "Street Lights Destroy 10",
             "nodeId": 2936,
             "physicsOptions": {
@@ -3786,7 +4522,6 @@
                 -0.800001
               ]
             },
-            "receiveShadow": true,
             "rotation": {
               "$bc": "e",
               "_": [
@@ -3808,7 +4543,32 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsClimb.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "modelUrl": "@project/assets/generated/OrdinanceCards/streetlights/StreetLightsClimb_Card_ShopSignStyle.glb",
+                "name": "StreetLightsClimb Card (ShopSign setup)",
+                "navigationGeometryRole": "none",
+                "nodeId": 27677,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "uuid": "8404d4129320235f"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsClimb_Clean.glb",
             "name": "Street Lights Climb 09",
             "nodeId": 6662,
             "physicsOptions": {
@@ -3823,7 +4583,6 @@
                 -0.733334
               ]
             },
-            "receiveShadow": true,
             "rotation": {
               "$bc": "e",
               "_": [
@@ -3845,7 +4604,32 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsClimb.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "modelUrl": "@project/assets/generated/OrdinanceCards/streetlights/StreetLightsClimb_Card_ShopSignStyle.glb",
+                "name": "StreetLightsClimb Card (ShopSign setup)",
+                "navigationGeometryRole": "none",
+                "nodeId": 58689,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "uuid": "784843187098f988"
+              }
+            ],
+            "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsClimb_Clean.glb",
             "name": "Street Lights Climb 10",
             "nodeId": 220,
             "physicsOptions": {
@@ -3878,6 +4662,39 @@
               ]
             },
             "uuid": "450ee1a395ab1292"
+          },
+          {
+            "$bc": "ENGINE.SpotLightNode",
+            "children": [
+              {
+                "$ref": 7
+              }
+            ],
+            "light": {
+              "$ref": 7
+            },
+            "name": "Lamp Ground Spot",
+            "nodeId": 9232,
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                4.55,
+                0.6
+              ]
+            },
+            "rotation": {
+              "$bc": "e",
+              "_": [
+                1.570796,
+                0,
+                0
+              ]
+            },
+            "shadowFar": 20,
+            "shadowMapSize": 1024,
+            "shadowNear": 0.2,
+            "uuid": "5f50b8b151bfdb2a"
           }
         ],
         "modelUrl": "@project/assets/PolyforkAssets/street-lamp-29f365.glb",
@@ -4276,9 +5093,9 @@
         "position": {
           "$bc": "v3",
           "_": [
-            -20.8,
+            -20.4,
             -0.1,
-            -21.3
+            -20.6
           ]
         },
         "receiveShadow": true,
@@ -4573,7 +5390,7 @@
           "_": [
             -13.4,
             -0.1,
-            -16.5
+            -17.3
           ]
         },
         "receiveShadow": true,
@@ -4813,7 +5630,7 @@
           "_": [
             -16.4,
             -0.1,
-            -17.6
+            -18.5
           ]
         },
         "receiveShadow": true,
@@ -4922,6 +5739,99 @@
           "objectFlags": 4
         },
         "uuid": "c67becc5179a44a9"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "modelUrl": "@project/assets/models/road-gap-triangle-asphalt.glb",
+        "name": "Asphalt Road Triangle Gap Filler 03",
+        "nodeId": 56734,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            15.9,
+            -1.6,
+            7.9
+          ]
+        },
+        "receiveShadow": true,
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            2.503412,
+            -0.659058,
+            2.456873
+          ]
+        },
+        "static": true,
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "bfad7fb2fd355ad3"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "modelUrl": "@project/assets/models/road-gap-triangle-asphalt.glb",
+        "name": "Asphalt Road Triangle Gap Filler 04",
+        "nodeId": 30097,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -24,
+            -0.8,
+            -7.9
+          ]
+        },
+        "receiveShadow": true,
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            2.503412,
+            -0.659058,
+            2.456873
+          ]
+        },
+        "static": true,
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "c1aef2934133e5e3"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "modelUrl": "@project/assets/models/road-gap-triangle-asphalt.glb",
+        "name": "Asphalt Road Triangle Gap Filler 05",
+        "nodeId": 42525,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -24,
+            -1.5,
+            0
+          ]
+        },
+        "receiveShadow": true,
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            2.503412,
+            -0.659058,
+            2.456873
+          ]
+        },
+        "static": true,
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "df05e7739dd98807"
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
@@ -5172,80 +6082,41 @@
         "castShadow": true,
         "children": [
           {
-            "$bc": "ENGINE.MeshNode",
-            "children": {
-              "$length": 1
-            },
-            "name": "TramTrigger",
-            "nodeId": 49262,
-            "physicsOptions": {
-              "collisionProfile": "NoCollision",
-              "enabled": false
-            },
-            "position": {
-              "$bc": "v3",
-              "_": [
-                0.006514,
-                3.4,
-                0
-              ]
-            },
-            "scale": {
-              "$bc": "v3",
-              "_": [
-                2.32,
-                0.76,
-                7.92
-              ]
-            },
-            "uuid": "a08acb30-256d-44f7-88f0-e8171f7fdcad",
-            "visible": false
-          }
-        ],
-        "modelUrl": "@project/assets/PolyforkAssets/City-tram.glb",
-        "name": "City Tram",
-        "nodeId": 57594,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
-        "position": {
-          "$bc": "v3",
-          "_": [
-            6.8,
-            -1.6,
-            12
-          ]
-        },
-        "receiveShadow": true,
-        "rotation": {
-          "$bc": "e",
-          "_": [
-            0,
-            -1.570796,
-            0
-          ]
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1.5,
-            1.5,
-            1.5
-          ]
-        },
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "d42b889c-b8f6-4272-b27d-e2ff3c039630"
-      },
-      {
-        "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
-        "children": [
-          {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/PoleCut.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "canEverTick": false,
+                "frustumCulled": false,
+                "modelMaterials": [],
+                "modelUrl": "@project/assets/generated/OrdinanceCards/v7/PoleCut_Card_White_v7.glb",
+                "name": "PoleCut Card Upright v5",
+                "navigationGeometryRole": "none",
+                "nodeId": 36695,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "tickEnabled": false,
+                "uuid": "073df2dd48442c7d"
+              }
+            ],
+            "editorData": {
+              "hidden": false
+            },
+            "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/PoleCut_Board_v2.glb",
             "name": "Pole Cut 02",
             "nodeId": 36724,
             "physicsOptions": {
@@ -5260,7 +6131,6 @@
                 -0.000001
               ]
             },
-            "receiveShadow": true,
             "rotation": {
               "$bc": "e",
               "_": [
@@ -5282,7 +6152,35 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/HighVoltage.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "canEverTick": false,
+                "frustumCulled": false,
+                "modelUrl": "@project/assets/generated/OrdinanceCards/v5/HighVoltage_Card_Upright_v5.glb",
+                "name": "HighVoltage Card Upright v5",
+                "navigationGeometryRole": "none",
+                "nodeId": 14665,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    0.525,
+                    0
+                  ]
+                },
+                "tickEnabled": false,
+                "uuid": "147399a6b98cdb68"
+              }
+            ],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/HighVoltage_Board_v2.glb",
             "name": "High Voltage",
             "nodeId": 13191,
             "physicsOptions": {
@@ -5297,7 +6195,6 @@
                 -0.153848
               ]
             },
-            "receiveShadow": true,
             "rotation": {
               "$bc": "e",
               "_": [
@@ -5319,7 +6216,35 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/HighVoltage.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "canEverTick": false,
+                "frustumCulled": false,
+                "modelUrl": "@project/assets/generated/OrdinanceCards/v5/HighVoltage_Card_Upright_v5.glb",
+                "name": "HighVoltage Card Upright v5",
+                "navigationGeometryRole": "none",
+                "nodeId": 26759,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    0.525,
+                    0
+                  ]
+                },
+                "tickEnabled": false,
+                "uuid": "b93099692952e7fd"
+              }
+            ],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/HighVoltage_Board_v2.glb",
             "name": "High Voltage 02",
             "nodeId": 22637,
             "physicsOptions": {
@@ -5334,7 +6259,6 @@
                 0.153844
               ]
             },
-            "receiveShadow": true,
             "rotation": {
               "$bc": "e",
               "_": [
@@ -5396,7 +6320,36 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/PoleCut.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "canEverTick": false,
+                "frustumCulled": false,
+                "modelMaterials": [],
+                "modelUrl": "@project/assets/generated/OrdinanceCards/v7/PoleCut_Card_White_v7.glb",
+                "name": "PoleCut Card Upright v5",
+                "navigationGeometryRole": "none",
+                "nodeId": 63521,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "tickEnabled": false,
+                "uuid": "a8500bdac4e92645"
+              }
+            ],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/PoleCut_Board_v2.glb",
             "name": "Pole Cut",
             "nodeId": 997,
             "physicsOptions": {
@@ -5411,7 +6364,6 @@
                 -0.000001
               ]
             },
-            "receiveShadow": true,
             "rotation": {
               "$bc": "e",
               "_": [
@@ -5433,7 +6385,35 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/HighVoltage.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "canEverTick": false,
+                "frustumCulled": false,
+                "modelUrl": "@project/assets/generated/OrdinanceCards/v5/HighVoltage_Card_Upright_v5.glb",
+                "name": "HighVoltage Card Upright v5",
+                "navigationGeometryRole": "none",
+                "nodeId": 52885,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    0.525,
+                    0
+                  ]
+                },
+                "tickEnabled": false,
+                "uuid": "9197a8766fb6af26"
+              }
+            ],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/HighVoltage_Board_v2.glb",
             "name": "High Voltage 03",
             "nodeId": 7383,
             "physicsOptions": {
@@ -5448,7 +6428,6 @@
                 -0.153848
               ]
             },
-            "receiveShadow": true,
             "rotation": {
               "$bc": "e",
               "_": [
@@ -5470,7 +6449,35 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/HighVoltage.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "canEverTick": false,
+                "frustumCulled": false,
+                "modelUrl": "@project/assets/generated/OrdinanceCards/v5/HighVoltage_Card_Upright_v5.glb",
+                "name": "HighVoltage Card Upright v5",
+                "navigationGeometryRole": "none",
+                "nodeId": 59090,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    0.525,
+                    0
+                  ]
+                },
+                "tickEnabled": false,
+                "uuid": "3a681e67de94ae6a"
+              }
+            ],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/HighVoltage_Board_v2.glb",
             "name": "High Voltage 04",
             "nodeId": 30325,
             "physicsOptions": {
@@ -5485,7 +6492,6 @@
                 0.153844
               ]
             },
-            "receiveShadow": true,
             "rotation": {
               "$bc": "e",
               "_": [
@@ -5547,7 +6553,36 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/PoleCut.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "canEverTick": false,
+                "frustumCulled": false,
+                "modelMaterials": [],
+                "modelUrl": "@project/assets/generated/OrdinanceCards/v7/PoleCut_Card_White_v7.glb",
+                "name": "PoleCut Card Upright v5",
+                "navigationGeometryRole": "none",
+                "nodeId": 39711,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "tickEnabled": false,
+                "uuid": "f9ed9a230e56a909"
+              }
+            ],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/PoleCut_Board_v2.glb",
             "name": "Pole Cut 03",
             "nodeId": 11638,
             "physicsOptions": {
@@ -5562,7 +6597,6 @@
                 -0.000001
               ]
             },
-            "receiveShadow": true,
             "rotation": {
               "$bc": "e",
               "_": [
@@ -5584,7 +6618,35 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/HighVoltage.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "canEverTick": false,
+                "frustumCulled": false,
+                "modelUrl": "@project/assets/generated/OrdinanceCards/v5/HighVoltage_Card_Upright_v5.glb",
+                "name": "HighVoltage Card Upright v5",
+                "navigationGeometryRole": "none",
+                "nodeId": 47551,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    0.525,
+                    0
+                  ]
+                },
+                "tickEnabled": false,
+                "uuid": "8f6ecd6acd5393e3"
+              }
+            ],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/HighVoltage_Board_v2.glb",
             "name": "High Voltage 05",
             "nodeId": 9428,
             "physicsOptions": {
@@ -5599,7 +6661,6 @@
                 -0.153848
               ]
             },
-            "receiveShadow": true,
             "rotation": {
               "$bc": "e",
               "_": [
@@ -5621,7 +6682,35 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/HighVoltage.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "canEverTick": false,
+                "frustumCulled": false,
+                "modelUrl": "@project/assets/generated/OrdinanceCards/v5/HighVoltage_Card_Upright_v5.glb",
+                "name": "HighVoltage Card Upright v5",
+                "navigationGeometryRole": "none",
+                "nodeId": 47046,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    0.525,
+                    0
+                  ]
+                },
+                "tickEnabled": false,
+                "uuid": "2ba878057cd3bc17"
+              }
+            ],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/HighVoltage_Board_v2.glb",
             "name": "High Voltage 06",
             "nodeId": 34254,
             "physicsOptions": {
@@ -5636,7 +6725,6 @@
                 0.153844
               ]
             },
-            "receiveShadow": true,
             "rotation": {
               "$bc": "e",
               "_": [
@@ -5698,7 +6786,36 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/PoleCut.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "canEverTick": false,
+                "frustumCulled": false,
+                "modelMaterials": [],
+                "modelUrl": "@project/assets/generated/OrdinanceCards/v7/PoleCut_Card_White_v7.glb",
+                "name": "PoleCut Card Upright v5",
+                "navigationGeometryRole": "none",
+                "nodeId": 65238,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    1.025,
+                    0
+                  ]
+                },
+                "tickEnabled": false,
+                "uuid": "2a6e01b22c6470a1"
+              }
+            ],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/PoleCut_Board_v2.glb",
             "name": "Pole Cut 04",
             "nodeId": 36894,
             "physicsOptions": {
@@ -5713,7 +6830,6 @@
                 0
               ]
             },
-            "receiveShadow": true,
             "rotation": {
               "$bc": "e",
               "_": [
@@ -5735,7 +6851,35 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/HighVoltage.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "canEverTick": false,
+                "frustumCulled": false,
+                "modelUrl": "@project/assets/generated/OrdinanceCards/v5/HighVoltage_Card_Upright_v5.glb",
+                "name": "HighVoltage Card Upright v5",
+                "navigationGeometryRole": "none",
+                "nodeId": 37878,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    0.525,
+                    0
+                  ]
+                },
+                "tickEnabled": false,
+                "uuid": "2ef596624011ad45"
+              }
+            ],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/HighVoltage_Board_v2.glb",
             "name": "High Voltage 07",
             "nodeId": 59787,
             "physicsOptions": {
@@ -5750,7 +6894,6 @@
                 0.153846
               ]
             },
-            "receiveShadow": true,
             "scale": {
               "$bc": "v3",
               "_": [
@@ -5764,7 +6907,35 @@
           {
             "$bc": "ENGINE.ModelMeshNode",
             "castShadow": true,
-            "modelUrl": "@project/assets/PolyforkAssets/Ordinances/HighVoltage.glb",
+            "children": [
+              {
+                "$bc": "ENGINE.ModelMeshNode",
+                "canEverTick": false,
+                "frustumCulled": false,
+                "modelUrl": "@project/assets/generated/OrdinanceCards/v5/HighVoltage_Card_Upright_v5.glb",
+                "name": "HighVoltage Card Upright v5",
+                "navigationGeometryRole": "none",
+                "nodeId": 62314,
+                "physicsOptions": {
+                  "collisionMeshType": "none",
+                  "collisionProfile": "NoCollision",
+                  "enabled": false,
+                  "generateCollisionEvents": false,
+                  "ignoreForInputCollision": true
+                },
+                "position": {
+                  "$bc": "v3",
+                  "_": [
+                    0,
+                    0.525,
+                    0
+                  ]
+                },
+                "tickEnabled": false,
+                "uuid": "dd7caa629f41bf83"
+              }
+            ],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/HighVoltage_Board_v2.glb",
             "name": "High Voltage 08",
             "nodeId": 40670,
             "physicsOptions": {
@@ -5779,7 +6950,6 @@
                 -0.153846
               ]
             },
-            "receiveShadow": true,
             "scale": {
               "$bc": "v3",
               "_": [
@@ -5911,9 +7081,6 @@
         "modelUrl": "@project/assets/PolyforkAssets/Axe.glb",
         "name": "Axe",
         "nodeId": 40541,
-        "physicsOptions": {
-          "motionType": "dynamic"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -6014,6 +7181,7 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "hiddenInGame": true,
         "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_07.glb",
         "name": "Sm Sb Env Cloud 07",
         "nodeId": 10424,
@@ -6047,10 +7215,12 @@
         "userData": {
           "objectFlags": 4
         },
-        "uuid": "5d3854b3-f2dc-4ccd-b7bd-500bb2717fb7"
+        "uuid": "5d3854b3-f2dc-4ccd-b7bd-500bb2717fb7",
+        "visible": false
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "hiddenInGame": true,
         "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_07.glb",
         "name": "Sm Sb Env Cloud 11",
         "nodeId": 31581,
@@ -6084,10 +7254,12 @@
         "userData": {
           "objectFlags": 4
         },
-        "uuid": "7f41ffa41ec75397"
+        "uuid": "7f41ffa41ec75397",
+        "visible": false
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "hiddenInGame": true,
         "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_07.glb",
         "name": "Sm Sb Env Cloud 09",
         "nodeId": 32148,
@@ -6121,10 +7293,12 @@
         "userData": {
           "objectFlags": 4
         },
-        "uuid": "c3f41816bfbc541f"
+        "uuid": "c3f41816bfbc541f",
+        "visible": false
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "hiddenInGame": true,
         "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_06.glb",
         "name": "Sm Sb Env Cloud 06",
         "nodeId": 50911,
@@ -6150,10 +7324,12 @@
         "userData": {
           "objectFlags": 4
         },
-        "uuid": "93a05724-7151-44e3-a2f5-13352577d20c"
+        "uuid": "93a05724-7151-44e3-a2f5-13352577d20c",
+        "visible": false
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "hiddenInGame": true,
         "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_05.glb",
         "name": "Sm Sb Env Cloud 05",
         "nodeId": 21289,
@@ -6187,10 +7363,12 @@
         "userData": {
           "objectFlags": 4
         },
-        "uuid": "0bff071c-a0fc-4e7f-9a26-58d908e0d78b"
+        "uuid": "0bff071c-a0fc-4e7f-9a26-58d908e0d78b",
+        "visible": false
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "hiddenInGame": true,
         "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_05.glb",
         "name": "Sm Sb Env Cloud 08",
         "nodeId": 60696,
@@ -6224,10 +7402,12 @@
         "userData": {
           "objectFlags": 4
         },
-        "uuid": "0e3ca3a8756bc955"
+        "uuid": "0e3ca3a8756bc955",
+        "visible": false
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "hiddenInGame": true,
         "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_04.glb",
         "name": "Sm Sb Env Cloud 10",
         "nodeId": 39350,
@@ -6261,10 +7441,12 @@
         "userData": {
           "objectFlags": 4
         },
-        "uuid": "9d1a7e98943ab44b"
+        "uuid": "9d1a7e98943ab44b",
+        "visible": false
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "hiddenInGame": true,
         "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_02.glb",
         "name": "Sm Sb Env Cloud 02",
         "nodeId": 18978,
@@ -6298,22 +7480,24 @@
         "userData": {
           "objectFlags": 4
         },
-        "uuid": "b54653f2-1952-4ac2-a9fc-706b1a9199b1"
+        "uuid": "b54653f2-1952-4ac2-a9fc-706b1a9199b1",
+        "visible": false
       },
       {
         "$bc": "ENGINE.SceneNode",
         "children": [
           {
             "$bc": "ENGINE.SceneEnvironmentNode",
-            "backgroundBlurriness": 0.12,
-            "backgroundIntensity": 0.88,
-            "bottomColor": "#efe6d6",
-            "envMapIntensity": 0.55,
-            "middleColor": "#c5d6ea",
+            "backgroundBlurriness": 0.08,
+            "backgroundIntensity": 1.35,
+            "bottomColor": "#f6ebdc",
+            "envMapIntensity": 0.45,
+            "height": 1025,
+            "middleColor": "#9ec4e6",
             "name": "Skybox",
             "nodeId": 45650,
             "sourceType": "Procedural",
-            "topColor": "#8eb6d8",
+            "topColor": "#4f94d4",
             "uuid": "c4d7ef38abac2867"
           }
         ],
@@ -6327,7 +7511,35 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/JayWalking.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/JayWalking_Card_Upright_v5.glb",
+            "name": "JayWalking Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 64621,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "2d904f8fdffc23fd"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/JayWalking_Clean.glb",
         "name": "JayWalking",
         "nodeId": 48491,
         "physicsOptions": {
@@ -6341,7 +7553,6 @@
             -0.7
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
@@ -6350,7 +7561,35 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/JayWalking.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/JayWalking_Card_Upright_v5.glb",
+            "name": "JayWalking Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 47781,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "c0cf4788e82bed4b"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/JayWalking_Clean.glb",
         "name": "JayWalking 02",
         "nodeId": 6126,
         "physicsOptions": {
@@ -6364,7 +7603,6 @@
             -8.5
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
@@ -6373,7 +7611,36 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Bench.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/OrdinanceCards/Cards/Bench_Card_Upright_v5.glb",
+            "name": "Bench Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 3019,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "affcc88e6a633dd9"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Bench_CleanBoard.glb",
         "name": "Bench",
         "nodeId": 2595,
         "physicsOptions": {
@@ -6387,7 +7654,6 @@
             -0.7
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
@@ -6396,9 +7662,97 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Bench.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/OrdinanceCards/Cards/Bench_Card_Upright_v5.glb",
+            "name": "Bench Card Upright v 07",
+            "navigationGeometryRole": "none",
+            "nodeId": 3019,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "96f35c1f144da5d2"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Bench_CleanBoard.glb",
+        "name": "Bench 03",
+        "nodeId": 62074,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -0.6,
+            -0.1,
+            -11.4
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            0,
+            -1.570796,
+            0
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "5cc2ac8b4f5c4520"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "castShadow": true,
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/OrdinanceCards/Cards/Bench_Card_Upright_v5.glb",
+            "name": "Bench Card Upright v 06",
+            "navigationGeometryRole": "none",
+            "nodeId": 3019,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "23e1b3914342a955"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Bench_CleanBoard.glb",
         "name": "Bench 02",
-        "nodeId": 24481,
+        "nodeId": 7075,
         "physicsOptions": {
           "collisionMeshType": "trimesh"
         },
@@ -6410,16 +7764,95 @@
             7.3
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
-        "uuid": "d680608ef8510dea"
+        "uuid": "f2454236475d6374"
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Birds.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/OrdinanceCards/Cards/Bench_Card_Upright_v5.glb",
+            "name": "Bench Card Upright v 08",
+            "navigationGeometryRole": "none",
+            "nodeId": 3019,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "21acfb2d137435a6"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Bench_CleanBoard.glb",
+        "name": "Bench 04",
+        "nodeId": 14797,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -6.9,
+            -1.5,
+            15.5
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "fe40218b59fe29e5"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "castShadow": true,
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Birds_Card_BackOnly_v5.glb",
+            "name": "Birds Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 19738,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                1.025,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "0182e9110b5fc6bd"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/Birds_Clean.glb",
         "name": "Birds",
         "nodeId": 7257,
         "physicsOptions": {
@@ -6430,10 +7863,9 @@
           "_": [
             -17.3,
             9.7,
-            -10.8
+            -11.5
           ]
         },
-        "receiveShadow": true,
         "rotation": {
           "$bc": "e",
           "_": [
@@ -6450,7 +7882,36 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Birds.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Birds_Card_BackOnly_v5.glb",
+            "name": "Birds Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 1798,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                1.025,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "e22ee8d70cc2a800"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/Birds_Clean.glb",
         "name": "Birds 02",
         "nodeId": 42650,
         "physicsOptions": {
@@ -6464,7 +7925,6 @@
             -3.2
           ]
         },
-        "receiveShadow": true,
         "rotation": {
           "$bc": "e",
           "_": [
@@ -6481,7 +7941,36 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Bushes.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Bushes_Card_Upright_v5.glb",
+            "name": "Bushes Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 58032,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "4bd707517b6dde13"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/Bushes_Clean.glb",
         "name": "Bushes",
         "nodeId": 41560,
         "physicsOptions": {
@@ -6495,7 +7984,6 @@
             7.4
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
@@ -6504,7 +7992,36 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Crates.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Crates_Card_Upright_v5.glb",
+            "name": "Crates Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 14979,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "4cf16c67b1065523"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/Crates_Clean.glb",
         "name": "Crates",
         "nodeId": 63107,
         "physicsOptions": {
@@ -6518,7 +8035,6 @@
             -21.8
           ]
         },
-        "receiveShadow": true,
         "rotation": {
           "$bc": "e",
           "_": [
@@ -6535,7 +8051,36 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Crates.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Crates_Card_Upright_v5.glb",
+            "name": "Crates Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 34758,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "cded531296d14491"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/Crates_Clean.glb",
         "name": "Crates 02",
         "nodeId": 35666,
         "physicsOptions": {
@@ -6549,7 +8094,6 @@
             -0.7
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
@@ -6558,7 +8102,36 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Crates.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Crates_Card_Upright_v5.glb",
+            "name": "Crates Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 25513,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "771fb1ce1ae595a4"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/Crates_Clean.glb",
         "name": "Crates 03",
         "nodeId": 54326,
         "physicsOptions": {
@@ -6572,7 +8145,6 @@
             7.3
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
@@ -6580,7 +8152,80 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Cones.glb",
+        "castShadow": true,
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Crates_Card_Upright_v5.glb",
+            "name": "Crates Card Upright v 06",
+            "navigationGeometryRole": "none",
+            "nodeId": 25513,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "f274b9d4f1ecd2a5"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/Crates_Clean.glb",
+        "name": "Crates 04",
+        "nodeId": 23197,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -14.2,
+            -1.5,
+            15.5
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "402295aa1e6ecdd7"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "castShadow": true,
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Cones_Card_Angled_v5.glb",
+            "name": "Cones Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 11471,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "tickEnabled": false,
+            "uuid": "b3b34578873db0c0"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/Cones_Clean.glb",
         "name": "DontRemoveTheCones",
         "nodeId": 4894,
         "position": {
@@ -6599,9 +8244,38 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Cats.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Cats_Card_Upright_v5.glb",
+            "name": "Cats Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 3301,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "f25269b42bfc16c5"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/Cats_Clean.glb",
         "name": "Cats",
-        "nodeId": 21525,
+        "nodeId": 41860,
         "physicsOptions": {
           "collisionMeshType": "trimesh"
         },
@@ -6613,7 +8287,6 @@
             -8.5
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
@@ -6622,7 +8295,28 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/CatFeed.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/CatFeed_Card_Angled_v5.glb",
+            "name": "CatFeed Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 2249,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "tickEnabled": false,
+            "uuid": "2f8bbf903f54c930"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/CatFeed_Clean.glb",
         "name": "Cat Feed",
         "nodeId": 59844,
         "physicsOptions": {
@@ -6636,7 +8330,6 @@
             -9.2
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
@@ -6644,7 +8337,29 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Maintenance.glb",
+        "castShadow": true,
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Maintenance_Card_Angled_v5.glb",
+            "name": "Maintenance Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 26754,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "tickEnabled": false,
+            "uuid": "572a960b09fcbdde"
+          }
+        ],
+        "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/Maintenance_Board_v2.glb",
         "name": "Maintenance",
         "nodeId": 51124,
         "position": {
@@ -6664,7 +8379,36 @@
         "$bc": "ENGINE.ModelMeshNode",
         "canEverTick": false,
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Logs.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Logs_Card_Upright_v5.glb",
+            "name": "Logs Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 35254,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "0ed81b72f05687a9"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/Logs_Clean.glb",
         "name": "Logs",
         "nodeId": 46160,
         "physicsOptions": {
@@ -6678,7 +8422,6 @@
             -0.7
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
@@ -6687,7 +8430,36 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Logs.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Logs_Card_Upright_v5.glb",
+            "name": "Logs Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 10671,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "1b45274e5adddb19"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/Logs_Clean.glb",
         "name": "Logs 02",
         "nodeId": 61297,
         "physicsOptions": {
@@ -6701,7 +8473,6 @@
             7.3
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
@@ -6710,38 +8481,87 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Bench.glb",
-        "name": "Bench 03",
-        "nodeId": 32989,
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Logs_Card_Upright_v5.glb",
+            "name": "Logs Card Upright v 06",
+            "navigationGeometryRole": "none",
+            "nodeId": 10671,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "1c27e5afc3fc58e8"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/Logs_Clean.glb",
+        "name": "Logs 04",
+        "nodeId": 54295,
         "physicsOptions": {
           "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
           "_": [
-            -0.6,
-            -0.1,
-            -11.45
-          ]
-        },
-        "receiveShadow": true,
-        "rotation": {
-          "$bc": "e",
-          "_": [
-            0,
-            -1.570796,
-            0
+            -12.3,
+            -1.5,
+            15.5
           ]
         },
         "userData": {
           "objectFlags": 4
         },
-        "uuid": "54b51c46d712ca6f"
+        "uuid": "933e143d60313ca4"
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Logs.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Logs_Card_Upright_v5.glb",
+            "name": "Logs Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 21054,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "7f23ffd3aa0f366b"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/Logs_Clean.glb",
         "name": "Logs 03",
         "nodeId": 1024,
         "physicsOptions": {
@@ -6755,7 +8575,6 @@
             -13.35
           ]
         },
-        "receiveShadow": true,
         "rotation": {
           "$bc": "e",
           "_": [
@@ -6772,7 +8591,36 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Kiosk.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Kiosk_Card_Upright_v5.glb",
+            "name": "Kiosk Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 58658,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "2d07eaa2250cfe16"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/Kiosk_Clean.glb",
         "name": "Kiosk",
         "nodeId": 49760,
         "physicsOptions": {
@@ -6786,7 +8634,6 @@
             1.2
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
@@ -6795,7 +8642,36 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/FireHydrant.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/FireHydrant_Card_Upright_v5.glb",
+            "name": "FireHydrant Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 7808,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "b801dc795fe5ac42"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/FireHydrant_Clean.glb",
         "name": "Fire Hydrant 02",
         "nodeId": 46203,
         "physicsOptions": {
@@ -6809,7 +8685,6 @@
             -9.3
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
@@ -6818,7 +8693,240 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/FireHydrant.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Rocks_Card_Upright_v5.glb",
+            "name": "Rocks Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 41774,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "631024cd24f74202"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/FireHydrant_Clean.glb",
+        "name": "Rocks Ordinance Board",
+        "nodeId": 2185,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -4.7,
+            -0.1,
+            -8.5
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "c907813aa6979555"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "castShadow": true,
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Rocks_Card_Upright_v5.glb",
+            "name": "Rocks Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 27322,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "3a8d9101ce0c2934"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/FireHydrant_Clean.glb",
+        "name": "Rocks Ordinance Board 03",
+        "nodeId": 36968,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            11.3,
+            -0.8,
+            7.3
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "c43e086763e41a40"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "castShadow": true,
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Rocks_Card_Upright_v5.glb",
+            "name": "Rocks Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 35091,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "0f4230d28f09e97a"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/FireHydrant_Clean.glb",
+        "name": "Rocks Ordinance Board 04",
+        "nodeId": 37815,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -8.8,
+            -1.5,
+            15.5
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "44f7553ffe74d4ac"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "castShadow": true,
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Rocks_Card_Upright_v5.glb",
+            "name": "Rocks Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 907,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "68bffc11e96649e4"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/FireHydrant_Clean.glb",
+        "name": "Rocks Ordinance Board 02",
+        "nodeId": 49297,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -0.6,
+            -0.1,
+            -15.4
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            0,
+            1.570796,
+            0
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "e035c480248f0214"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "castShadow": true,
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/FireHydrant_Card_Upright_v5.glb",
+            "name": "FireHydrant Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 65440,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "e89346b05267b186"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/FireHydrant_Clean.glb",
         "name": "Fire Hydrant",
         "nodeId": 5361,
         "physicsOptions": {
@@ -6832,7 +8940,6 @@
             -0.8
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
@@ -6842,7 +8949,36 @@
         "$bc": "ENGINE.ModelMeshNode",
         "canEverTick": false,
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Metals.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Metals_Card_Upright_v5.glb",
+            "name": "Metals Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 21188,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "1ff95023453f0261"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/Metals_Clean.glb",
         "name": "Metals",
         "nodeId": 35464,
         "physicsOptions": {
@@ -6856,7 +8992,6 @@
             -0.7
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
@@ -6865,7 +9000,36 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Metals.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Metals_Card_Upright_v5.glb",
+            "name": "Metals Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 39965,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "f82e9cf3062d7b34"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/Metals_Clean.glb",
         "name": "Metals 02",
         "nodeId": 42806,
         "physicsOptions": {
@@ -6879,7 +9043,6 @@
             7.3
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
@@ -6888,7 +9051,87 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Metals.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Metals_Card_Upright_v5.glb",
+            "name": "Metals Card Upright v 06",
+            "navigationGeometryRole": "none",
+            "nodeId": 39965,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "d1551d55226748b0"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/Metals_Clean.glb",
+        "name": "Metals 04",
+        "nodeId": 31426,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -19.8,
+            -1.6,
+            15.5
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "b4f469aa9fda86c8"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "castShadow": true,
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Metals_Card_Upright_v5.glb",
+            "name": "Metals Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 8939,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "67bba0dd9a4e8ba0"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/Metals_Clean.glb",
         "name": "Metals 03",
         "nodeId": 48035,
         "physicsOptions": {
@@ -6902,7 +9145,6 @@
             -17.5
           ]
         },
-        "receiveShadow": true,
         "rotation": {
           "$bc": "e",
           "_": [
@@ -6919,7 +9161,36 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/ShopSign.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/ShopSign_Card_BackOnly_v5.glb",
+            "name": "ShopSign Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 36694,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                1.025,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "e87336fc260175d4"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/ShopSign_Clean.glb",
         "name": "Shop Sign",
         "nodeId": 52540,
         "physicsOptions": {
@@ -6933,7 +9204,6 @@
             -12.9
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
@@ -6942,7 +9212,36 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Signs.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Signs_Card_Upright_v5.glb",
+            "name": "Signs Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 64205,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "efa55909a870ac3b"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/Signs_Clean.glb",
         "name": "Signs",
         "nodeId": 31810,
         "physicsOptions": {
@@ -6956,7 +9255,6 @@
             -0.7
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
@@ -6965,7 +9263,36 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/TreesClimbing.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/TreesClimbing_Card_BackOnly_v5.glb",
+            "name": "TreesClimbing Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 3419,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                1.025,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "709951b4d9c67406"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/TreesClimbing_Clean.glb",
         "name": "Trees Climbing",
         "nodeId": 9927,
         "physicsOptions": {
@@ -6979,7 +9306,6 @@
             4.8
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
@@ -6988,7 +9314,36 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/TreesClimbing.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/TreesClimbing_Card_BackOnly_v5.glb",
+            "name": "TreesClimbing Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 22060,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                1.025,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "d865225ca050e779"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/TreesClimbing_Clean.glb",
         "name": "Trees Climbing 02",
         "nodeId": 1109,
         "physicsOptions": {
@@ -7002,7 +9357,6 @@
             -13.789509
           ]
         },
-        "receiveShadow": true,
         "rotation": {
           "$bc": "e",
           "_": [
@@ -7019,7 +9373,36 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/WoodPlanks.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/WoodPlanks_Card_Upright_v5.glb",
+            "name": "WoodPlanks Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 39467,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "18ff6d487b2108ec"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/WoodPlanks_Clean.glb",
         "name": "Wood Planks",
         "nodeId": 13419,
         "physicsOptions": {
@@ -7033,7 +9416,6 @@
             -0.7
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
@@ -7042,7 +9424,36 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/WoodPlanks.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/WoodPlanks_Card_Upright_v5.glb",
+            "name": "WoodPlanks Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 47649,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "280da2847eaf837a"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/WoodPlanks_Clean.glb",
         "name": "Wood Planks 02",
         "nodeId": 16583,
         "physicsOptions": {
@@ -7056,7 +9467,6 @@
             7.3
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
@@ -7065,7 +9475,87 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/WoodPlanks.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/WoodPlanks_Card_Upright_v5.glb",
+            "name": "WoodPlanks Card Upright v 06",
+            "navigationGeometryRole": "none",
+            "nodeId": 47649,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "3d37b3b1ce3f1023"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/WoodPlanks_Clean.glb",
+        "name": "Wood Planks 04",
+        "nodeId": 27465,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -17.9,
+            -1.6,
+            15.5
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "8773ef612261b44d"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "castShadow": true,
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelMaterials": [],
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/WoodPlanks_Card_Upright_v5.glb",
+            "name": "WoodPlanks Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 10806,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                2.568416,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "8faef1e742a13577"
+          }
+        ],
+        "modelUrl": "@project/assets/OrdinanceCards/Clean/WoodPlanks_Clean.glb",
         "name": "Wood Planks 03",
         "nodeId": 3904,
         "physicsOptions": {
@@ -7079,7 +9569,6 @@
             -19.4
           ]
         },
-        "receiveShadow": true,
         "rotation": {
           "$bc": "e",
           "_": [
@@ -7096,7 +9585,35 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/DoNotStep.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/DoNotStep_Card_Upright_v5.glb",
+            "name": "DoNotStep Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 53363,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                0.525,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "a0b0326556325870"
+          }
+        ],
+        "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/DoNotStep_Board_v2.glb",
         "name": "Do Not Step City Tram",
         "nodeId": 14641,
         "physicsOptions": {
@@ -7111,17 +9628,43 @@
             12
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
-        "uuid": "33af548e7c08dc31",
-        "visible": false
+        "uuid": "33af548e7c08dc31"
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
-        "modelUrl": "@project/assets/PolyforkAssets/Ordinances/DoNotStep.glb",
+        "children": [
+          {
+            "$bc": "ENGINE.ModelMeshNode",
+            "canEverTick": false,
+            "frustumCulled": false,
+            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/DoNotStep_Card_Upright_v5.glb",
+            "name": "DoNotStep Card Upright v5",
+            "navigationGeometryRole": "none",
+            "nodeId": 55204,
+            "physicsOptions": {
+              "collisionMeshType": "none",
+              "collisionProfile": "NoCollision",
+              "enabled": false,
+              "generateCollisionEvents": false,
+              "ignoreForInputCollision": true
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                0.525,
+                0
+              ]
+            },
+            "tickEnabled": false,
+            "uuid": "52b3d8dd1bd914c5"
+          }
+        ],
+        "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/DoNotStep_Board_v2.glb",
         "name": "Do Not Step Car",
         "nodeId": 55096,
         "physicsOptions": {
@@ -7132,11 +9675,10 @@
           "$bc": "v3",
           "_": [
             2.5,
-            1.37,
-            -16
+            1.7,
+            -15.8
           ]
         },
-        "receiveShadow": true,
         "userData": {
           "objectFlags": 4
         },
@@ -7252,7 +9794,7 @@
           "_": [
             -18.7,
             3.6,
-            -9.9
+            -10.625
           ]
         },
         "receiveShadow": true,
@@ -7272,7 +9814,7 @@
           "_": [
             -14.7,
             3.6,
-            -9.9
+            -10.625
           ]
         },
         "receiveShadow": true,
@@ -7286,13 +9828,13 @@
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/tiled-roof-section-6f1121.glb",
         "name": "Tiled Roof Section 6 F 1123",
-        "nodeId": 16726,
+        "nodeId": 22401,
         "position": {
           "$bc": "v3",
           "_": [
             -10.7,
             3.6,
-            -9.9
+            -10.625
           ]
         },
         "receiveShadow": true,
@@ -7592,11 +10134,11 @@
         "$bc": "ENGINE.HemisphereLightNode",
         "children": [
           {
-            "$ref": 3
+            "$ref": 8
           }
         ],
         "light": {
-          "$ref": 3
+          "$ref": 8
         },
         "name": "Anime Sky Fill",
         "nodeId": 20880,
@@ -7609,11 +10151,11 @@
         "$bc": "ENGINE.AmbientLightNode",
         "children": [
           {
-            "$ref": 4
+            "$ref": 9
           }
         ],
         "light": {
-          "$ref": 4
+          "$ref": 9
         },
         "name": "Anime Ambient Fill",
         "nodeId": 47640,
@@ -8192,16 +10734,546 @@
       },
       {
         "$bc": "ENGINE.FogNode",
-        "fogColor": "#e4ebf2",
-        "fogDensity": 0.006,
-        "fogFar": 110,
-        "fogNear": 36,
+        "fogColor": "#d7e4f0",
+        "fogDensity": 0.012,
+        "fogFar": 55,
+        "fogNear": 12,
         "name": "Afternoon Haze",
         "nodeId": 44092,
         "userData": {
           "objectFlags": 4
         },
         "uuid": "3360cf19b9d5c39e"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
+        "name": "Mesh Fense Pane",
+        "nodeId": 16542,
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -21,
+            -0.1,
+            -23.7
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            3.141593,
+            0,
+            3.141593
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            2,
+            2,
+            2
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "62e8e7dc-25c0-4f94-b180-9e652ffe1802"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
+        "name": "Mesh Fense Pane 07",
+        "nodeId": 17064,
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -23.3,
+            -0.1,
+            -21.7
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            0,
+            -1.570796,
+            0
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            2,
+            2,
+            2
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "84feb358068478d5"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
+        "name": "Mesh Fense Pane 08",
+        "nodeId": 45911,
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -23.3,
+            -0.1,
+            -18.1
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            0,
+            -1.570796,
+            0
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            2,
+            2,
+            2
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "a292adc786b7029e"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
+        "name": "Mesh Fense Pane 09",
+        "nodeId": 55816,
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -23.3,
+            -0.1,
+            -14.4
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            0,
+            -1.570796,
+            0
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            2,
+            2,
+            2
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "42271785865923ba"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
+        "name": "Mesh Fense Pane 10",
+        "nodeId": 35858,
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -23.3,
+            -0.1,
+            -10.8
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            0,
+            -1.570796,
+            0
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            2,
+            2,
+            2
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "8bbffe17c43e5880"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
+        "name": "Mesh Fense Pane 02",
+        "nodeId": 59256,
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -17.4,
+            -0.1,
+            -23.7
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            -3.141592,
+            0,
+            -3.141592
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            2,
+            2,
+            2
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "13b13581c69e6997"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
+        "name": "Mesh Fense Pane 03",
+        "nodeId": 8634,
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -13.8,
+            -0.1,
+            -23.7
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            -3.141592,
+            0,
+            -3.141592
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            2,
+            2,
+            2
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "cf2241642034c734"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
+        "name": "Mesh Fense Pane 04",
+        "nodeId": 50566,
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -10.2,
+            -0.1,
+            -23.7
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            -3.141592,
+            0,
+            -3.141592
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            2,
+            2,
+            2
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "cd079d004c094844"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
+        "name": "Mesh Fense Pane 05",
+        "nodeId": 42169,
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -6.6,
+            -0.1,
+            -23.7
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            -3.141592,
+            0,
+            -3.141592
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            2,
+            2,
+            2
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "dd866f8c87a129ce"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
+        "name": "Mesh Fense Pane 06",
+        "nodeId": 62309,
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -2.95,
+            -0.1,
+            -23.7
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            -3.141592,
+            0,
+            -3.141592
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            2,
+            2,
+            2
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "17a5a6a0315069d2"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "castShadow": true,
+        "children": [
+          {
+            "$bc": "ENGINE.SceneNode",
+            "name": "TramTrigger",
+            "nodeId": 38159,
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0.006514,
+                3.4,
+                0
+              ]
+            },
+            "rotation": {
+              "$bc": "e",
+              "_": {
+                "$length": 3
+              }
+            },
+            "scale": {
+              "$bc": "v3",
+              "_": [
+                2.32,
+                0.76,
+                7.92
+              ]
+            },
+            "uuid": "8334c6791319357f",
+            "visible": false
+          }
+        ],
+        "modelUrl": "@project/assets/PolyforkAssets/City-tram.glb",
+        "name": "City Tram",
+        "nodeId": 1372,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh"
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            7,
+            -1.6,
+            12
+          ]
+        },
+        "receiveShadow": true,
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            0,
+            -1.570796,
+            0
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1.5,
+            1.5,
+            1.5
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "95dfdd37a9c14326"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "ef0cc6e5-0f43-4a62-925b-070508316e1a"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "1c8eecc6-62fd-47c5-9b56-5b6c9585307c"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "bab7ed42-88ca-4a20-84bb-96c04340c5db"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "74b8124f-9100-4795-8c2c-8a0078d18a1f"
       }
     ],
     "editorData": {
@@ -8279,11 +11351,6 @@
           },
           {
             "id": "d1509744-269f-44ca-abe4-698e2db1c36d",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
-            "id": "62d83f5e-8cd2-4a64-80bf-d15569cf6233",
             "isExpanded": false,
             "nodeType": "actor"
           },
@@ -8713,11 +11780,6 @@
             "nodeType": "actor"
           },
           {
-            "id": "d42b889c-b8f6-4272-b27d-e2ff3c039630",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
             "id": "ef111cb519fa14d7",
             "isExpanded": false,
             "nodeType": "actor"
@@ -8971,10 +12033,6 @@
             "nodeType": "actor"
           },
           {
-            "id": "d680608ef8510dea",
-            "nodeType": "actor"
-          },
-          {
             "id": "6b0d5ce6bbd83174",
             "nodeType": "actor"
           },
@@ -8992,10 +12050,6 @@
           },
           {
             "id": "160d10b5841e8c6f",
-            "nodeType": "actor"
-          },
-          {
-            "id": "54b51c46d712ca6f",
             "nodeType": "actor"
           },
           {
@@ -9120,6 +12174,110 @@
           },
           {
             "id": "3360cf19b9d5c39e",
+            "nodeType": "actor"
+          },
+          {
+            "id": "38baaca05e7293b9",
+            "nodeType": "actor"
+          },
+          {
+            "id": "f2454236475d6374",
+            "nodeType": "actor"
+          },
+          {
+            "id": "5cc2ac8b4f5c4520",
+            "nodeType": "actor"
+          },
+          {
+            "id": "c907813aa6979555",
+            "nodeType": "actor"
+          },
+          {
+            "id": "c43e086763e41a40",
+            "nodeType": "actor"
+          },
+          {
+            "id": "e035c480248f0214",
+            "nodeType": "actor"
+          },
+          {
+            "id": "402295aa1e6ecdd7",
+            "nodeType": "actor"
+          },
+          {
+            "id": "933e143d60313ca4",
+            "nodeType": "actor"
+          },
+          {
+            "id": "b4f469aa9fda86c8",
+            "nodeType": "actor"
+          },
+          {
+            "id": "8773ef612261b44d",
+            "nodeType": "actor"
+          },
+          {
+            "id": "fe40218b59fe29e5",
+            "nodeType": "actor"
+          },
+          {
+            "id": "44f7553ffe74d4ac",
+            "nodeType": "actor"
+          },
+          {
+            "id": "62e8e7dc-25c0-4f94-b180-9e652ffe1802",
+            "nodeType": "actor"
+          },
+          {
+            "id": "84feb358068478d5",
+            "nodeType": "actor"
+          },
+          {
+            "id": "a292adc786b7029e",
+            "nodeType": "actor"
+          },
+          {
+            "id": "42271785865923ba",
+            "nodeType": "actor"
+          },
+          {
+            "id": "8bbffe17c43e5880",
+            "nodeType": "actor"
+          },
+          {
+            "id": "13b13581c69e6997",
+            "nodeType": "actor"
+          },
+          {
+            "id": "cf2241642034c734",
+            "nodeType": "actor"
+          },
+          {
+            "id": "cd079d004c094844",
+            "nodeType": "actor"
+          },
+          {
+            "id": "dd866f8c87a129ce",
+            "nodeType": "actor"
+          },
+          {
+            "id": "17a5a6a0315069d2",
+            "nodeType": "actor"
+          },
+          {
+            "id": "bfad7fb2fd355ad3",
+            "nodeType": "actor"
+          },
+          {
+            "id": "c1aef2934133e5e3",
+            "nodeType": "actor"
+          },
+          {
+            "id": "df05e7739dd98807",
+            "nodeType": "actor"
+          },
+          {
+            "id": "95dfdd37a9c14326",
             "nodeType": "actor"
           }
         ],

@@ -20,8 +20,8 @@ const PULSE_COUNT = 3;
 /** Slow opacity breathe (~one full cycle every ~2.5s). */
 const PULSE_HZ = 0.4;
 const PULSE_DURATION_SEC = PULSE_COUNT / PULSE_HZ;
-/** Soft floor so keys never disappear mid-pulse. */
-const PULSE_OPACITY_MIN = 0.3;
+/** Begin fully transparent, then breathe up to opaque and back again. */
+const PULSE_OPACITY_MIN = 0;
 const PULSE_OPACITY_MAX = 1;
 
 type IconSpec = {
@@ -158,7 +158,8 @@ export class TutorialKeysGuide extends ENGINE.SceneNode {
     }
     this.pulseRemaining = Math.max(0, this.pulseRemaining - deltaTime);
     this.pulseElapsed += deltaTime;
-    // Soft → opaque → soft (never fully transparent).
+    // Transparent → opaque → transparent. The cosine starts at the transparent
+    // end so the tutorial appears by fading in rather than abruptly popping on.
     const wave = 0.5 - 0.5 * Math.cos(this.pulseElapsed * Math.PI * 2 * PULSE_HZ);
     this.setIconsOpacity(
       PULSE_OPACITY_MIN + wave * (PULSE_OPACITY_MAX - PULSE_OPACITY_MIN),

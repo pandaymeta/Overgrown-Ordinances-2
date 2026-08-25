@@ -33,8 +33,9 @@
           "navigationGeometryRole": "exclude",
           "nodeId": 61570,
           "physicsOptions": {
-            "collisionProfile": "NoCollision",
-            "enabled": false
+            "collisionMeshType": "boundingBox",
+            "density": 40,
+            "motionType": "dynamic"
           },
           "prefabId": "a47f9c12e83b6d01",
           "receiveShadow": true,

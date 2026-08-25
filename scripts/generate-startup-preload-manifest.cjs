@@ -1,45 +1,11 @@
 const fs = require('fs');
-const path = require('path');
 
-const root = 'assets';
-const includeExt = ['.glb', '.prefab.json', '.material.json', '.woff', '.woff2'];
-const includeExactTextures = new Set([
-  'assets/textures/mail-trail-arrow.png',
-  'assets/textures/startup-splash/transition-cream-atlas.png',
-]);
-const skipDir = new Set(['screenshots', 'transition-cream-png', 'codex-backups']);
-const skipName = /(?:\.tmp\.|\.treefix|screenshot)/i;
-
-const out = [];
-
-function walk(dir) {
-  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (ent.name.startsWith('.')) {
-      continue;
-    }
-    if (ent.isDirectory()) {
-      if (skipDir.has(ent.name)) {
-        continue;
-      }
-      walk(path.join(dir, ent.name));
-      continue;
-    }
-    if (skipName.test(ent.name)) {
-      continue;
-    }
-    const rel = path.join(dir, ent.name).split(path.sep).join('/');
-    const lower = ent.name.toLowerCase();
-    const okExt = includeExt.some((e) => lower.endsWith(e));
-    const okTex = includeExactTextures.has(rel);
-    if (!okExt && !okTex) {
-      continue;
-    }
-    out.push(`@project/${rel}`);
-  }
-}
-
-walk(root);
-out.sort();
+// Scene models are collected at runtime by StartupLoadingScreenSystem. Keep this
+// list only for assets required before the scene can be revealed; scanning the
+// entire assets directory made obsolete backups part of every startup preload.
+const out = [
+  '@project/assets/textures/startup-splash/transition-cream-atlas.png',
+];
 const body = [
   '/**',
   ' * Project assets preloaded behind the cream startup loading screen.',

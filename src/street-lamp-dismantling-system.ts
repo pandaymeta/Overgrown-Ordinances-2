@@ -44,6 +44,8 @@ const ORDINANCE_BOARD_INTERACTION_RANGE = 6;
 const UTILITY_POLE_INTERACTION_RANGE = 2.5;
 /** Standing ordinance boards (axe → fallen dynamic prefab). */
 const ORDINANCE_BOARD_MODEL_PATH = /PolyforkAssets\/Ordinances\/([^/?#]+)\.glb/i;
+/** Current generated cards use a separate v5 folder rather than the legacy Ordinances path. */
+const ORDINANCE_CARD_V5_MODEL_PATH = /(?:^|\/)([A-Za-z]+)_Card_(?:[A-Za-z]+_)?v5\.glb$/i;
 /** Pole/lamp scrap drops and already-fallen meshes — not axe targets. */
 const ORDINANCE_BOARD_NON_TARGET_NAME = /(?:\s+Drop|\s+Fallen(?:\s+Mesh)?)(?:\s+\d+)?$/i;
 /**
@@ -162,10 +164,11 @@ export class StreetLampDismantlingSystem {
   private readonly targetRotation = new THREE.Quaternion();
   private readonly targetSize = new THREE.Vector3();
   private readonly dropPosition = new THREE.Vector3();
-  private readonly shakeOriginalPosition = new THREE.Vector3();
-  private readonly shakeOriginalRotation = new THREE.Quaternion();
   private readonly shakeRotation = new THREE.Quaternion();
   private readonly shakeEuler = new THREE.Euler();
+  private readonly hitShakeBaseQuaternion = new THREE.Quaternion();
+  private readonly hitShakeOffsetQuaternion = new THREE.Quaternion();
+  private readonly hitShakeEuler = new THREE.Euler();
   private readonly healthAnchor = new THREE.Vector3();
   private readonly healthScreenPosition = new THREE.Vector3();
   private readonly aimRaycaster = new THREE.Raycaster();
@@ -228,6 +231,7 @@ export class StreetLampDismantlingSystem {
     this.handleHydrantCollision(hydrantNode, other, event);
   };
   private flashedTarget: ENGINE.ModelMeshNode | null = null;
+  private hitShakeTarget: ENGINE.ModelMeshNode | null = null;
   private pendingDismantle: ENGINE.ModelMeshNode | null = null;
   private hitFlashRemaining = 0;
   private hitFlashElapsed = 0;
@@ -328,7 +332,8 @@ export class StreetLampDismantlingSystem {
         carriedObject,
         camera,
         aimNdc,
-        { meshFallback: false },
+        // Mesh fallback so dense foliage (bushes) still outline when physics misses.
+        { meshFallback: true },
       );
       this.setTarget(world, target);
     }
@@ -973,23 +978,32 @@ export class StreetLampDismantlingSystem {
   }
 
   private isOrdinanceBoardTarget(node: ENGINE.ModelMeshNode): boolean {
-    const modelUrl = node.modelUrl ?? '';
-    if (!ORDINANCE_BOARD_MODEL_PATH.test(modelUrl)) {
-      return false;
-    }
     const name = node.name ?? '';
     if (ORDINANCE_BOARD_NON_TARGET_NAME.test(name)) {
       return false;
     }
-    return true;
+    return this.getOrdinanceBoardKey(node) !== null;
   }
 
-  private resolveOrdinanceBoardFallenPrefab(modelUrl: string): string | null {
-    const match = modelUrl.match(ORDINANCE_BOARD_MODEL_PATH);
-    if (!match?.[1]) {
-      return null;
+  /** Resolve both legacy board models and the generated v5 card models. */
+  private getOrdinanceBoardKey(node: ENGINE.ModelMeshNode): string | null {
+    const modelUrl = node.modelUrl ?? '';
+    const v5Match = modelUrl.match(ORDINANCE_CARD_V5_MODEL_PATH);
+    if (v5Match?.[1]) {
+      return v5Match[1];
     }
-    return ORDINANCE_BOARD_FALLEN_PREFABS_BY_LOWER.get(match[1].toLowerCase()) ?? null;
+    const match = modelUrl.match(ORDINANCE_BOARD_MODEL_PATH);
+    if (match?.[1]) {
+      return match[1];
+    }
+    // The name fallback also covers cards whose asset URL is supplied at runtime.
+    const nameMatch = (node.name ?? '').match(/^([A-Za-z]+)\s+Card\s+Upright\s+v5$/i);
+    return nameMatch?.[1] ?? null;
+  }
+
+  private resolveOrdinanceBoardFallenPrefab(target: ENGINE.ModelMeshNode): string | null {
+    const key = this.getOrdinanceBoardKey(target);
+    return key ? ORDINANCE_BOARD_FALLEN_PREFABS_BY_LOWER.get(key.toLowerCase()) ?? null : null;
   }
 
   private applyTargetHit(target: ENGINE.ModelMeshNode): number {
@@ -998,12 +1012,16 @@ export class StreetLampDismantlingSystem {
       (this.cherryTreeHealth.get(target) ?? CHERRY_TREE_MAX_HEALTH) - 1,
     );
     this.cherryTreeHealth.set(target, health);
+    // Mark a final hit before applying feedback so the standing lamp is never
+    // moved while its dismantled replacement is being created.
+    if (health <= 0) {
+      this.pendingDismantle = target;
+    }
     this.applyRedHitFlash(target);
     if (this.treeHealthBarReady) {
       this.treeHealthBar?.setValue(health, true);
     }
     if (health <= 0) {
-      this.pendingDismantle = target;
       if (TRAFFIC_CONE_C_NAME.test(target.name ?? '')) {
         this.trafficConeFifthHitHandler?.();
       }
@@ -1394,8 +1412,12 @@ export class StreetLampDismantlingSystem {
     this.flashedTarget = target;
     this.hitFlashRemaining = HIT_FLASH_DURATION;
     this.hitFlashElapsed = 0;
-    this.shakeOriginalPosition.copy(target.position);
-    this.shakeOriginalRotation.copy(target.quaternion);
+    // Give ordinary axe hits a short physical-looking response.  The final hit
+    // stays still so it cannot fight the physics/replacement handoff.
+    if (this.pendingDismantle !== target) {
+      this.hitShakeTarget = target;
+      this.hitShakeBaseQuaternion.copy(target.quaternion);
+    }
 
     target.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) {
@@ -1431,19 +1453,17 @@ export class StreetLampDismantlingSystem {
     }
     this.hitFlashRemaining -= deltaTime;
     this.hitFlashElapsed += deltaTime;
-    const phase = this.hitFlashElapsed * 95;
-    const fade = Math.max(0, this.hitFlashRemaining / HIT_FLASH_DURATION);
-    this.flashedTarget.position.copy(this.shakeOriginalPosition);
-    this.flashedTarget.position.x += Math.sin(phase) * 0.035 * fade;
-    this.flashedTarget.position.z += Math.cos(phase * 0.83) * 0.025 * fade;
-    this.shakeEuler.set(
-      Math.sin(phase * 0.71) * 0.018 * fade,
-      0,
-      Math.cos(phase) * 0.028 * fade,
-    );
-    this.shakeRotation.setFromEuler(this.shakeEuler);
-    this.flashedTarget.quaternion.copy(this.shakeOriginalRotation).multiply(this.shakeRotation);
-    this.flashedTarget.updateMatrixWorld(true);
+    if (this.hitShakeTarget) {
+      const progress = Math.min(1, this.hitFlashElapsed / HIT_FLASH_DURATION);
+      const envelope = (1 - progress) * (1 - progress);
+      const angle = Math.sin(progress * Math.PI * 5) * 0.055 * envelope;
+      this.hitShakeEuler.set(angle * 0.45, 0, -angle, 'XYZ');
+      this.hitShakeOffsetQuaternion.setFromEuler(this.hitShakeEuler);
+      this.hitShakeTarget.quaternion
+        .copy(this.hitShakeBaseQuaternion)
+        .multiply(this.hitShakeOffsetQuaternion);
+      this.hitShakeTarget.updateMatrixWorld(true);
+    }
     if (this.hitFlashRemaining <= 0) {
       const pendingDismantle = this.pendingDismantle;
       this.pendingDismantle = null;
@@ -1456,10 +1476,10 @@ export class StreetLampDismantlingSystem {
   }
 
   private restoreHitFlash(): void {
-    if (this.flashedTarget) {
-      this.flashedTarget.position.copy(this.shakeOriginalPosition);
-      this.flashedTarget.quaternion.copy(this.shakeOriginalRotation);
-      this.flashedTarget.updateMatrixWorld(true);
+    if (this.hitShakeTarget) {
+      this.hitShakeTarget.quaternion.copy(this.hitShakeBaseQuaternion);
+      this.hitShakeTarget.updateMatrixWorld(true);
+      this.hitShakeTarget = null;
     }
     for (const record of this.hitFlashRecords) {
       record.mesh.material = record.originalMaterial;
@@ -1531,7 +1551,7 @@ export class StreetLampDismantlingSystem {
     }
 
     if (isOrdinanceBoard) {
-      const boardPrefab = this.resolveOrdinanceBoardFallenPrefab(target.modelUrl ?? '');
+      const boardPrefab = this.resolveOrdinanceBoardFallenPrefab(target);
       if (!boardPrefab) {
         console.error(
           '[StreetLampDismantlingSystem] No fallen prefab for ordinance board.',
@@ -1662,6 +1682,7 @@ export class StreetLampDismantlingSystem {
         window.setTimeout(() => this.applySourceMaterialsToScrap(scraps, sourceMaterials), 1000);
       }
       if (prefabPath === BUSH_8_BB_DROP_PREFAB) {
+        this.enableWearableBushPhysics(scraps);
         this.playBushTransformAnimation(scraps);
       }
       if (FALLEN_UTILITY_POLE_PREFABS.has(prefabPath) && poleOrdinanceDrops) {
@@ -2136,6 +2157,28 @@ export class StreetLampDismantlingSystem {
       basePosition: node.position.clone(),
       baseQuaternion: node.quaternion.clone(),
     });
+  }
+
+  /** Ensure the hide-bush drop is physically pickable / wearable after spawn. */
+  private enableWearableBushPhysics(scraps: ENGINE.SceneNode): void {
+    const models = scraps instanceof ENGINE.ModelMeshNode
+      ? [scraps]
+      : scraps.getNodes(ENGINE.ModelMeshNode);
+    for (const model of models) {
+      model.replacePhysicsOptions({
+        enabled: true,
+        collisionMeshType: ENGINE.CollisionMeshType.BoundingBox,
+        collisionProfile: ENGINE.DefaultCollisionProfile.BlockAll,
+        motionType: ENGINE.PhysicsMotionType.Dynamic,
+        density: 40,
+      });
+      model.setPhysicsTransformUpdateFlags({
+        sendPosition: true,
+        sendRotation: true,
+        receivePosition: true,
+        receiveRotation: true,
+      });
+    }
   }
 
   private updateBushAppearAnimations(deltaTime: number): void {

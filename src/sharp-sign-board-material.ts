@@ -6,6 +6,7 @@
 
 import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
+import { texture } from 'three/tsl';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 
 @ENGINE.GameClass({
@@ -73,7 +74,12 @@ export class SharpSignBoardMaterial extends ENGINE.NodeMaterialAsset(MeshBasicNo
         });
       }
 
-      this.colorNode = null;
+      // MeshBasicNodeMaterial only renders a texture when it is wired into its
+      // node graph. syncTexturePath loads and owns `map`, but unlike a classic
+      // MeshBasicMaterial it does not automatically use that map as the output.
+      // Keeping this explicit is what lets Studio-managed image assets render
+      // on GLB card planes in both the editor and play mode.
+      this.colorNode = map ? texture(map).rgb : null;
       this.needsUpdate = true;
     } catch (error) {
       console.error('[SharpSignBoardMaterial] rebuild failed', error);

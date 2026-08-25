@@ -4,8 +4,10 @@ import * as THREE from 'three';
 const SILHOUETTE_GREEN = 0x39ff63;
 /** Skip absurdly dense props (keeps hover hitch small). */
 const MAX_WIRE_MESHES = 48;
-/** Inflate slightly so wires sit outside the solid surface. */
-const WIRE_SCALE = 1.004;
+/** Inflate so wires sit outside the solid surface (foliage needs more lift). */
+const WIRE_SCALE = 1.012;
+const WIRE_SCALE_FOLIAGE = 1.04;
+const FOLIAGE_TARGET_NAME = /bush|tree|cherry|fern|grass/i;
 /**
  * Climb / contact volumes parented under lamps, trams, trees, etc.
  * Never include these in the green hover wireframe.
@@ -15,6 +17,7 @@ const OUTLINE_EXCLUDED_TRIGGER_NAME = /^(?:LampTrigger|TramTrigger|TramRoofTrigg
 type WireBinding = {
   node: ENGINE.MeshNode;
   source: THREE.Mesh;
+  owner: ENGINE.ModelMeshNode | null;
 };
 
 /**
@@ -30,6 +33,7 @@ export class HoverSilhouette {
   private readonly position = new THREE.Vector3();
   private readonly quaternion = new THREE.Quaternion();
   private readonly scale = new THREE.Vector3();
+  private readonly relativeMatrix = new THREE.Matrix4();
   private readonly scratchGeometry = new THREE.BoxGeometry(0.01, 0.01, 0.01);
   private loadToken = 0;
 
@@ -43,7 +47,11 @@ export class HoverSilhouette {
     }
     this.target = target;
     this.loadToken += 1;
-    if (!world || !target || isOutlineExcludedTrigger(target)) {
+    if (
+      !world
+      || !target
+      || isOutlineExcludedTrigger(target)
+    ) {
       this.disposeWires();
       return;
     }
@@ -57,16 +65,23 @@ export class HoverSilhouette {
     if (this.bindings.length === 0) {
       return;
     }
-    for (const { node, source } of this.bindings) {
+    for (const { node, source, owner } of this.bindings) {
       if (!source.parent) {
         node.visible = false;
         continue;
       }
       source.updateWorldMatrix(true, false);
-      source.matrixWorld.decompose(this.position, this.quaternion, this.scale);
+      if (owner) {
+        owner.updateWorldMatrix(true, false);
+        this.relativeMatrix.copy(owner.matrixWorld).invert().multiply(source.matrixWorld);
+        this.relativeMatrix.decompose(this.position, this.quaternion, this.scale);
+      } else {
+        source.matrixWorld.decompose(this.position, this.quaternion, this.scale);
+      }
       node.position.copy(this.position);
       node.quaternion.copy(this.quaternion);
-      node.scale.copy(this.scale).multiplyScalar(WIRE_SCALE);
+      const foliage = FOLIAGE_TARGET_NAME.test(this.target?.name ?? '');
+      node.scale.copy(this.scale).multiplyScalar(foliage ? WIRE_SCALE_FOLIAGE : WIRE_SCALE);
       node.visible = source.visible;
     }
   }
@@ -89,7 +104,8 @@ export class HoverSilhouette {
       wireframe: true,
       transparent: true,
       opacity: 0.95,
-      depthTest: true,
+      // depthTest off so dense foliage (bushes) still shows the green cage
+      depthTest: false,
       depthWrite: false,
       toneMapped: false,
     });
@@ -127,11 +143,11 @@ export class HoverSilhouette {
       return;
     }
     if (meshes.length > MAX_WIRE_MESHES) {
-      meshes.sort((a, b) => triangleCount(b) - triangleCount(a));
+      meshes.sort((a, b) => triangleCount(b.mesh) - triangleCount(a.mesh));
       meshes.length = MAX_WIRE_MESHES;
     }
 
-    for (const mesh of meshes) {
+    for (const { mesh, owner } of meshes) {
       const node = ENGINE.MeshNode.create({
         name: 'Hover Trimesh Wire',
         geometry: mesh.geometry,
@@ -141,17 +157,17 @@ export class HoverSilhouette {
         physicsOptions: { enabled: false },
       });
       node.renderOrder = 900;
-      world.add(node);
-      this.bindings.push({ node, source: mesh });
+      (owner ?? world).add(node);
+      this.bindings.push({ node, source: mesh, owner });
     }
     this.syncTransforms();
   }
 
-  private collectMeshes(root: THREE.Object3D): THREE.Mesh[] {
-    const meshes: THREE.Mesh[] = [];
+  private collectMeshes(root: THREE.Object3D): Array<{ mesh: THREE.Mesh; owner: ENGINE.ModelMeshNode | null }> {
+    const meshes: Array<{ mesh: THREE.Mesh; owner: ENGINE.ModelMeshNode | null }> = [];
     const seen = new Set<THREE.Mesh>();
 
-    const addMesh = (mesh: THREE.Mesh): void => {
+    const addMesh = (mesh: THREE.Mesh, owner: ENGINE.ModelMeshNode | null = null): void => {
       if (!mesh.geometry || seen.has(mesh) || !mesh.visible) {
         return;
       }
@@ -159,7 +175,7 @@ export class HoverSilhouette {
         return;
       }
       seen.add(mesh);
-      meshes.push(mesh);
+      meshes.push({ mesh, owner });
     };
 
     if (root instanceof ENGINE.SceneNode) {
@@ -174,7 +190,7 @@ export class HoverSilhouette {
           continue;
         }
         for (const mesh of model.getAllMeshes()) {
-          addMesh(mesh);
+          addMesh(mesh, model);
         }
       }
     }

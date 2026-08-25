@@ -27,5 +27,6 @@ import './startup-loading-screen.js';
 import './startup-preload-manifest.js';
 import './startup-splash-frames.js';
 import './street-lamp-dismantling-system.js';
+import './street-lamp-ground-lights.js';
 import './tutorial-keys-guide.js';
 import '@packs/stylized-village-pack/index';
