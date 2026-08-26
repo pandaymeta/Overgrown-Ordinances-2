@@ -10,6 +10,7 @@ import {
   DELIVERY_WAY_GOAL,
   MailDeliveryFlowSystem,
 } from './mail-delivery-flow.js';
+import { GameSound, playSound } from './game-audio.js';
 import { ensureOvergrownAveriaFont } from './overgrown-averia-font.js';
 
 const INFO_TITLE = 'Overgrown Rules';
@@ -155,6 +156,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     if (this.choiceModal || this.victoryEndScreen) {
       return;
     }
+    playSound(this.getWorld(), GameSound.UiOpen, 0.6);
     this.closeModals();
     const modal = this.createModalShell(INFO_TITLE);
     const body = document.createElement('p');
@@ -182,6 +184,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     if (this.choiceModal || this.victoryEndScreen) {
       return;
     }
+    playSound(this.getWorld(), GameSound.UiOpen, 0.6);
     this.closeModals();
     const modal = this.createModalShell(LIST_TITLE);
     const body = document.createElement('div');
@@ -299,6 +302,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
   }
 
   private onVictory(): void {
+    playSound(this.getWorld(), GameSound.Victory, 0.9);
     this.getFlow()?.setCompletionInteractionPaused(true);
     this.choiceModal?.remove();
     this.choiceModal = null;
@@ -408,6 +412,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       ].join(';');
       close.addEventListener('click', (event) => {
         event.stopPropagation();
+        playSound(this.getWorld(), GameSound.UiClose, 0.6);
         this.closeModals();
       });
       panel.appendChild(close);

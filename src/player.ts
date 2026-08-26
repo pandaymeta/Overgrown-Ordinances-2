@@ -5,6 +5,7 @@ import { createAirmailEnvelope, disposeAirmailEnvelope } from './airmail-envelop
 import { installAnimationOneShotHostPatch } from './animation-oneshot-host-patch.js';
 import { CarryableCrateNode } from './carryable-crate-node.js';
 import { FaceMovementCharacterMovementNode } from './face-movement-character-movement.js';
+import { FootstepPlayer, GameSound, playSound } from './game-audio.js';
 import { HoverSilhouette } from './hover-silhouette.js';
 import { StreetLampDismantlingSystem } from './street-lamp-dismantling-system.js';
 
@@ -120,6 +121,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
   private introFaceMeshAmount = 0;
   private cinematicCameraLock = false;
   private movementFrozen = false;
+  private readonly footsteps = new FootstepPlayer();
   private mailDeliveryClickHandler: (() => boolean) | null = null;
   private readonly cameraLookTarget = new THREE.Vector3();
   private hasCameraLookTarget = false;
@@ -814,7 +816,23 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     );
     this.updateHoveredCarryable(deltaTime);
     this.hoverSilhouette.syncTransforms();
+    this.updateFootsteps(deltaTime);
     this.respawnIfBelowWorld();
+  }
+
+  private updateFootsteps(deltaTime: number): void {
+    if (this.movementFrozen) {
+      this.footsteps.update(this.getWorld(), deltaTime, false, false);
+      return;
+    }
+    const { isWalking, isRunning, isClimbing, isJumping } = this.getLocomotionAnimationParameters();
+    const grounded = !isClimbing && !isJumping;
+    this.footsteps.update(
+      this.getWorld(),
+      deltaTime,
+      grounded && (isWalking || isRunning),
+      isRunning,
+    );
   }
 
   public override tickPostPhysics(deltaTime: number): void {
@@ -975,6 +993,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
       this.setHoveredCarryable(null);
       this.hideTrajectory();
       this.updateHeldTool();
+      playSound(this.getWorld(), GameSound.PickupTool, 0.8);
       return true;
     }
 
@@ -986,6 +1005,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     this.carriedCrate = crate;
     this.setHoveredCarryable(null);
     this.updateCarriedCrate();
+    playSound(this.getWorld(), GameSound.PickupSoft, 0.8);
     return true;
   }
 

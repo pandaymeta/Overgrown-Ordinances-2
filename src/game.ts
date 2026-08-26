@@ -20,6 +20,7 @@ import { GameCursorSystem } from './game-cursor.js';
 import { StartupLoadingScreenSystem } from './startup-loading-screen.js';
 import { TutorialKeysGuide } from './tutorial-keys-guide.js';
 import { StreetLampGroundLightsSystem } from './street-lamp-ground-lights.js';
+import { preloadGameAudio } from './game-audio.js';
 
 installAnimationOneShotHostPatch(ENGINE);
 
@@ -46,6 +47,8 @@ class ThirdPersonGameMode extends ENGINE.GameMode {
     }
     // Cream cover before anything else so the world never flashes on the first frames.
     this.ensureStartupLoadingScreen();
+    // Warm the decode cache while the cream cover is up, so the first stamp lands.
+    void preloadGameAudio();
     this.ensureStartupBrushReveal();
     this.attachAccessStairWalkRamp();
     this.attachClimbableLadders();

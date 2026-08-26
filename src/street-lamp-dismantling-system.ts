@@ -2,6 +2,7 @@ import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 import { CarryableCrateNode } from './carryable-crate-node.js';
 import { SKIP_ENVIRONMENT_ART_FLAG } from './environment-art-direction.js';
+import { GameSound, playSoundAt } from './game-audio.js';
 import { HoverSilhouette } from './hover-silhouette.js';
 import { HydrantWaterStream } from './hydrant-water-stream.js';
 
@@ -1012,6 +1013,9 @@ export class StreetLampDismantlingSystem {
       (this.cherryTreeHealth.get(target) ?? CHERRY_TREE_MAX_HEALTH) - 1,
     );
     this.cherryTreeHealth.set(target, health);
+    const hitAt = new THREE.Vector3();
+    target.getWorldPosition(hitAt);
+    playSoundAt(target.getWorld(), GameSound.AxeChop, hitAt, 0.85);
     // Mark a final hit before applying feedback so the standing lamp is never
     // moved while its dismantled replacement is being created.
     if (health <= 0) {
@@ -1634,6 +1638,13 @@ export class StreetLampDismantlingSystem {
       poleOrdinanceDrops,
       parkBenchMaterials,
     ).then(() => {
+      // Metal poles and lamps clatter; trees, benches and kiosks land woody.
+      playSoundAt(
+        world,
+        isStreetLamp || notifyPoleCut ? GameSound.MetalCrash : GameSound.WoodCrash,
+        this.targetCenter,
+        1,
+      );
       if (notifyPoleCut) {
         this.utilityPoleDismantledHandler?.();
       }

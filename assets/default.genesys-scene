@@ -9,11 +9,11 @@
             "$bc": "c",
             "_": [
               1,
-              0.527115,
-              0.278894
+              0.7157,
+              0.4286
             ]
           },
-          2.85
+          4.2
         ]
       }
     },
@@ -137,20 +137,20 @@
           {
             "$bc": "c",
             "_": [
-              0.208637,
-              0.40724,
-              0.708376
+              0.7758,
+              0.6942,
+              0.5775
             ]
           },
           {
             "$bc": "c",
             "_": [
-              0.584078,
-              0.296138,
-              0.127438
+              0.584,
+              0.4794,
+              0.3613
             ]
           },
-          1.15
+          1.8
         ]
       }
     },
@@ -162,12 +162,12 @@
           {
             "$bc": "c",
             "_": [
-              0.47932,
-              0.57758,
-              0.715694
+              1,
+              0.8879,
+              0.7606
             ]
           },
-          0.4
+          0.35
         ]
       }
     }
@@ -233,6 +233,7 @@
           "$length": 13
         },
         "csmFade": true,
+        "csmMaxFar": 250,
         "isSunLight": true,
         "light": {
           "$ref": 1
@@ -250,21 +251,20 @@
         "rotation": {
           "$bc": "e",
           "_": [
-            1.919862,
-            0,
+            2.72271,
+            0.5236,
             0
           ]
         },
         "shadowBias": -0.0002,
-        "shadowCameraBottom": -40,
-        "shadowCameraLeft": -40,
-        "shadowCameraRight": 40,
-        "shadowCameraTop": 40,
+        "shadowCameraBottom": -80,
+        "shadowCameraLeft": -80,
+        "shadowCameraRight": 80,
+        "shadowCameraTop": 80,
         "shadowFar": 2000,
         "shadowMapSize": 4096,
         "shadowNear": 0.5,
         "shadowNormalBias": 0.04,
-        "shadowRadius": 6,
         "useCsmShadows": true,
         "userData": {
           "objectFlags": 6
@@ -550,14 +550,14 @@
       {
         "$bc": "ENGINE.SkyNode",
         "children": {
-          "$length": 1
+          "$length": 2
         },
-        "cloudCoverage": 0.12,
-        "cloudDensity": 0.2,
+        "cloudCoverage": 0.5,
+        "cloudDensity": 0.3,
         "cloudElevation": 0.45,
         "cloudSpeed": 0.00003,
-        "mieCoefficient": 0.003,
-        "mieDirectionalG": 0.75,
+        "generateEnvironmentMap": true,
+        "mieCoefficient": 0.004,
         "name": "Sky",
         "nodeId": 35256,
         "position": {
@@ -568,7 +568,7 @@
             -3.7
           ]
         },
-        "rayleigh": 1.15,
+        "rayleigh": 1.8,
         "scale": {
           "$bc": "v3",
           "_": [
@@ -577,13 +577,12 @@
             10000
           ]
         },
-        "showSunDisc": false,
         "sunPosition": {
           "$bc": "v3",
           "_": [
-            -0.65,
-            0.42,
-            -0.4
+            -0.4621,
+            0.4067,
+            0.788
           ]
         },
         "turbidity": 4.5,
@@ -7489,15 +7488,15 @@
           {
             "$bc": "ENGINE.SceneEnvironmentNode",
             "backgroundBlurriness": 0.08,
-            "backgroundIntensity": 1.35,
-            "bottomColor": "#f6ebdc",
-            "envMapIntensity": 0.45,
+            "backgroundIntensity": 1.1,
+            "bottomColor": "#F0DFC6",
+            "envMapIntensity": 0.75,
             "height": 1025,
-            "middleColor": "#9ec4e6",
+            "middleColor": "#C3C9C9",
             "name": "Skybox",
             "nodeId": 45650,
             "sourceType": "Procedural",
-            "topColor": "#4f94d4",
+            "topColor": "#5C82B8",
             "uuid": "c4d7ef38abac2867"
           }
         ],
@@ -10734,10 +10733,10 @@
       },
       {
         "$bc": "ENGINE.FogNode",
-        "fogColor": "#d7e4f0",
+        "fogColor": "#E8D5C0",
         "fogDensity": 0.012,
-        "fogFar": 55,
-        "fogNear": 12,
+        "fogFar": 240,
+        "fogNear": 65,
         "name": "Afternoon Haze",
         "nodeId": 44092,
         "userData": {
@@ -12290,29 +12289,29 @@
       "effects": [
         {
           "enabled": true,
-          "exposure": 0.5,
-          "mode": 4,
+          "exposure": 1.1,
+          "mode": 6,
           "type": "toneMapping"
         },
         {
-          "contrast": 1,
-          "enabled": false,
+          "contrast": 1.05,
+          "enabled": true,
           "exposure": 1,
           "gain": 1,
           "gainTint": 16777215,
           "gamma": 1,
           "gammaTint": 16777215,
-          "highlightsStrength": 0,
-          "highlightsTint": 16777215,
+          "highlightsStrength": 0.15,
+          "highlightsTint": 16767392,
           "hueShift": 0,
-          "lift": 0,
+          "lift": 0.02,
           "liftTint": 16777215,
           "midtonesStrength": 0,
           "midtonesTint": 16777215,
-          "saturation": 1,
-          "shadowsStrength": 0,
-          "shadowsTint": 16777215,
-          "temperature": 0,
+          "saturation": 1.22,
+          "shadowsStrength": 0.12,
+          "shadowsTint": 4864602,
+          "temperature": 0.12,
           "tint": 0,
           "type": "colorGrading"
         }

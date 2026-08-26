@@ -61,6 +61,7 @@ import * as THREE from 'three';
 import { createAirmailEnvelope, disposeAirmailEnvelope } from './airmail-envelope.js';
 import { AxePickupRingSystem } from './axe-pickup-ring.js';
 import { CatMailCourier } from './cat-mail-courier.js';
+import { GameSound, playSound, startGoldenHourAudio } from './game-audio.js';
 import { HoverSilhouette } from './hover-silhouette.js';
 import { ThirdPersonPlayer } from './player.js';
 import { ensureOvergrownAveriaFont } from './overgrown-averia-font.js';
@@ -669,6 +670,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private introSettleFramesRemaining = 0;
   private nextDayTypingElapsed = 0;
   private nextDayTypingActive = false;
+  private nextDayTypedCount = 0;
   /** Set only by the completed delivery transition, never by an ordinance reset loop. */
   private showPromptAfterNextDayTransition = false;
   /** After the next-day speech bubble auto-hides, pulse the ground tutorial keys. */
@@ -1051,6 +1053,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     // Keep the tutorial UI quiet while the opening mask reveals the world.
     // The first speech bubble appears only once the player has full view.
     await waitForStartupBrushReveal();
+    startGoldenHourAudio(this.getWorld());
     this.plantPlayerForIntro();
     this.beginIntroSpeech();
   }
@@ -1230,6 +1233,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   }
 
   private setPhase(phase: FlowPhase): void {
+    if (phase === FlowPhase.OrdinanceFocus && this.phase !== FlowPhase.OrdinanceFocus) {
+      // Second beat of the punchline: the board itself lands on screen.
+      playSound(this.getWorld(), GameSound.OrdinanceReveal, 0.65);
+    }
     this.phase = phase;
     this.phaseElapsed = 0;
   }
@@ -1831,6 +1838,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
     this.brokenOrdinanceOrder.push(id);
+    // The punchline: a new law gets stamped into existence. Loudest cue in the mix.
+    playSound(this.getWorld(), GameSound.OrdinanceStamp, 1);
   }
 
   /** Count of ordinances broken/revealed so far this run. */
@@ -6820,6 +6829,13 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         Math.floor(this.nextDayTypingElapsed / TYPEWRITER_CHAR_INTERVAL_SEC) + 1,
       );
       nextDayEl.textContent = NEXT_DAY_TEXT.slice(0, characterCount);
+      if (characterCount > this.nextDayTypedCount) {
+        this.nextDayTypedCount = characterCount;
+        // Typewriter tick per character; spaces stay silent so it reads as typing.
+        if (NEXT_DAY_TEXT[characterCount - 1] !== ' ') {
+          playSound(this.getWorld(), GameSound.NextDayType, 0.3);
+        }
+      }
       if (characterCount >= NEXT_DAY_TEXT.length) {
         this.nextDayTypingActive = false;
       }
@@ -6891,9 +6907,12 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.nextDayEl.textContent = '';
       this.nextDayTypingElapsed = 0;
       this.nextDayTypingActive = true;
+      this.nextDayTypedCount = 0;
+      playSound(this.getWorld(), GameSound.NextDaySting, 0.7);
     } else {
       this.nextDayTypingElapsed = 0;
       this.nextDayTypingActive = false;
+      this.nextDayTypedCount = 0;
     }
   }
 
@@ -7325,6 +7344,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!this.mailbox) {
       return;
     }
+    playSound(this.getWorld(), GameSound.EnvelopePaper, 0.8);
 
     this.tmpBounds.setFromObject(this.mailbox);
     if (this.tmpBounds.isEmpty()) {
@@ -7373,6 +7393,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     const scale = THREE.MathUtils.lerp(1, 0.55, eased);
     this.envelopeMesh.scale.set(scale, scale, scale);
     if (t >= 1) {
+      if (this.envelopeMesh.visible) {
+        playSound(this.getWorld(), GameSound.MailboxLatch, 0.9);
+        playSound(this.getWorld(), GameSound.MailDelivered, 0.7);
+      }
       this.envelopeMesh.visible = false;
     }
   }

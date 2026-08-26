@@ -2,6 +2,7 @@ import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
 import { createAirmailEnvelope, disposeAirmailEnvelope } from './airmail-envelope.js';
+import { GameSound, playSoundAt } from './game-audio.js';
 import { HoverSilhouette } from './hover-silhouette.js';
 import type { ThirdPersonPlayer } from './player.js';
 
@@ -855,6 +856,15 @@ export class CatMailCourier {
     if (!this.cat) {
       return;
     }
+    // A peach-fed cat sounds content; an unfed one sounds like it wants paying.
+    const meowAt = new THREE.Vector3();
+    this.cat.getWorldPosition(meowAt);
+    playSoundAt(
+      this.cat.getWorld(),
+      via === 'peach' ? GameSound.CatMeow : GameSound.CatMeowHungry,
+      meowAt,
+      0.9,
+    );
     this.deliveryVia = via;
     this.interactable = false;
     this.streetsClickable = false;

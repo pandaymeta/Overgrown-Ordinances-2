@@ -12,7 +12,7 @@ type SurfaceStyle = {
 
 const TEXTURE_ANISOTROPY = 8;
 /** Bump when retuning so already-styled materials get the lighter sharp-mesh pass. */
-const STYLED_FLAG = 'civicAfternoonSurfaceStyleV3b';
+const STYLED_FLAG = 'lateAfternoonSurfaceStyleV1';
 /** Spawned scrap that already received a source-prop material copy. */
 export const SKIP_ENVIRONMENT_ART_FLAG = 'skipEnvironmentArtDirection';
 const ORDINANCE_MODEL_PATH = /PolyforkAssets\/Ordinances\//i;
@@ -25,50 +25,52 @@ const meshLoadHooks = new WeakSet<ENGINE.ModelMeshNode>();
 
 /**
  * Light-touch grading for restored sharp Overgrown-Rules meshes.
- * Cool roads / warm plaster / alive greens — keep edges crisp.
+ * Late afternoon, not sunset: warmth belongs to the light, not the albedo, so
+ * surfaces stay close to their own colour. Asphalt must read as sunlit grey —
+ * tinting it brown is what previously made the street look like dusk soup.
  */
 const SURFACE_STYLES: Record<string, SurfaceStyle> = {
   asphalt: {
-    tint: new THREE.Color('#7d98aa'),
-    tintAmount: 0.2,
+    tint: new THREE.Color('#a8a4a0'),
+    tintAmount: 0.18,
     roughness: 0.9,
-    exposure: 0.96,
+    exposure: 1.06,
   },
   road: {
-    tint: new THREE.Color('#8aa8b4'),
-    tintAmount: 0.18,
+    tint: new THREE.Color('#b0aca6'),
+    tintAmount: 0.16,
     roughness: 0.82,
-    exposure: 1.0,
+    exposure: 1.08,
   },
   vegetation: {
-    tint: new THREE.Color('#58a46c'),
-    tintAmount: 0.22,
+    tint: new THREE.Color('#86a855'),
+    tintAmount: 0.2,
     roughness: 0.94,
     exposure: 1.05,
   },
   building: {
-    tint: new THREE.Color('#f0c292'),
-    tintAmount: 0.16,
+    tint: new THREE.Color('#f2ddc2'),
+    tintAmount: 0.14,
     roughness: 0.84,
-    exposure: 1.05,
+    exposure: 1.04,
   },
   metal: {
-    tint: new THREE.Color('#9aafbb'),
-    tintAmount: 0.15,
+    tint: new THREE.Color('#b8b4ae'),
+    tintAmount: 0.12,
     roughness: 0.8,
     exposure: 1.0,
   },
   prop: {
-    tint: new THREE.Color('#e4cbaa'),
-    tintAmount: 0.08,
+    tint: new THREE.Color('#ecdcc6'),
+    tintAmount: 0.07,
     roughness: 0.88,
     exposure: 1.02,
   },
   cloud: {
-    tint: new THREE.Color('#f2ebe2'),
-    tintAmount: 0.22,
+    tint: new THREE.Color('#f8ecdd'),
+    tintAmount: 0.18,
     roughness: 1,
-    exposure: 1.06,
+    exposure: 1.04,
   },
 };
 
