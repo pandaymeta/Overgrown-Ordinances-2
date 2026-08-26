@@ -18,15 +18,11 @@ const SPOT_LOCAL_POS = new THREE.Vector3(0, 4.55, 0.9);
 
 const SPOT_COLOR = new THREE.Color('#ffd2a0');
 
-/**
- * Soft readable pool under haze — between “stamp” and “invisible”.
- * Dusk level: lamps reading as just-flicked-on is a nice golden-hour beat, but
- * at full night strength they fight the low sun and pull the street toward night.
- */
+/** Soft readable pool under haze — between “stamp” and “invisible”. */
 const SPOT_ANGLE = 0.44;
 const SPOT_PENUMBRA = 0.4;
-const SPOT_INTENSITY = 30;
-const SPOT_DISTANCE = 13;
+const SPOT_INTENSITY = 52;
+const SPOT_DISTANCE = 14;
 const SPOT_DECAY = 1.55;
 
 function findNamedChild<T extends ENGINE.SceneNode>(
