@@ -7693,7 +7693,7 @@
         ],
         "modelUrl": "@project/assets/OrdinanceCards/Bench_CleanBoard.glb",
         "name": "Bench 03",
-        "nodeId": 62074,
+        "nodeId": 12479,
         "physicsOptions": {
           "collisionMeshType": "trimesh"
         },

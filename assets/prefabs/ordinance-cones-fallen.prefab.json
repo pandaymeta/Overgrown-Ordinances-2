@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Cones.glb",
+      "modelUrl": "@project/assets/OrdinanceCards/Clean/Cones_Clean.glb",
           "name": "Cones Fallen Mesh",
           "nodeId": 39396,
           "physicsOptions": {

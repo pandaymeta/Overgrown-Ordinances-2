@@ -10,7 +10,7 @@ type SurfaceStyle = {
   exposure: number;
 };
 
-const TEXTURE_ANISOTROPY = 8;
+const TEXTURE_ANISOTROPY = 4;
 /** Bump when retuning so already-styled materials get the lighter sharp-mesh pass. */
 const STYLED_FLAG = 'civicAfternoonSurfaceStyleV3b';
 /** Spawned scrap that already received a source-prop material copy. */

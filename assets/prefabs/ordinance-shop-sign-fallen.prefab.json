@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/ShopSign.glb",
+      "modelUrl": "@project/assets/OrdinanceCards/Clean/ShopSign_Clean.glb",
           "name": "Shop Sign Fallen Mesh",
           "nodeId": 56429,
           "physicsOptions": {

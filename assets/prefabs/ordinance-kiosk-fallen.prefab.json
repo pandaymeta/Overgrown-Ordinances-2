@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Kiosk.glb",
+      "modelUrl": "@project/assets/OrdinanceCards/Clean/Kiosk_Clean.glb",
           "name": "Kiosk Fallen Mesh",
           "nodeId": 33739,
           "physicsOptions": {

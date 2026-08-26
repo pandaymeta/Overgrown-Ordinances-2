@@ -2,14 +2,15 @@
  * Street-lamp lighting for the late-afternoon haze:
  * - Real downward SpotLight (soft warm pool on the ground)
  * - Glazing "on" look comes from the street-lamp-29f365.glb lens material
- * - No fake ground-disc or overlay glass meshes
+ * - Spots live as world roots (not lamp children) so axe/dismantle never
+ *   tears down an active SpotLight under a ModelMeshNode hierarchy
  */
 
 import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
 const STREET_LAMP_NAME = /^Street Lamp/i;
-const SPOT_NAME = /^Lamp Ground Spot$/i;
+const SPOT_NAME = /^Lamp Ground Spot/i;
 const POOL_NAME = /^Lamp Ground Pool$/i;
 const GLASS_GLOW_NAME = /^Lamp Glass Glow$/i;
 
@@ -21,9 +22,19 @@ const SPOT_COLOR = new THREE.Color('#ffd2a0');
 /** Soft readable pool under haze — between “stamp” and “invisible”. */
 const SPOT_ANGLE = 0.44;
 const SPOT_PENUMBRA = 0.4;
-const SPOT_INTENSITY = 52;
+export const STREET_LAMP_SPOT_INTENSITY = 52;
+const SPOT_INTENSITY = STREET_LAMP_SPOT_INTENSITY;
 const SPOT_DISTANCE = 14;
 const SPOT_DECAY = 1.55;
+
+const OWNER_UUID_KEY = 'streetLampOwnerUuid';
+
+/** lamp.uuid → detached world-root spot */
+const detachedSpotsByLampUuid = new Map<string, ENGINE.SpotLightNode>();
+
+const scratchWorldPos = new THREE.Vector3();
+const scratchWorldQuat = new THREE.Quaternion();
+const scratchWorldScale = new THREE.Vector3();
 
 function findNamedChild<T extends ENGINE.SceneNode>(
   parent: ENGINE.SceneNode,
@@ -47,8 +58,28 @@ function removeLegacyOverlays(lamp: ENGINE.ModelMeshNode): void {
   }
 }
 
+function findSpotForLamp(lamp: ENGINE.ModelMeshNode): ENGINE.SpotLightNode | null {
+  const tracked = detachedSpotsByLampUuid.get(lamp.uuid);
+  if (tracked?.parent) {
+    return tracked;
+  }
+  return findNamedChild(lamp, ENGINE.SpotLightNode, SPOT_NAME);
+}
+
+function retuneSpot(spot: ENGINE.SpotLightNode): void {
+  spot.name = spot.name?.startsWith('Lamp Ground Spot') ? spot.name : 'Lamp Ground Spot';
+  spot.visible = true;
+  spot.color = SPOT_COLOR;
+  spot.intensity = SPOT_INTENSITY;
+  spot.distance = SPOT_DISTANCE;
+  spot.decay = SPOT_DECAY;
+  spot.angle = SPOT_ANGLE;
+  spot.penumbra = SPOT_PENUMBRA;
+  spot.castShadow = false;
+}
+
 function ensureSpot(lamp: ENGINE.ModelMeshNode): ENGINE.SpotLightNode {
-  let spot = findNamedChild(lamp, ENGINE.SpotLightNode, SPOT_NAME);
+  let spot = findSpotForLamp(lamp);
   if (!spot) {
     spot = ENGINE.SpotLightNode.create({
       name: 'Lamp Ground Spot',
@@ -67,19 +98,90 @@ function ensureSpot(lamp: ENGINE.ModelMeshNode): ENGINE.SpotLightNode {
     spot.rotation.set(Math.PI / 2, 0, 0);
   }
 
-  spot.name = 'Lamp Ground Spot';
-  spot.visible = true;
-  spot.color = SPOT_COLOR;
-  spot.intensity = SPOT_INTENSITY;
-  spot.distance = SPOT_DISTANCE;
-  spot.decay = SPOT_DECAY;
-  spot.angle = SPOT_ANGLE;
-  spot.penumbra = SPOT_PENUMBRA;
-  spot.castShadow = false;
+  retuneSpot(spot);
   return spot;
 }
 
-/** Attach / retune spots; strip fake pool discs and old glass overlays. */
+/**
+ * Keep spots lit, but not parented under Street Lamps — dismantle / physics
+ * rebuilds on the lamp must never touch an active SpotLight child.
+ */
+export function detachStreetLampSpotsToWorld(
+  world: ENGINE.World | null | undefined,
+): number {
+  if (!world) {
+    return 0;
+  }
+
+  let count = 0;
+  for (const lamp of world.getNodes(ENGINE.ModelMeshNode)) {
+    if (!STREET_LAMP_NAME.test(lamp.name ?? '')) {
+      continue;
+    }
+    const spot = findNamedChild(lamp, ENGINE.SpotLightNode, SPOT_NAME)
+      ?? detachedSpotsByLampUuid.get(lamp.uuid)
+      ?? null;
+    if (!spot) {
+      continue;
+    }
+
+    spot.updateWorldMatrix(true, false);
+    spot.matrixWorld.decompose(scratchWorldPos, scratchWorldQuat, scratchWorldScale);
+
+    if (spot.parent !== world) {
+      spot.removeFromParent();
+      world.add(spot);
+      spot.position.copy(scratchWorldPos);
+      spot.quaternion.copy(scratchWorldQuat);
+      spot.scale.copy(scratchWorldScale);
+    }
+
+    spot.userData[OWNER_UUID_KEY] = lamp.uuid;
+    detachedSpotsByLampUuid.set(lamp.uuid, spot);
+    retuneSpot(spot);
+    count += 1;
+  }
+  return count;
+}
+
+/** Dim every lamp spot — extra lights are expensive during cinematics / fade. */
+export function setStreetLampGroundLightsEnabled(
+  world: ENGINE.World | null | undefined,
+  enabled: boolean,
+): void {
+  if (!world) {
+    return;
+  }
+
+  const seen = new Set<ENGINE.SpotLightNode>();
+  for (const spot of detachedSpotsByLampUuid.values()) {
+    if (!spot.parent) {
+      continue;
+    }
+    // Keep intensity stable — zeroing SpotLight intensity jitters the camera.
+    spot.visible = enabled;
+    if (enabled) {
+      spot.intensity = SPOT_INTENSITY;
+    }
+    seen.add(spot);
+  }
+
+  for (const lamp of world.getNodes(ENGINE.ModelMeshNode)) {
+    if (!STREET_LAMP_NAME.test(lamp.name ?? '')) {
+      continue;
+    }
+    const spot = findNamedChild(lamp, ENGINE.SpotLightNode, SPOT_NAME);
+    if (!spot || seen.has(spot)) {
+      continue;
+    }
+    spot.visible = enabled;
+    if (enabled) {
+      spot.intensity = SPOT_INTENSITY;
+    }
+  }
+}
+
+/** Attach / retune spots, detach to world roots, strip fake pool discs. */
 export function refreshStreetLampGroundLights(
   world: ENGINE.World | null | undefined,
 ): number {
@@ -96,6 +198,7 @@ export function refreshStreetLampGroundLights(
     ensureSpot(lamp);
     count += 1;
   }
+  detachStreetLampSpotsToWorld(world);
   return count;
 }
 

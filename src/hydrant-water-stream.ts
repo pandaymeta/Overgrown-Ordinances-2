@@ -58,6 +58,7 @@ export class HydrantWaterStream {
   private world: ENGINE.World | null = null;
   private elapsed = 0;
   private destroyed = false;
+  private visualsEnabled = true;
 
   public start(world: ENGINE.World, hydrant: ENGINE.ModelMeshNode, camera: THREE.Camera): void {
     this.destroyed = false;
@@ -71,8 +72,25 @@ export class HydrantWaterStream {
     this.update(0, camera);
   }
 
+  /** Hide spray meshes and skip per-frame buffer uploads (cinematics / fade). */
+  public setVisualsEnabled(enabled: boolean): void {
+    this.visualsEnabled = enabled;
+    if (this.ribbon) {
+      this.ribbon.visible = enabled;
+    }
+    if (this.splash) {
+      this.splash.visible = enabled;
+    }
+    for (const droplet of this.droplets) {
+      droplet.mesh.visible = enabled;
+    }
+  }
+
   public update(deltaTime: number, camera: THREE.Camera): void {
     if (this.destroyed || !this.ribbon) {
+      return;
+    }
+    if (!this.visualsEnabled) {
       return;
     }
     this.elapsed += deltaTime;

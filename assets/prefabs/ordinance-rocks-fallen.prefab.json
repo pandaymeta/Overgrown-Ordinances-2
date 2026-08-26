@@ -1,7 +1,7 @@
 {
   "$root": {
     "$bc": "ENGINE.Prefab",
-    "$uuid": "31231ce92948f1b5",
+    "$uuid": "a7d9f262a9b04e81",
     "rootNode": {
       "$bc": "ENGINE.SceneNode",
       "children": [
@@ -13,15 +13,15 @@
               "$bc": "GAME.CarryableCrateNode",
               "carryHeightOverride": 0.8,
               "children": [],
-              "name": "Carryable Do Not Step",
-              "nodeId": 17419,
-              "prefabId": "4fe3f09ee04ce328",
+              "name": "Carryable Rocks Ordinance",
+              "nodeId": 61821,
+              "prefabId": "9a062dd4fb84d11c",
               "throwDistanceOverride": 5
             }
           ],
-      "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/DoNotStep_Board_v2.glb",
-          "name": "Do Not Step Fallen Mesh",
-          "nodeId": 35631,
+          "modelUrl": "@project/assets/OrdinanceCards/Clean/FireHydrant_Clean.glb",
+          "name": "Rocks Fallen Mesh",
+          "nodeId": 61822,
           "physicsOptions": {
             "collisionMeshType": "convexHull",
             "density": 2000,
@@ -35,7 +35,7 @@
               0
             ]
           },
-          "prefabId": "5201d5aa5680a0ab",
+          "prefabId": "d2233f180385a07e",
           "receiveShadow": true,
           "rotation": {
             "$bc": "e",
@@ -55,9 +55,9 @@
           }
         }
       ],
-      "name": "Do Not Step Fallen",
-      "nodeId": 28578,
-      "prefabId": "e757fdb2a75bc07e"
+      "name": "Rocks Fallen",
+      "nodeId": 61823,
+      "prefabId": "855b2c6e4a812335"
     }
   },
   "$version": 3

@@ -15,16 +15,17 @@ import * as THREE from 'three';
 
 /** Full literal paths — project asset paths must never be built programmatically. */
 export const GameSound = {
-  /** The punchline. Swap for `ordinance-stamp-woody.mp3` if a drier stamp reads better. */
+  /** The punchline when a new ordinance is imposed. */
   OrdinanceStamp: '@project/assets/audio/sfx/ordinance-stamp.mp3',
+  OrdinanceStampWoody: '@project/assets/audio/sfx/ordinance-stamp-woody.mp3',
   OrdinanceReveal: '@project/assets/audio/sfx/ordinance-reveal.mp3',
   NextDaySting: '@project/assets/audio/sfx/next-day-sting.mp3',
   NextDayType: '@project/assets/audio/sfx/next-day-type.mp3',
   MailDelivered: '@project/assets/audio/sfx/mail-delivered.mp3',
   MailboxLatch: '@project/assets/audio/sfx/mailbox-latch.mp3',
   EnvelopePaper: '@project/assets/audio/sfx/envelope-paper.mp3',
-  AxeChop: '@project/assets/audio/sfx/axe-chop.mp3',
   AxeHitWood: '@project/assets/audio/sfx/axe-hit-wood.mp3',
+  AxeHitMetal: '@project/assets/audio/sfx/axe-hit-metal.ogg',
   WoodCrash: '@project/assets/audio/sfx/wood-crash.mp3',
   MetalCrash: '@project/assets/audio/sfx/metal-crash.mp3',
   PickupTool: '@project/assets/audio/sfx/pickup-tool.mp3',
@@ -47,13 +48,29 @@ const FOOTSTEPS = [
 const MUSIC_TRACK = '@project/assets/audio/music/golden-hour-stroll.mp3';
 const AMBIENCE_TRACK = '@project/assets/audio/ambience/evening-crickets.mp3';
 
+/**
+ * Temporary mute for golden-hour BGM. Flip back to `true` when restoring music.
+ * Ambience / SFX are unaffected.
+ */
+const MUSIC_ENABLED = false;
+
 const MUSIC_VOLUME = 0.34;
 const AMBIENCE_VOLUME = 0.2;
-const SFX_BUS_VOLUME = 0.85;
+// Keep effect requests at their authored gain.  Individual calls below are
+// responsible for balancing; a reduced master SFX bus made the requested
+// 2× impact/stamp gains far less noticeable in play mode.
+const SFX_BUS_VOLUME = 1;
 
 /** Walk/run stride spacing in seconds. */
 const WALK_STRIDE_SEC = 0.5;
 const RUN_STRIDE_SEC = 0.33;
+/**
+ * Footstep playback gain. Loudness is baked into the MP3s (peak ~0.33);
+ * keep these near unity so a broken runtime gain path cannot re-blast them.
+ */
+const FOOTSTEP_WALK_VOLUME = 1;
+const FOOTSTEP_RUN_VOLUME = 1;
+const FOOTSTEP_LAND_VOLUME = 1.15;
 
 let activeWorld: ENGINE.World | null = null;
 let busesConfigured = false;
@@ -95,10 +112,81 @@ function configureBuses(world: ENGINE.World): void {
     return;
   }
   // Music sits well under the effects so the stamp always cuts through.
-  music.setVolume(MUSIC_VOLUME);
+  music.setVolume(MUSIC_ENABLED ? MUSIC_VOLUME : 0);
   manager.getBus('Ambience')?.setVolume(AMBIENCE_VOLUME);
   manager.getBus('SFX')?.setVolume(SFX_BUS_VOLUME);
   busesConfigured = true;
+}
+
+/**
+ * One-shot SFX with immediate gain. Three.js Audio.setVolume() ramps from 1.0
+ * via setTargetAtTime, so short hits (axe, stamp, latch, paper) never reach the
+ * requested 2× level after the first sample — they keep sounding like volume 1.
+ */
+function playImmediateGainSound(
+  world: ENGINE.World,
+  url: string,
+  volume: number,
+  position: THREE.Vector3 | null,
+  positional: { maxDistance: number; rolloffFactor: number } | null = null,
+): void {
+  const manager = getManager(world);
+  const listener = world.audioListener;
+  if (!manager || !listener) {
+    return;
+  }
+  configureBuses(world);
+
+  const context = listener.context;
+  const destination = manager.getBus('SFX')?.getInput() ?? listener.getInput();
+
+  void (async () => {
+    try {
+      const buffer = await ENGINE.resourceManager.loadSound(
+        ENGINE.AssetPath.fromString(url),
+      );
+      if (!buffer) {
+        return;
+      }
+
+      const source = context.createBufferSource();
+      source.buffer = buffer;
+
+      const gain = context.createGain();
+      gain.gain.value = volume;
+      source.connect(gain);
+
+      let panner: PannerNode | null = null;
+      if (position && positional) {
+        panner = context.createPanner();
+        panner.panningModel = 'HRTF';
+        panner.distanceModel = 'inverse';
+        panner.refDistance = 1;
+        panner.maxDistance = positional.maxDistance;
+        panner.rolloffFactor = positional.rolloffFactor;
+        panner.positionX.value = position.x;
+        panner.positionY.value = position.y;
+        panner.positionZ.value = position.z;
+        gain.connect(panner);
+        panner.connect(destination);
+      } else {
+        gain.connect(destination);
+      }
+
+      source.start(0);
+      source.onended = () => {
+        try {
+          source.disconnect();
+          gain.disconnect();
+          panner?.disconnect();
+        } catch {
+          // Already disconnected.
+        }
+      };
+    } catch {
+      // A missing clip should never block gameplay.
+    }
+  })();
 }
 
 /** Plays a non-positional one-shot. Use for UI, stings and the player's own actions. */
@@ -107,12 +195,29 @@ export function playSound(
   url: string,
   volume = 1,
 ): void {
-  const manager = getManager(world);
-  if (!manager || !world) {
+  if (!world) {
     return;
   }
-  configureBuses(world);
-  void manager.playGlobalSound(url, { volume, bus: 'SFX' });
+  playImmediateGainSound(world, url, volume, null);
+}
+
+/**
+ * Ordinance punchline: stamp clip looped 3× in sequence (not stacked).
+ * Interval matches ordinance-stamp.mp3 duration (~0.43s) so each hit finishes
+ * before the next. Volume stays at 2× the prior single-hit level (was 2 → 4).
+ */
+const ORDINANCE_STAMP_LOOP_COUNT = 3;
+const ORDINANCE_STAMP_DURATION_MS = 430;
+const ORDINANCE_STAMP_VOLUME = 4;
+
+export function playOrdinanceStamp(world: ENGINE.World | null | undefined): void {
+  for (let index = 0; index < ORDINANCE_STAMP_LOOP_COUNT; index++) {
+    const delayMs = index * ORDINANCE_STAMP_DURATION_MS;
+    window.setTimeout(
+      () => playSound(world, GameSound.OrdinanceStamp, ORDINANCE_STAMP_VOLUME),
+      delayMs,
+    );
+  }
 }
 
 /** Plays a one-shot at a world position so it pans and falls off with distance. */
@@ -122,14 +227,10 @@ export function playSoundAt(
   position: THREE.Vector3,
   volume = 1,
 ): void {
-  const manager = getManager(world);
-  if (!manager || !world) {
+  if (!world) {
     return;
   }
-  configureBuses(world);
-  void manager.playSoundAtPosition(url, position.clone(), {
-    volume,
-    bus: 'SFX',
+  playImmediateGainSound(world, url, volume, position.clone(), {
     maxDistance: 60,
     rolloffFactor: 1.1,
   });
@@ -147,11 +248,13 @@ function startLoops(world: ENGINE.World): void {
   // is live by now, so this is the point where the mix levels reliably apply.
   configureBuses(world);
   loopsStarted = true;
-  void manager.playGlobalSound(MUSIC_TRACK, {
-    volume: 1,
-    loop: true,
-    bus: 'Music',
-  });
+  if (MUSIC_ENABLED) {
+    void manager.playGlobalSound(MUSIC_TRACK, {
+      volume: 1,
+      loop: true,
+      bus: 'Music',
+    });
+  }
   // Dusk crickets — a small, very Japanese golden-hour detail.
   void manager.playGlobalSound(AMBIENCE_TRACK, {
     volume: 1,
@@ -209,19 +312,46 @@ export async function preloadGameAudio(): Promise<void> {
 }
 
 /**
+ * Footsteps use the same immediate-gain path as other short SFX.
+ */
+function playFootstepSound(
+  world: ENGINE.World | null | undefined,
+  url: string,
+  volume: number,
+): void {
+  if (!world) {
+    return;
+  }
+  playImmediateGainSound(world, url, volume, null);
+}
+
+/**
  * Stride-timed footsteps. Owned by the player so the cadence survives across
  * frames; call `update` every tick with the current locomotion state.
  */
 export class FootstepPlayer {
   private sinceLastStep = 0;
   private nextIndex = 0;
+  /** null until the first grounded sample — avoids a false land on spawn. */
+  private wasGrounded: boolean | null = null;
+
+  /**
+   * Clear jump/land edge tracking (movement freeze, teleport, cinematic).
+   * Next update re-seeds from the live grounded flag without playing a step.
+   */
+  public clearAirborneTracking(): void {
+    this.wasGrounded = null;
+  }
 
   public update(
     world: ENGINE.World | null | undefined,
     deltaTime: number,
     moving: boolean,
     running: boolean,
+    grounded: boolean,
   ): void {
+    this.updateJumpAndLand(world, grounded);
+
     if (!moving) {
       // Land the next step immediately on move so walking feels responsive.
       this.sinceLastStep = WALK_STRIDE_SEC;
@@ -233,10 +363,32 @@ export class FootstepPlayer {
       return;
     }
     this.sinceLastStep = 0;
+    this.playNextStep(world, running ? FOOTSTEP_RUN_VOLUME : FOOTSTEP_WALK_VOLUME);
+  }
+
+  private updateJumpAndLand(
+    world: ENGINE.World | null | undefined,
+    grounded: boolean,
+  ): void {
+    if (this.wasGrounded === null) {
+      this.wasGrounded = grounded;
+      return;
+    }
+    // Footstep only on landing — jump takeoff stays silent.
+    if (!this.wasGrounded && grounded) {
+      this.playNextStep(world, FOOTSTEP_LAND_VOLUME);
+    }
+    this.wasGrounded = grounded;
+  }
+
+  private playNextStep(
+    world: ENGINE.World | null | undefined,
+    volume: number,
+  ): void {
     const url = FOOTSTEPS[this.nextIndex % FOOTSTEPS.length];
     this.nextIndex += 1;
     // Own footsteps stay non-positional: the third-person camera sits metres
     // behind the avatar, which would make spatialised steps too quiet.
-    playSound(world, url, running ? 0.5 : 0.36);
+    playFootstepSound(world, url, volume);
   }
 }

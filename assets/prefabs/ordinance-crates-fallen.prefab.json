@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Crates.glb",
+      "modelUrl": "@project/assets/OrdinanceCards/Clean/Crates_Clean.glb",
           "name": "Crates Fallen Mesh",
           "nodeId": 34331,
           "physicsOptions": {

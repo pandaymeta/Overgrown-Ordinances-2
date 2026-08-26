@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Bench.glb",
+      "modelUrl": "@project/assets/OrdinanceCards/Bench_CleanBoard.glb",
           "name": "Bench Fallen Mesh",
           "nodeId": 36189,
           "physicsOptions": {

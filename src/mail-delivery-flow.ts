@@ -61,11 +61,13 @@ import * as THREE from 'three';
 import { createAirmailEnvelope, disposeAirmailEnvelope } from './airmail-envelope.js';
 import { AxePickupRingSystem } from './axe-pickup-ring.js';
 import { CatMailCourier } from './cat-mail-courier.js';
-import { GameSound, playSound, startGoldenHourAudio } from './game-audio.js';
+import { GameSound, playOrdinanceStamp, playSound, startGoldenHourAudio } from './game-audio.js';
 import { HoverSilhouette } from './hover-silhouette.js';
 import { ThirdPersonPlayer } from './player.js';
 import { ensureOvergrownAveriaFont } from './overgrown-averia-font.js';
+import { ShophouseCameraOcclusionSystem } from './shophouse-camera-occlusion.js';
 import { playBrushReveal, waitForStartupBrushReveal } from './startup-brush-reveal.js';
+import { setStreetLampGroundLightsEnabled } from './street-lamp-ground-lights.js';
 import { TutorialKeysGuide } from './tutorial-keys-guide.js';
 
 /** Default spring-arm distance for gameplay and opening shot. */
@@ -90,9 +92,10 @@ export const DELIVERY_WAY_GOAL = 12;
 /** Solid road cue after first reveal or breaking active Maintenance / Jaywalking ordinances. */
 const ROAD_HIGHLIGHT_DURATION_SEC = 2;
 /** Black-screen staging: hide scrap, then retire, then restore, then reveal. */
-const DAY_TRANSITION_SCRAP_RETIRE_SEC = 0.2;
+const DAY_TRANSITION_TELEPORT_SEC = 0.28;
+const DAY_TRANSITION_SCRAP_RETIRE_SEC = 0.55;
 /** Let renderer resource retirement settle before beginning the reset. */
-const DAY_TRANSITION_WORLD_RESTORE_SEC = 0.9;
+const DAY_TRANSITION_WORLD_RESTORE_SEC = 1.45;
 /** Cooldown between the completed world restore and ordinance reveal. */
 const DAY_TRANSITION_REVEAL_COOLDOWN_SEC = 0.35;
 /** Cooldown between revealing assets and starting the cinematic camera work. */
@@ -607,6 +610,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   /** After ordinance focus, continue into the black next-day transition. */
   private fadeAfterOrdinanceFocus = false;
   /** Staged next-day transition under black (scrap hide → destroy → restore → reveal). */
+  private dayTransitionTeleportDone = false;
   private dayTransitionScrapRetired = false;
   private dayTransitionWorldRestored = false;
   private dayTransitionWorldRestoreStarted = false;
@@ -679,6 +683,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private outlinePassEnabled = false;
   private mailboxHovered = false;
   private readonly mailboxHoverSilhouette = new HoverSilhouette();
+  /** Occlusion / lamp / hydrant GPU budget while a cinematic or fade owns the screen. */
+  private gpuSafeTransitionActive = false;
   private playableGraceRemaining = 0;
   private mainRoadLoopTriggered = false;
   private leftSideRoadLoopTriggered = false;
@@ -859,6 +865,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return false;
     }
     this.stopModelFrontCinematic();
+    this.endGpuSafeTransition();
     this.clearEnvelope();
     this.player?.setMailEnvelopeCarried(false);
     this.teardownUi();
@@ -895,7 +902,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
 
     const world = this.getWorld();
-    if (world) {
+    if (world && this.shouldPollOrdinances()) {
       this.refreshModelMeshCache(world);
     }
     if (world && !this.speechEl) {
@@ -910,35 +917,43 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (this.playableGraceRemaining > 0) {
       this.playableGraceRemaining = Math.max(0, this.playableGraceRemaining - deltaTime);
     }
-    this.pollMainRoadFeetContact();
-    this.pollLeftSideRoadFeetContact();
-    this.pollCarRoofFeetContact();
-    this.pollTramRoofFeetContact();
-    this.pollLampClimbFeetContact();
-    this.pollTreeClimbFeetContact();
-    this.pollKioskWoodPlatformUse();
-    this.pollWireWalkFeetContact();
-    this.pollCargoCrateOnRoadContact();
-    this.pollSmallRockOnRoadContact();
-    this.pollParkBenchOnRoadContact();
-    this.pollLogOnRoadContact();
-    this.pollWoodPlanksPropOnRoadContact();
-    this.pollScrapMetalOnRoadContact();
-    this.pollBushWearOnRoadContact();
-    this.pollConePlatformRoadBypass();
-    this.pollFallenPolePlatformRoadBypass();
-    this.pollFallenOrdinanceSignPlatformRoadBypass();
-    this.pollStreetLampScrapPlatformRoadBypass();
-    this.pollTrafficConePickupSoftLoop(deltaTime);
-    this.pollBushWearSoftLoop(deltaTime);
-    this.pollPoleCutSoftLoop(deltaTime);
-    this.pollKanjiSignSoftLoop(deltaTime);
-    this.pollFireHydrantSoftLoop(deltaTime);
-    this.pollTreeCutSoftLoop(deltaTime);
-    this.pollKioskDismantleSoftLoop(deltaTime);
-    this.pollSignsSoftLoop(deltaTime);
-    this.pollStreetLampDestroySoftLoop(deltaTime);
-    this.catMailCourier.tick(deltaTime);
+    // Never destroy hover GPU buffers during fade/cinematic — only when playable.
+    if (!this.isGpuCriticalPhase()) {
+      this.mailboxHoverSilhouette.flushDeferredDestroys();
+    }
+    if (this.shouldPollOrdinances()) {
+      this.pollMainRoadFeetContact();
+      this.pollLeftSideRoadFeetContact();
+      this.pollCarRoofFeetContact();
+      this.pollTramRoofFeetContact();
+      this.pollLampClimbFeetContact();
+      this.pollTreeClimbFeetContact();
+      this.pollKioskWoodPlatformUse();
+      this.pollWireWalkFeetContact();
+      this.pollCargoCrateOnRoadContact();
+      this.pollSmallRockOnRoadContact();
+      this.pollParkBenchOnRoadContact();
+      this.pollLogOnRoadContact();
+      this.pollWoodPlanksPropOnRoadContact();
+      this.pollScrapMetalOnRoadContact();
+      this.pollBushWearOnRoadContact();
+      this.pollConePlatformRoadBypass();
+      this.pollFallenPolePlatformRoadBypass();
+      this.pollFallenOrdinanceSignPlatformRoadBypass();
+      this.pollStreetLampScrapPlatformRoadBypass();
+      this.pollTrafficConePickupSoftLoop(deltaTime);
+      this.pollBushWearSoftLoop(deltaTime);
+      this.pollPoleCutSoftLoop(deltaTime);
+      this.pollKanjiSignSoftLoop(deltaTime);
+      this.pollFireHydrantSoftLoop(deltaTime);
+      this.pollTreeCutSoftLoop(deltaTime);
+      this.pollKioskDismantleSoftLoop(deltaTime);
+      this.pollSignsSoftLoop(deltaTime);
+      this.pollStreetLampDestroySoftLoop(deltaTime);
+    }
+    if (!this.isGpuCriticalPhase()) {
+      this.catMailCourier.tick(deltaTime);
+    }
     this.updateModelFrontCinematic(deltaTime);
     this.updateEnvelopeInsert(deltaTime);
     this.updateTypingAnimations(deltaTime);
@@ -956,7 +971,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
   public override tickPostPhysics(_deltaTime: number): void {
     super.tickPostPhysics(_deltaTime);
-    if (this.baselineReinforceRemaining > 0) {
+    if (
+      this.baselineReinforceRemaining > 0
+      && !this.isGpuCriticalPhase()
+    ) {
       const finalizePhysics = this.baselineReinforceRemaining === 1;
       // Static scenery was restored once under black. Only dynamic props need repeated
       // physics settling; replaying the entire scene here overloads the renderer/physics bridge.
@@ -1118,7 +1136,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         if (this.envelopeStarted && this.envelopeProgress >= 1) {
           this.envelopeFinishedElapsed += _deltaTime;
           if (this.envelopeFinishedElapsed >= DELIVERY_POST_INSERT_SEC) {
-            this.clearEnvelope();
+            this.hideEnvelopeForGpu();
             if (this.mysteryDeliveryWinPending) {
               this.mysteryDeliveryWinReady = true;
               this.setPhase(FlowPhase.MysteryWinHold);
@@ -1160,11 +1178,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         break;
       case FlowPhase.FadeToBlack: {
         this.player?.setMovementFrozen(true);
+        this.player?.setAllowDeferredDestroys(false);
         const t = Math.min(1, this.phaseElapsed / FADE_SEC);
         this.setFade(t);
         if (t >= 1) {
           this.setFade(1);
-          this.performHiddenTeleport();
           this.showPromptAfterNextDayTransition = true;
           this.showNextDayLabel(true);
           this.setPhase(FlowPhase.HoldBlack);
@@ -1180,6 +1198,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
           this.showNextDayLabel(false);
           this.pendingOrdinance = null;
           this.player?.forceIdlePose();
+          this.player?.setAllowDeferredDestroys(false);
           this.daySplashRevealDone = false;
           this.daySplashRevealStarted = false;
           this.setPhase(FlowPhase.FadeFromBlack);
@@ -1236,6 +1255,12 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (phase === FlowPhase.OrdinanceFocus && this.phase !== FlowPhase.OrdinanceFocus) {
       // Second beat of the punchline: the board itself lands on screen.
       playSound(this.getWorld(), GameSound.OrdinanceReveal, 0.65);
+    }
+    if (phase === FlowPhase.FadeToBlack && this.phase !== FlowPhase.FadeToBlack) {
+      this.resetDayTransitionStaging();
+      this.beginGpuSafeTransition();
+      this.hideEnvelopeForGpu();
+      setStreetLampGroundLightsEnabled(this.getWorld(), false);
     }
     this.phase = phase;
     this.phaseElapsed = 0;
@@ -1315,6 +1340,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.player?.forceIdlePose();
     this.player?.setMovementFrozen(false);
     this.player?.setCinematicCameraLock(false);
+    this.endGpuSafeTransition();
+    // Physics settle after GPU throttle lifts — not under black/brush.
+    this.baselineReinforceRemaining = Math.max(this.baselineReinforceRemaining, 10);
     if (!preserveCurrentCamera) {
       this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
     }
@@ -1333,6 +1361,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.setMailboxHoverOutline(false);
     this.setMailboxHighlight(false);
     this.setTrailVisible(false);
+    this.beginGpuSafeTransition();
     this.player?.setMovementFrozen(true);
     this.player?.setCinematicCameraLock(true);
     const target = options.target ?? this.maintenance;
@@ -1639,8 +1668,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.setTrailVisible(false);
     this.setMailboxHighlight(false);
     this.setMailboxHoverOutline(false);
-    // Scrap shadows are costly for WebGPU; physics stays dynamic so poles settle.
-    this.player?.prepareScrapForCinematic();
+    this.beginGpuSafeTransition();
     this.player?.setMovementFrozen(true);
     this.player?.forceIdlePose();
     this.player?.setCinematicCameraLock(true);
@@ -1839,7 +1867,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     this.brokenOrdinanceOrder.push(id);
     // The punchline: a new law gets stamped into existence. Loudest cue in the mix.
-    playSound(this.getWorld(), GameSound.OrdinanceStamp, 1);
+    playOrdinanceStamp(this.getWorld());
   }
 
   /** Count of ordinances broken/revealed so far this run. */
@@ -1877,7 +1905,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.mysteryDeliveryWinReady = false;
     this.setCompletionInteractionPaused(false);
     this.stopModelFrontCinematic();
-    this.clearEnvelope();
+    this.hideEnvelopeForGpu();
     this.setFade(0);
     this.player?.setMovementFrozen(true);
     this.player?.forceIdlePose();
@@ -3533,10 +3561,45 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (this.carRoofTriggers.length === 0) {
       this.cacheClimbCarsAndRoofTriggers();
     }
-    if (!this.isPlayerFeetInsideTriggers(this.carRoofTriggers)) {
+    // The authored roof trigger is preferred, but keep a bounds fallback just
+    // like the tram.  Imported cars have occasionally had an undersized or
+    // offset trigger, which meant the player could stand on the roof without
+    // registering the route before delivering the letter.
+    if (
+      !this.isPlayerFeetInsideTriggers(this.carRoofTriggers)
+      && !this.isPlayerFeetOnClimbCarRoof()
+    ) {
       return;
     }
     this.onCarRoofContact();
+  }
+
+  /** Conservative fallback for a car roof trigger. */
+  private isPlayerFeetOnClimbCarRoof(): boolean {
+    if (!this.player || this.climbCars.length === 0) {
+      return false;
+    }
+    this.player.getWorldPosition(this.tmpPlayerPos);
+    this.tmpPlayerPos.y -= this.pawnFeetBelowRoot;
+    for (const car of this.climbCars) {
+      car.updateMatrixWorld(true);
+      this.tmpBounds.setFromObject(car);
+      if (this.tmpBounds.isEmpty()) {
+        continue;
+      }
+      const onTopSlice =
+        this.tmpPlayerPos.y >= this.tmpBounds.max.y - 0.6
+        && this.tmpPlayerPos.y <= this.tmpBounds.max.y + 0.4;
+      const withinRoof =
+        this.tmpPlayerPos.x >= this.tmpBounds.min.x - 0.1
+        && this.tmpPlayerPos.x <= this.tmpBounds.max.x + 0.1
+        && this.tmpPlayerPos.z >= this.tmpBounds.min.z - 0.1
+        && this.tmpPlayerPos.z <= this.tmpBounds.max.z + 0.1;
+      if (onTopSlice && withinRoof) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private pollTramRoofFeetContact(): void {
@@ -6626,10 +6689,14 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
   private async beginDaySplashReveal(): Promise<void> {
     const world = this.getWorld();
+    // Stop MeshNode.destroy while the brush + 3D scene share the GPU.
+    this.player?.setAllowDeferredDestroys(false);
     try {
       await playBrushReveal(world, {
         holdMs: 200,
         revealMs: 1600,
+        // Drop the CSS cream as soon as the brush atlas paints its own cover,
+        // otherwise the opaque fade hides the splash transition.
         onCoverReady: () => this.setFade(0),
       });
     } catch (error) {
@@ -6645,6 +6712,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
    */
   private async beginDayResetCreamReturn(): Promise<void> {
     const world = this.getWorld();
+    this.player?.setAllowDeferredDestroys(false);
     try {
       await playBrushReveal(world, {
         holdMs: 200,
@@ -6954,8 +7022,17 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
    * Scrap teardown / world restore / ordinance reveal happen later via staging.
    */
   private performHiddenTeleport(): void {
-    this.clearEnvelope();
+    this.hideEnvelopeForGpu();
     this.stopModelFrontCinematic();
+    this.player?.releaseHeldItemsForDayReset();
+    this.player?.prepareScrapForCinematic();
+    this.player?.setMovementFrozen(true);
+    this.player?.teleportToPlayerStartAndSettle();
+    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+  }
+
+  private resetDayTransitionStaging(): void {
+    this.dayTransitionTeleportDone = false;
     this.dayTransitionScrapRetired = false;
     this.dayTransitionWorldRestored = false;
     this.dayTransitionWorldRestoreStarted = false;
@@ -6964,23 +7041,86 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.dayTransitionOrdinanceRevealed = false;
     this.dayTransitionOrdinanceRevealedAt = 0;
     this.dayTransitionCamReady = false;
-    this.player?.releaseHeldItemsForDayReset();
-    this.player?.prepareScrapForCinematic();
-    this.player?.setMovementFrozen(true);
-    this.player?.teleportToPlayerStartAndSettle();
-    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+  }
+
+  private shouldPollOrdinances(): boolean {
+    return this.phase === FlowPhase.AwaitingDelivery
+      || this.phase === FlowPhase.ZoomOutReveal
+      || this.phase === FlowPhase.IntroSpeech;
+  }
+
+  private isGpuCriticalPhase(): boolean {
+    return this.phase === FlowPhase.DeliveryFocus
+      || this.phase === FlowPhase.MysteryWinHold
+      || this.phase === FlowPhase.FadeToBlack
+      || this.phase === FlowPhase.HoldBlack
+      || this.phase === FlowPhase.FadeFromBlack
+      || this.phase === FlowPhase.OrdinanceFocus
+      || this.phase === FlowPhase.ZoomOutToPlay;
   }
 
   /**
-   * Under full black: retire scrap → wait for GPU destroy → restore world →
-   * reveal boards → snap ordinance cam.
+   * Cut GPU-heavy background systems before mailbox cinematic / fade:
+   * shophouse translucency, hydrant stream uploads, axe hover, scrap draw.
+   */
+  private beginGpuSafeTransition(): void {
+    if (this.gpuSafeTransitionActive) {
+      return;
+    }
+    this.gpuSafeTransitionActive = true;
+    const world = this.getWorld();
+    world?.getNodes(ShophouseCameraOcclusionSystem).forEach((system) => {
+      system.setPaused(true);
+    });
+    setStreetLampGroundLightsEnabled(world, false);
+    this.player?.prepareScrapForCinematic();
+    this.player?.setGpuThrottled(true);
+    this.player?.setAllowDeferredDestroys(false);
+    this.mailboxHoverSilhouette.setTarget(null, null);
+  }
+
+  private restoreGpuSafeLights(): void {
+    // Never re-enable lights while scrap/hydrant MeshNode.destroy is still draining.
+    if (this.player?.hasPendingScrapDestroys()) {
+      return;
+    }
+    setStreetLampGroundLightsEnabled(this.getWorld(), true);
+  }
+
+  private endGpuSafeTransition(): void {
+    if (!this.gpuSafeTransitionActive) {
+      return;
+    }
+    this.gpuSafeTransitionActive = false;
+    this.player?.setAllowDeferredDestroys(true);
+    this.restoreGpuSafeLights();
+    this.getWorld()?.getNodes(ShophouseCameraOcclusionSystem).forEach((system) => {
+      system.setPaused(false);
+    });
+    this.player?.setGpuThrottled(false);
+    this.player?.disposeHiddenMailEnvelope();
+    this.clearEnvelope();
+  }
+
+  /**
+   * Under full black: teleport → retire scrap → wait for GPU destroy → restore
+   * world → reveal boards → snap ordinance cam.
    */
   private tickDayTransitionStaging(): void {
-    // Let the dismantling system tick deferred destroys once per update —
-    // do not double-increment the GPU settle counter from here.
+    // Destroy only under full black — CSS fade overlays do not pause WebGPU.
+    this.player?.setAllowDeferredDestroys(true);
     const t = this.phaseElapsed;
 
-    if (!this.dayTransitionScrapRetired && t >= DAY_TRANSITION_SCRAP_RETIRE_SEC) {
+    if (!this.dayTransitionTeleportDone && t >= DAY_TRANSITION_TELEPORT_SEC) {
+      this.performHiddenTeleport();
+      this.dayTransitionTeleportDone = true;
+    }
+
+    if (
+      this.dayTransitionTeleportDone
+      && !this.dayTransitionScrapRetired
+      && t >= DAY_TRANSITION_SCRAP_RETIRE_SEC
+    ) {
       this.player?.retireScrapForDayReset();
       this.dayTransitionScrapRetired = true;
     }
@@ -6997,6 +7137,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       if (this.tickStagedDayBaselineRestore()) {
         this.dayTransitionWorldRestored = true;
         this.dayTransitionWorldRestoredAt = t;
+        // Keep lights off until pending destroys from orphan retire are empty.
       }
     }
 
@@ -7015,14 +7156,20 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.dayTransitionOrdinanceRevealed
       && !this.dayTransitionCamReady
       && t >= this.dayTransitionOrdinanceRevealedAt + DAY_TRANSITION_CINEMATIC_COOLDOWN_SEC
+      && !(this.player?.hasPendingScrapDestroys() ?? false)
     ) {
       this.ensureWakeOrdinanceCinematic();
       this.dayTransitionCamReady = true;
+      this.restoreGpuSafeLights();
     }
   }
 
   private isDayTransitionHoldComplete(): boolean {
-    return this.dayTransitionCamReady && this.phaseElapsed >= NEXT_DAY_LABEL_SEC;
+    if (!this.dayTransitionCamReady || this.phaseElapsed < NEXT_DAY_LABEL_SEC) {
+      return false;
+    }
+    // Stay black until GPU teardown drains — revealing mid-destroy loses the device.
+    return !(this.player?.hasPendingScrapDestroys() ?? false);
   }
 
   private shouldSkipDayReset(node: ENGINE.SceneNode): boolean {
@@ -7231,7 +7378,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     // Ordinance GLBs retain their authored materials after a day reset.  Do not
     // replace or reconfigure their maps here: Studio's editor and Play loader
     // must use the same glTF material and UV data.
-    this.baselineReinforceRemaining = 10;
+    // Defer physics reinforce until playable — hammering teleports under black
+    // + brush overlap loses WebGPU.
   }
 
   private applyAllSnapshotPoses(options?: {
@@ -7344,7 +7492,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!this.mailbox) {
       return;
     }
-    playSound(this.getWorld(), GameSound.EnvelopePaper, 0.8);
+    playSound(this.getWorld(), GameSound.EnvelopePaper, 3.2);
 
     this.tmpBounds.setFromObject(this.mailbox);
     if (this.tmpBounds.isEmpty()) {
@@ -7394,9 +7542,16 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.envelopeMesh.scale.set(scale, scale, scale);
     if (t >= 1) {
       if (this.envelopeMesh.visible) {
-        playSound(this.getWorld(), GameSound.MailboxLatch, 0.9);
+        playSound(this.getWorld(), GameSound.MailboxLatch, 3.6);
         playSound(this.getWorld(), GameSound.MailDelivered, 0.7);
       }
+      this.envelopeMesh.visible = false;
+    }
+  }
+
+  /** Hide the insert mesh without disposing GPU resources mid-fade. */
+  private hideEnvelopeForGpu(): void {
+    if (this.envelopeMesh) {
       this.envelopeMesh.visible = false;
     }
   }
@@ -7455,8 +7610,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.cinematicReturningToPlayer = false;
     this.resolveOrdinanceCinematicLookAt(target, this.cinematicLookAt);
 
-    // Approach the authored / editor-readable face (local +Z). Local −Z is the back;
-    // DoubleSide materials look mirrored from behind — that is not a model flip.
+    // Pick the board side nearest the current gameplay view.  Several ordinance
+    // models have opposite local axes, so assuming local +Z can make the shot
+    // orbit around the board to its back.  Choosing between the two board-face
+    // directions preserves the readable side already facing the player.
     const localForwardZ = 1;
     target.getWorldQuaternion(this.tmpQuat);
     this.tmpForward.set(0, 0, localForwardZ).applyQuaternion(this.tmpQuat);
@@ -7465,6 +7622,16 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.tmpForward.set(0, 0, localForwardZ);
     } else {
       this.tmpForward.normalize();
+    }
+    const activeCamera = world.getActiveCamera();
+    if (activeCamera) {
+      activeCamera.updateMatrixWorld(true);
+      activeCamera.getWorldPosition(this.tmpDir);
+      this.tmpDir.sub(this.cinematicLookAt);
+      this.tmpDir.y = 0;
+      if (this.tmpDir.lengthSq() > 1e-6 && this.tmpForward.dot(this.tmpDir) < 0) {
+        this.tmpForward.negate();
+      }
     }
 
     // Exact focus distance from look-at (default 2.2m). Keep pitch at 0 for ordinances.
@@ -7492,11 +7659,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.cinematicStartQuat.copy(this.cinematicEndQuat);
       this.cinematicBlend = 1;
     } else if (!useCapturedStart) {
-      const active = world.getActiveCamera();
-      if (active) {
-        active.updateMatrixWorld(true);
-        active.getWorldPosition(this.cinematicStartPos);
-        active.getWorldQuaternion(this.cinematicStartQuat);
+      if (activeCamera) {
+        activeCamera.updateMatrixWorld(true);
+        activeCamera.getWorldPosition(this.cinematicStartPos);
+        activeCamera.getWorldQuaternion(this.cinematicStartQuat);
       } else {
         this.cinematicStartPos.copy(this.cinematicEndPos);
         this.cinematicStartQuat.copy(this.cinematicEndQuat);
@@ -7685,11 +7851,15 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
   }
 
-  /** Seamless handoff: align to gameplay pose, then drop the view-target override. */
+  /** Seamless handoff: keep the captured blend endpoint, then drop the override. */
   private finishCinematicReturnToPlayer(): void {
     if (this.cinematicReturningToPlayer && this.viewTargetCam && this.player) {
-      // Re-sample the already-configured gameplay cam so handoff matches exactly.
-      this.syncCinematicReturnEndPose(false);
+      // Only movement interrupts can change the gameplay endpoint. Re-sampling
+      // an otherwise stationary spring arm on the final frame was the source of
+      // the maintenance focus jitter and the visible end-of-return snap.
+      if (this.cinematicReturnInterrupted) {
+        this.syncCinematicReturnEndPose(false);
+      }
       this.viewTargetCam.position.copy(this.cinematicEndPos);
       this.viewTargetCam.quaternion.copy(this.cinematicEndQuat);
       this.viewTargetCam.updateMatrixWorld(true);

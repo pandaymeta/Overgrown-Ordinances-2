@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/TreesClimbing.glb",
+      "modelUrl": "@project/assets/OrdinanceCards/Clean/TreesClimbing_Clean.glb",
           "name": "Trees Climbing Fallen Mesh",
           "nodeId": 58412,
           "physicsOptions": {

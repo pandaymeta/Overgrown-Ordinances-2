@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/JayWalking.glb",
+      "modelUrl": "@project/assets/OrdinanceCards/Clean/JayWalking_Clean.glb",
           "name": "Jay Walking Fallen Mesh",
           "nodeId": 53430,
           "physicsOptions": {

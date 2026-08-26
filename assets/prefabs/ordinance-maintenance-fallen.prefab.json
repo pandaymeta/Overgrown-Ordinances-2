@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Maintenance.glb",
+      "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/Maintenance_Board_v2.glb",
           "name": "Maintenance Fallen Mesh",
           "nodeId": 19891,
           "physicsOptions": {

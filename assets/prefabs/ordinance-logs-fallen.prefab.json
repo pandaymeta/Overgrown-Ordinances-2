@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Logs.glb",
+      "modelUrl": "@project/assets/OrdinanceCards/Clean/Logs_Clean.glb",
           "name": "Logs Fallen Mesh",
           "nodeId": 40260,
           "physicsOptions": {

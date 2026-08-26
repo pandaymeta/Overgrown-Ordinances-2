@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Bushes.glb",
+      "modelUrl": "@project/assets/OrdinanceCards/Clean/Bushes_Clean.glb",
           "name": "Bushes Fallen Mesh",
           "nodeId": 17930,
           "physicsOptions": {

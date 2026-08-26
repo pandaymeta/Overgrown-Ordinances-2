@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/TreesCutting.glb",
+      "modelUrl": "@project/assets/OrdinanceCards/Clean/TreesCutting_Clean.glb",
           "name": "Trees Cutting Fallen Mesh",
           "nodeId": 58670,
           "physicsOptions": {

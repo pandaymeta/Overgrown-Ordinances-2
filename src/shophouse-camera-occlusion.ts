@@ -63,6 +63,7 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
   private player: ThirdPersonPlayer | null = null;
   private tickCounter = 0;
   private hasSampledPose = false;
+  private paused = false;
 
   constructor() {
     super();
@@ -122,8 +123,27 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
     return true;
   }
 
+  /**
+   * Freeze occlusion swaps during mailbox / next-day cinematics.
+   * Translucent shophouses cause huge overdraw and WebGPU device loss.
+   */
+  public setPaused(paused: boolean): void {
+    if (this.paused === paused) {
+      return;
+    }
+    this.paused = paused;
+    if (paused) {
+      this.restoreAll();
+      this.restoreClouds();
+    }
+    this.hasSampledPose = false;
+  }
+
   public override tickPostPhysics(_deltaTime: number): void {
     super.tickPostPhysics(_deltaTime);
+    if (this.paused) {
+      return;
+    }
     const world = this.getWorld();
     if (!world) {
       return;

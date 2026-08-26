@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Metals.glb",
+      "modelUrl": "@project/assets/OrdinanceCards/Clean/Metals_Clean.glb",
           "name": "Metals Fallen Mesh",
           "nodeId": 48713,
           "physicsOptions": {

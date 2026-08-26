@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/CatFeed.glb",
+      "modelUrl": "@project/assets/OrdinanceCards/Clean/CatFeed_Clean.glb",
           "name": "Cat Feed Fallen Mesh",
           "nodeId": 54387,
           "physicsOptions": {

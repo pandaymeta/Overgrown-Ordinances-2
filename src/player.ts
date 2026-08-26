@@ -5,7 +5,7 @@ import { createAirmailEnvelope, disposeAirmailEnvelope } from './airmail-envelop
 import { installAnimationOneShotHostPatch } from './animation-oneshot-host-patch.js';
 import { CarryableCrateNode } from './carryable-crate-node.js';
 import { FaceMovementCharacterMovementNode } from './face-movement-character-movement.js';
-import { FootstepPlayer, GameSound, playSound } from './game-audio.js';
+import { FootstepPlayer, GameSound, playSound, playSoundAt } from './game-audio.js';
 import { HoverSilhouette } from './hover-silhouette.js';
 import { StreetLampDismantlingSystem } from './street-lamp-dismantling-system.js';
 
@@ -144,6 +144,10 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     remaining: number;
     gravityScale: number;
     settleFlat: boolean;
+    /** Impact cue for dismantled wood / metal scrap after a throw. */
+    landSound: 'wood' | 'metal' | null;
+    wasFalling: boolean;
+    landPlayed: boolean;
   }> = [];
   private trajectoryRibbon: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial> | null = null;
   private readonly trajectoryPoints: THREE.Vector3[] = Array.from(
@@ -224,6 +228,22 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
       if ((child as THREE.Mesh).isMesh || (child as THREE.SkinnedMesh).isSkinnedMesh) {
         child.castShadow = true;
         child.receiveShadow = true;
+      }
+    });
+  }
+
+  /** Shadow maps are expensive under WebGPU — disable during cinematics / fade. */
+  private setVisualShadowsEnabled(enabled: boolean): void {
+    const root = this.visualNode;
+    if (!root) {
+      return;
+    }
+    root.castShadow = enabled;
+    root.receiveShadow = enabled;
+    root.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh || (child as THREE.SkinnedMesh).isSkinnedMesh) {
+        child.castShadow = enabled;
+        child.receiveShadow = enabled;
       }
     });
   }
@@ -497,6 +517,40 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
   /** Lighten scrap GPU cost before mailbox / ordinance cinematics (keeps physics). */
   public prepareScrapForCinematic(): void {
     this.streetLampDismantling.prepareScrapForCinematic();
+  }
+
+  /**
+   * Pause axe targeting, hydrant spray uploads, and pickup hover while a
+   * cinematic/fade needs the GPU.
+   */
+  public setGpuThrottled(throttled: boolean): void {
+    this.streetLampDismantling.setGpuThrottled(throttled);
+    this.setVisualShadowsEnabled(!throttled);
+    if (throttled) {
+      this.setHoveredCarryable(null);
+      this.hideMailEnvelopeForGpu();
+    }
+  }
+
+  /** Only flush MeshNode.destroy while the screen is fully covered. */
+  public setAllowDeferredDestroys(allowed: boolean): void {
+    this.streetLampDismantling.setAllowDeferredDestroys(allowed);
+  }
+
+  /** Hide the hand envelope without disposing GPU textures mid-fade. */
+  public hideMailEnvelopeForGpu(): void {
+    this.mailEnvelopeRequested = false;
+    if (this.mailEnvelopeMesh) {
+      this.mailEnvelopeMesh.visible = false;
+    }
+  }
+
+  /** Dispose a previously hidden hand envelope once the GPU is safe again. */
+  public disposeHiddenMailEnvelope(): void {
+    if (this.mailEnvelopeRequested) {
+      return;
+    }
+    this.clearMailEnvelope();
   }
 
   /** Stage 1 of black-screen day transition: detach scrap, queue deferred destroy. */
@@ -814,15 +868,18 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
       this.carryAimNdc,
       deltaTime,
     );
-    this.updateHoveredCarryable(deltaTime);
-    this.hoverSilhouette.syncTransforms();
+    if (!this.movementFrozen && !this.cinematicCameraLock) {
+      this.updateHoveredCarryable(deltaTime);
+      this.hoverSilhouette.syncTransforms();
+    }
     this.updateFootsteps(deltaTime);
     this.respawnIfBelowWorld();
   }
 
   private updateFootsteps(deltaTime: number): void {
     if (this.movementFrozen) {
-      this.footsteps.update(this.getWorld(), deltaTime, false, false);
+      this.footsteps.clearAirborneTracking();
+      this.footsteps.update(this.getWorld(), deltaTime, false, false, true);
       return;
     }
     const { isWalking, isRunning, isClimbing, isJumping } = this.getLocomotionAnimationParameters();
@@ -832,6 +889,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
       deltaTime,
       grounded && (isWalking || isRunning),
       isRunning,
+      grounded,
     );
   }
 
@@ -902,7 +960,10 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
   public setMailEnvelopeCarried(carried: boolean): void {
     this.mailEnvelopeRequested = carried;
     if (!carried) {
-      this.clearMailEnvelope();
+      // Hide only — dispose during cinematic/fade loses WebGPU.
+      if (this.mailEnvelopeMesh) {
+        this.mailEnvelopeMesh.visible = false;
+      }
       return;
     }
     this.ensureMailEnvelope();
@@ -1056,11 +1117,16 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     ]);
     crate.setPhysicsVectorParam(ENGINE.PhysicsVectorParam.AngularVelocity, [0, 0, 0]);
     if (isThrow) {
+      // 2× the carried-pickup soft cue.
+      playSound(this.getWorld(), GameSound.PickupSoft, 1.6);
       this.thrownGravityRestores.push({
         crate,
         remaining: this.calculatedThrowFlightTime + 0.15,
         gravityScale: originalGravityScale,
         settleFlat,
+        landSound: this.classifyThrownLandSound(crate),
+        wasFalling: false,
+        landPlayed: false,
       });
     }
 
@@ -1479,15 +1545,105 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
   private updateThrownCrateGravity(deltaTime: number): void {
     for (let index = this.thrownGravityRestores.length - 1; index >= 0; index--) {
       const record = this.thrownGravityRestores[index];
+      this.updateThrownLandSound(record);
       record.remaining -= deltaTime;
       if (record.remaining > 0) {
         continue;
       }
+      // Flight timer ended — play a land cue if the velocity check never fired.
+      this.playThrownLandSound(record, true);
       this.restoreCrateGravity(record.crate, record.gravityScale);
       if (record.settleFlat) {
         this.settleCrateFlat(record.crate);
       }
       this.thrownGravityRestores.splice(index, 1);
+    }
+  }
+
+  /**
+   * Dismantled wood scraps → axe-hit-wood; Metal Scrapt / metal drops → axe-hit-metal.
+   * Other throwables (rocks, peaches, cones, …) stay silent on land.
+   */
+  private classifyThrownLandSound(
+    crate: ENGINE.PrimitiveNode,
+  ): 'wood' | 'metal' | null {
+    const name = crate.name ?? '';
+    const modelUrl = crate instanceof ENGINE.ModelMeshNode ? (crate.modelUrl ?? '') : '';
+    if (
+      /^Metal Scrapt(?:\s+\d+)?$/i.test(name)
+      || /^Bench[_\s-]?scrapt/i.test(name)
+      || /^Guardrail(?:\s|$)/i.test(name)
+      || /metal_scrapt|Bench_scrapt|guardrail[1-4]\.glb/i.test(modelUrl)
+    ) {
+      return 'metal';
+    }
+    if (
+      /^Log(?:\s+\d+)?$/i.test(name)
+      || /^Kiosk Wood(?:\s+\d+)?$/i.test(name)
+      || /^Crate Planks Drop(?:\s+\d+)?$/i.test(name)
+      || /^Bush(?:\s|$)/i.test(name)
+      || /fallen-log|(?:^|\/)Wood[12](?:-centered)?\.glb$/i.test(modelUrl)
+    ) {
+      return 'wood';
+    }
+    return null;
+  }
+
+  private updateThrownLandSound(record: {
+    crate: ENGINE.PrimitiveNode;
+    landSound: 'wood' | 'metal' | null;
+    wasFalling: boolean;
+    landPlayed: boolean;
+  }): void {
+    if (record.landPlayed || !record.landSound) {
+      return;
+    }
+    const verticalSpeed = this.getThrownVerticalSpeed(record.crate);
+    if (verticalSpeed === null) {
+      return;
+    }
+    // Descending fast enough to count as airborne after the throw.
+    if (verticalSpeed < -1.1) {
+      record.wasFalling = true;
+    }
+    if (record.wasFalling && Math.abs(verticalSpeed) < 0.55) {
+      this.playThrownLandSound(record, false);
+    }
+  }
+
+  private playThrownLandSound(
+    record: {
+      crate: ENGINE.PrimitiveNode;
+      landSound: 'wood' | 'metal' | null;
+      wasFalling: boolean;
+      landPlayed: boolean;
+    },
+    forceAfterFlight: boolean,
+  ): void {
+    if (record.landPlayed || !record.landSound) {
+      return;
+    }
+    if (!forceAfterFlight && !record.wasFalling) {
+      return;
+    }
+    record.landPlayed = true;
+    const sound = record.landSound === 'wood'
+      ? GameSound.AxeHitWood
+      : GameSound.AxeHitMetal;
+    const at = record.crate.getWorldPosition(new THREE.Vector3());
+    // 2× default one-shot gain.
+    playSoundAt(this.getWorld(), sound, at, 2);
+  }
+
+  private getThrownVerticalSpeed(crate: ENGINE.PrimitiveNode): number | null {
+    try {
+      const velocity = crate.getPhysicsVectorParam(ENGINE.PhysicsVectorParam.LinearVelocity);
+      if (!velocity) {
+        return null;
+      }
+      return velocity[1];
+    } catch {
+      return null;
     }
   }
 

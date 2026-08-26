@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Cats.glb",
+      "modelUrl": "@project/assets/OrdinanceCards/Clean/Cats_Clean.glb",
           "name": "Cats Fallen Mesh",
           "nodeId": 38460,
           "physicsOptions": {

@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Signs.glb",
+      "modelUrl": "@project/assets/OrdinanceCards/Clean/Signs_Clean.glb",
           "name": "Signs Fallen Mesh",
           "nodeId": 43635,
           "physicsOptions": {

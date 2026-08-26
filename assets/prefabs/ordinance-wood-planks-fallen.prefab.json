@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/WoodPlanks.glb",
+      "modelUrl": "@project/assets/OrdinanceCards/Clean/WoodPlanks_Clean.glb",
           "name": "Wood Planks Fallen Mesh",
           "nodeId": 44455,
           "physicsOptions": {

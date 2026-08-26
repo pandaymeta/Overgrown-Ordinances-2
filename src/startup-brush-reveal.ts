@@ -315,7 +315,7 @@ export class StartupBrushRevealSystem extends ENGINE.SceneNode {
     const rect = overlay.getBoundingClientRect();
     const cssW = Math.max(1, Math.round(rect.width));
     const cssH = Math.max(1, Math.round(rect.height));
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = 1;
     const pixelW = Math.max(1, Math.round(cssW * dpr));
     const pixelH = Math.max(1, Math.round(cssH * dpr));
     if (canvas.width !== pixelW || canvas.height !== pixelH) {

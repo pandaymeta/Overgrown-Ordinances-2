@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsClimb.glb",
+      "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsClimb_Clean.glb",
           "name": "Street Lights Climb Fallen Mesh",
           "nodeId": 46509,
           "physicsOptions": {

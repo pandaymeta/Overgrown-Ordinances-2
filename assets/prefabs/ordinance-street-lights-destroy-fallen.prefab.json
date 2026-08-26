@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/StreetLightsDestroy.glb",
+      "modelUrl": "@project/assets/OrdinanceCards/Clean/StreetLightsDestroy_Clean.glb",
           "name": "Street Lights Destroy Fallen Mesh",
           "nodeId": 24347,
           "physicsOptions": {

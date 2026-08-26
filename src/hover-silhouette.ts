@@ -1,40 +1,32 @@
 import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
-const SILHOUETTE_GREEN = 0x39ff63;
+const HIGHLIGHT_GREEN = 0x39ff63;
 /** Skip absurdly dense props (keeps hover hitch small). */
-const MAX_WIRE_MESHES = 48;
-/** Inflate so wires sit outside the solid surface (foliage needs more lift). */
-const WIRE_SCALE = 1.012;
-const WIRE_SCALE_FOLIAGE = 1.04;
-const FOLIAGE_TARGET_NAME = /bush|tree|cherry|fern|grass/i;
+const MAX_HIGHLIGHT_MESHES = 48;
 /**
  * Climb / contact volumes parented under lamps, trams, trees, etc.
- * Never include these in the green hover wireframe.
+ * Never include these in the green hover highlight.
  */
 const OUTLINE_EXCLUDED_TRIGGER_NAME = /^(?:LampTrigger|TramTrigger|TramRoofTrigger|TreeTrigg+er|WireTrigger|CarRoofTrigger)(?:\s|$)/i;
 
-type WireBinding = {
-  node: ENGINE.MeshNode;
-  source: THREE.Mesh;
-  owner: ENGINE.ModelMeshNode | null;
+type MaterialSwap = {
+  mesh: THREE.Mesh;
+  original: THREE.Material | THREE.Material[];
+  highlight: THREE.Material | THREE.Material[];
 };
 
 /**
- * Green trimesh wireframe hover cue for pickups and axe dismantle targets.
+ * Green material-tint hover cue for pickups and axe dismantle targets.
  *
- * Uses MeshNode wireframes (Genesys-rendered) instead of raw LineSegments.
- * Geometry is built once per target; transforms sync each frame.
+ * Same aim triggers as the old wireframe, but tints the live GLB meshes
+ * (like the red axe hit flash — steady green, no pulse). No extra MeshNodes.
  */
 export class HoverSilhouette {
   private target: THREE.Object3D | null = null;
-  private wireMaterial: THREE.MeshBasicMaterial | null = null;
-  private readonly bindings: WireBinding[] = [];
-  private readonly position = new THREE.Vector3();
-  private readonly quaternion = new THREE.Quaternion();
-  private readonly scale = new THREE.Vector3();
-  private readonly relativeMatrix = new THREE.Matrix4();
-  private readonly scratchGeometry = new THREE.BoxGeometry(0.01, 0.01, 0.01);
+  private readonly swaps: MaterialSwap[] = [];
+  /** Highlight still referenced by an active red hit flash — restore next frames. */
+  private readonly pendingRestores: MaterialSwap[] = [];
   private loadToken = 0;
 
   public get activeTarget(): THREE.Object3D | null {
@@ -47,72 +39,36 @@ export class HoverSilhouette {
     }
     this.target = target;
     this.loadToken += 1;
+    this.restoreMaterials(false);
     if (
       !world
       || !target
       || isOutlineExcludedTrigger(target)
     ) {
-      this.disposeWires();
       return;
     }
-    this.ensureMaterial();
-    this.rebuildWires(world, target, this.loadToken);
+    this.applyHighlightMaterials(target, this.loadToken);
     this.waitForPrefabMeshes(world, target, this.loadToken);
   }
 
-  /** Copy source mesh poses onto wires — call once per frame while active. */
+  /** Drain deferred restores after a red hit flash releases the mesh. */
   public syncTransforms(): void {
-    if (this.bindings.length === 0) {
-      return;
-    }
-    for (const { node, source, owner } of this.bindings) {
-      if (!source.parent) {
-        node.visible = false;
-        continue;
-      }
-      source.updateWorldMatrix(true, false);
-      if (owner) {
-        owner.updateWorldMatrix(true, false);
-        this.relativeMatrix.copy(owner.matrixWorld).invert().multiply(source.matrixWorld);
-        this.relativeMatrix.decompose(this.position, this.quaternion, this.scale);
-      } else {
-        source.matrixWorld.decompose(this.position, this.quaternion, this.scale);
-      }
-      node.position.copy(this.position);
-      node.quaternion.copy(this.quaternion);
-      const foliage = FOLIAGE_TARGET_NAME.test(this.target?.name ?? '');
-      node.scale.copy(this.scale).multiplyScalar(foliage ? WIRE_SCALE_FOLIAGE : WIRE_SCALE);
-      node.visible = source.visible;
-    }
+    this.flushPendingRestores();
   }
 
   public clear(): void {
     this.target = null;
     this.loadToken += 1;
-    this.disposeWires();
-    this.wireMaterial?.dispose();
-    this.wireMaterial = null;
-    this.scratchGeometry.dispose();
+    this.restoreMaterials(true);
   }
 
-  private ensureMaterial(): void {
-    if (this.wireMaterial) {
-      return;
-    }
-    this.wireMaterial = new THREE.MeshBasicMaterial({
-      color: SILHOUETTE_GREEN,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.95,
-      // depthTest off so dense foliage (bushes) still shows the green cage
-      depthTest: false,
-      depthWrite: false,
-      toneMapped: false,
-    });
+  /** Kept for cinematic callers; material swaps have nothing to defer-destroy. */
+  public flushDeferredDestroys(_forceAll = false): void {
+    this.restoreMaterials(true);
   }
 
   private waitForPrefabMeshes(
-    world: ENGINE.World,
+    _world: ENGINE.World,
     target: THREE.Object3D,
     token: number,
   ): void {
@@ -127,47 +83,109 @@ export class HoverSilhouette {
         if (token !== this.loadToken || this.target !== target) {
           return;
         }
-        this.rebuildWires(world, target, token);
+        this.restoreMaterials(false);
+        this.applyHighlightMaterials(target, token);
       });
     }
   }
 
-  private rebuildWires(world: ENGINE.World, target: THREE.Object3D, token: number): void {
-    if (token !== this.loadToken || !this.wireMaterial) {
+  private applyHighlightMaterials(target: THREE.Object3D, token: number): void {
+    if (token !== this.loadToken) {
       return;
     }
-    this.disposeWires();
-
     const meshes = this.collectMeshes(target);
     if (meshes.length === 0) {
       return;
     }
-    if (meshes.length > MAX_WIRE_MESHES) {
-      meshes.sort((a, b) => triangleCount(b.mesh) - triangleCount(a.mesh));
-      meshes.length = MAX_WIRE_MESHES;
+    if (meshes.length > MAX_HIGHLIGHT_MESHES) {
+      meshes.sort((a, b) => triangleCount(b) - triangleCount(a));
+      meshes.length = MAX_HIGHLIGHT_MESHES;
     }
 
-    for (const { mesh, owner } of meshes) {
-      const node = ENGINE.MeshNode.create({
-        name: 'Hover Trimesh Wire',
-        geometry: mesh.geometry,
-        material: this.wireMaterial,
-        castShadow: false,
-        receiveShadow: false,
-        physicsOptions: { enabled: false },
-      });
-      node.renderOrder = 900;
-      (owner ?? world).add(node);
-      this.bindings.push({ node, source: mesh, owner });
+    for (const mesh of meshes) {
+      const original = mesh.material;
+      const highlight = Array.isArray(original)
+        ? original.map((material) => this.createHighlightMaterial(material))
+        : this.createHighlightMaterial(original);
+      this.swaps.push({ mesh, original, highlight });
+      mesh.material = highlight;
     }
-    this.syncTransforms();
   }
 
-  private collectMeshes(root: THREE.Object3D): Array<{ mesh: THREE.Mesh; owner: ENGINE.ModelMeshNode | null }> {
-    const meshes: Array<{ mesh: THREE.Mesh; owner: ENGINE.ModelMeshNode | null }> = [];
+  private createHighlightMaterial(material: THREE.Material): THREE.Material {
+    const highlight = material.clone() as THREE.Material & {
+      color?: THREE.Color;
+      emissive?: THREE.Color;
+      emissiveIntensity?: number;
+      transparent?: boolean;
+      opacity?: number;
+      depthWrite?: boolean;
+    };
+    highlight.color?.setHex(HIGHLIGHT_GREEN);
+    highlight.emissive?.setHex(HIGHLIGHT_GREEN);
+    if (highlight.emissiveIntensity !== undefined) {
+      highlight.emissiveIntensity = Math.max(highlight.emissiveIntensity, 0.85);
+    }
+    highlight.transparent = true;
+    highlight.opacity = 0.5;
+    highlight.depthWrite = false;
+    highlight.needsUpdate = true;
+    return highlight;
+  }
+
+  private restoreMaterials(force: boolean): void {
+    for (const swap of this.swaps.splice(0)) {
+      if (!this.tryRestoreSwap(swap, force)) {
+        this.pendingRestores.push(swap);
+      }
+    }
+    if (force) {
+      this.flushPendingRestores(true);
+    }
+  }
+
+  private flushPendingRestores(force = false): void {
+    if (this.pendingRestores.length === 0) {
+      return;
+    }
+    const stillPending: MaterialSwap[] = [];
+    for (const swap of this.pendingRestores.splice(0)) {
+      if (!this.tryRestoreSwap(swap, force)) {
+        stillPending.push(swap);
+      }
+    }
+    this.pendingRestores.push(...stillPending);
+  }
+
+  private tryRestoreSwap(swap: MaterialSwap, force: boolean): boolean {
+    const { mesh, original, highlight } = swap;
+    const current = mesh.material;
+    const ownsSlot = materialsMatch(current, highlight);
+    if (!ownsSlot && !force) {
+      // Red hit flash owns the mesh — wait until it puts our highlight back.
+      // If the mesh already shows the true original, only dispose the highlight.
+      if (!materialsMatch(current, original)) {
+        return false;
+      }
+    } else {
+      mesh.material = original;
+    }
+    const list = Array.isArray(highlight) ? highlight : [highlight];
+    for (const material of list) {
+      material.dispose();
+    }
+    return true;
+  }
+
+  /**
+   * ModelMeshNode targets: only that node's own GLB meshes via getAllMeshes —
+   * never SceneNode children (boards, triggers, spots under lamps).
+   */
+  private collectMeshes(root: THREE.Object3D): THREE.Mesh[] {
+    const meshes: THREE.Mesh[] = [];
     const seen = new Set<THREE.Mesh>();
 
-    const addMesh = (mesh: THREE.Mesh, owner: ENGINE.ModelMeshNode | null = null): void => {
+    const addMesh = (mesh: THREE.Mesh): void => {
       if (!mesh.geometry || seen.has(mesh) || !mesh.visible) {
         return;
       }
@@ -175,45 +193,30 @@ export class HoverSilhouette {
         return;
       }
       seen.add(mesh);
-      meshes.push({ mesh, owner });
+      meshes.push(mesh);
     };
 
-    if (root instanceof ENGINE.SceneNode) {
-      const models = root instanceof ENGINE.ModelMeshNode
-        ? [root]
-        : [root, ...root.getNodes(ENGINE.ModelMeshNode)];
-      for (const model of models) {
-        if (!(model instanceof ENGINE.ModelMeshNode)) {
-          continue;
+    if (root instanceof ENGINE.ModelMeshNode) {
+      if (!isOutlineExcludedTrigger(root)) {
+        for (const mesh of root.getAllMeshes()) {
+          addMesh(mesh);
         }
+      }
+      return meshes;
+    }
+
+    if (root instanceof ENGINE.SceneNode) {
+      for (const model of root.getNodes(ENGINE.ModelMeshNode)) {
         if (isOutlineExcludedTrigger(model) || isUnderOutlineExcludedTrigger(model)) {
           continue;
         }
         for (const mesh of model.getAllMeshes()) {
-          addMesh(mesh, model);
+          addMesh(mesh);
         }
       }
     }
 
-    root.traverse((child) => {
-      if (isOutlineExcludedTrigger(child)) {
-        return;
-      }
-      if ((child as THREE.Mesh).isMesh) {
-        addMesh(child as THREE.Mesh);
-      }
-    });
-
     return meshes;
-  }
-
-  private disposeWires(): void {
-    for (const { node } of this.bindings.splice(0)) {
-      // Detach shared source geometry before destroy so we do not dispose the prop.
-      node.geometry = this.scratchGeometry;
-      node.parent?.remove(node);
-      node.destroy();
-    }
   }
 }
 
@@ -227,6 +230,22 @@ function triangleCount(mesh: THREE.Mesh): number {
   }
   const positions = geometry.getAttribute('position');
   return positions ? positions.count / 3 : 0;
+}
+
+function materialsMatch(
+  current: THREE.Material | THREE.Material[],
+  expected: THREE.Material | THREE.Material[],
+): boolean {
+  if (current === expected) {
+    return true;
+  }
+  if (!Array.isArray(current) || !Array.isArray(expected)) {
+    return false;
+  }
+  if (current.length !== expected.length) {
+    return false;
+  }
+  return current.every((mat, index) => mat === expected[index]);
 }
 
 function isOutlineExcludedTrigger(object: THREE.Object3D): boolean {

@@ -5,6 +5,7 @@ import { SKIP_ENVIRONMENT_ART_FLAG } from './environment-art-direction.js';
 import { GameSound, playSoundAt } from './game-audio.js';
 import { HoverSilhouette } from './hover-silhouette.js';
 import { HydrantWaterStream } from './hydrant-water-stream.js';
+import { refreshStreetLampGroundLights } from './street-lamp-ground-lights.js';
 
 const STREET_LAMP_NAME = /^Street Lamp(?:\s|$)/i;
 const GUARDRAIL_D_NAME = /^Guardrail D(?:\s|$)/i;
@@ -46,7 +47,7 @@ const UTILITY_POLE_INTERACTION_RANGE = 2.5;
 /** Standing ordinance boards (axe → fallen dynamic prefab). */
 const ORDINANCE_BOARD_MODEL_PATH = /PolyforkAssets\/Ordinances\/([^/?#]+)\.glb/i;
 /** Current generated cards use a separate v5 folder rather than the legacy Ordinances path. */
-const ORDINANCE_CARD_V5_MODEL_PATH = /(?:^|\/)([A-Za-z]+)_Card_(?:[A-Za-z]+_)?v5\.glb$/i;
+const ORDINANCE_CARD_V5_MODEL_PATH = /(?:^|\/)([A-Za-z]+)_Card_[^/]+\.glb$/i;
 /** Pole/lamp scrap drops and already-fallen meshes — not axe targets. */
 const ORDINANCE_BOARD_NON_TARGET_NAME = /(?:\s+Drop|\s+Fallen(?:\s+Mesh)?)(?:\s+\d+)?$/i;
 /**
@@ -72,6 +73,7 @@ const ORDINANCE_BOARD_FALLEN_PREFABS: Record<string, string> = {
   Metals: '@project/assets/prefabs/ordinance-metals-fallen.prefab.json',
   Plastics: '@project/assets/prefabs/ordinance-plastics-fallen.prefab.json',
   PoleCut: '@project/assets/prefabs/ordinance-pole-cut-fallen.prefab.json',
+  Rocks: '@project/assets/prefabs/ordinance-rocks-fallen.prefab.json',
   ShopSign: '@project/assets/prefabs/ordinance-shop-sign-fallen.prefab.json',
   Signs: '@project/assets/prefabs/ordinance-signs-fallen.prefab.json',
   StreetLightsClimb: '@project/assets/prefabs/ordinance-street-lights-climb-fallen.prefab.json',
@@ -184,7 +186,29 @@ export class StreetLampDismantlingSystem {
    */
   private readonly pendingDestroyRoots: ENGINE.SceneNode[] = [];
   private pendingDestroyFrames = 0;
+  /** Hidden hydrant streams waiting for GPU-safe destroy during day reset. */
+  private readonly pendingHydrantDestroy: HydrantWaterStream[] = [];
+  /** Skip aim, water uploads, and mesh reloads while a cinematic/fade owns the GPU. */
+  private gpuThrottled = false;
+  /**
+   * When false, pending scrap/hydrant MeshNode.destroy stays queued.
+   * Only true under full black (HoldBlack) so WebGPU is not presenting under a CSS fade.
+   */
+  private allowDeferredDestroys = false;
+  private meshSwapCooldownFrames = 0;
+  /** Wait this many ticks after the last retire before destroying any GPU mesh. */
+  private static readonly SCRAP_DESTROY_SETTLE_FRAMES = 12;
+  /** Destroy at most one retired root every N ticks after settle. */
+  private static readonly SCRAP_DESTROY_STRIDE_FRAMES = 3;
   private readonly meshSwapRecords: Array<{ node: ENGINE.ModelMeshNode; modelUrl: string }> = [];
+  /** Street lamps removed from the world on final hit; re-added on day reset. */
+  private readonly yankedStreetLamps: ENGINE.ModelMeshNode[] = [];
+  /**
+   * Pre-spawned lamp scrap (GLB + colliders cooked off-frame). Taking from the
+   * pool avoids the freeze-then-scrap hitch on the final axe hit.
+   */
+  private readonly streetLampScrapPool: ENGINE.SceneNode[] = [];
+  private streetLampScrapWarming = false;
   private readonly poseFallHomePoses = new Map<ENGINE.ModelMeshNode, {
     position: THREE.Vector3;
     quaternion: THREE.Quaternion;
@@ -289,9 +313,11 @@ export class StreetLampDismantlingSystem {
 
     this.enableBushAxeHits(world);
     this.parentPoleCutBoardsOntoUtilityPoles(world);
+    this.hardenStreetLampChildPhysics(world);
     this.bindHydrantProjectileHits(world);
     this.cachePoseFallTargets(world);
     this.hidePoseFallTargets(world);
+    this.warmStreetLampScrapPool(2);
   }
 
   public update(
@@ -303,11 +329,23 @@ export class StreetLampDismantlingSystem {
   ): void {
     this.lastCamera = camera;
     this.simulationTime += deltaTime;
+    if (this.allowDeferredDestroys) {
+      this.flushPendingScrapDestroys();
+      this.flushPendingHydrantDestroys();
+    }
+    this.processDeferredMeshSwaps();
+    if (this.allowDeferredDestroys) {
+      this.hoverSilhouette.flushDeferredDestroys();
+    }
+    if (this.gpuThrottled) {
+      this.setTarget(player.getWorld(), null);
+      this.updateTreeHealthBar(player.getWorld(), camera, null);
+      return;
+    }
     this.updateHitFlash(deltaTime);
     this.updateBushAppearAnimations(deltaTime);
     this.updatePoseFallAnimations(deltaTime);
     this.updateHydrantWater(deltaTime, camera);
-    this.flushPendingScrapDestroys();
     const world = player.getWorld();
     if (world) {
       this.updateHydrantProjectileHits(world);
@@ -346,6 +384,7 @@ export class StreetLampDismantlingSystem {
    * Hides scrap from the renderer (physics bodies stay as-is).
    */
   public prepareScrapForCinematic(): void {
+    this.prepareHydrantWaterForCinematic();
     for (const scrap of this.spawnedScrapRoots) {
       this.disableScrapShadows(scrap);
       scrap.visible = false;
@@ -353,6 +392,40 @@ export class StreetLampDismantlingSystem {
         child.visible = false;
       });
       this.setScrapMeshesRenderable(scrap, false);
+    }
+  }
+
+  /**
+   * Pause axe targeting, hydrant buffer uploads, and mesh reloads while the
+   * mailbox cinematic / next-day fade owns the GPU.
+   */
+  public setGpuThrottled(throttled: boolean): void {
+    if (this.gpuThrottled === throttled) {
+      return;
+    }
+    this.gpuThrottled = throttled;
+    if (throttled) {
+      this.allowDeferredDestroys = false;
+      this.prepareHydrantWaterForCinematic();
+      this.setTarget(null, null);
+    } else {
+      // After cinematic, allow residual teardown again.
+      this.allowDeferredDestroys = true;
+    }
+  }
+
+  /**
+   * Enable staggered MeshNode.destroy only while the screen is fully covered
+   * (HoldBlack). Destroy during FadeToBlack / brush reveal loses WebGPU.
+   */
+  public setAllowDeferredDestroys(allowed: boolean): void {
+    this.allowDeferredDestroys = allowed;
+  }
+
+  /** Hide hydrant spray meshes so they stop uploading stream geometry. */
+  public prepareHydrantWaterForCinematic(): void {
+    for (const stream of this.hydrantWaterStreams) {
+      stream.setVisualsEnabled(false);
     }
   }
 
@@ -373,10 +446,10 @@ export class StreetLampDismantlingSystem {
   }
 
   public hasPendingScrapDestroys(): boolean {
-    return this.pendingDestroyRoots.length > 0;
+    return this.pendingDestroyRoots.length > 0 || this.pendingHydrantDestroy.length > 0;
   }
 
-  /** Force-progress deferred scrap destroys (call while screen is black). */
+  /** Tick deferred scrap destroys (call while screen is black). */
   public flushPendingScrapDestroysNow(): void {
     this.flushPendingScrapDestroys();
   }
@@ -397,10 +470,10 @@ export class StreetLampDismantlingSystem {
     this.bushAppearAnimations.length = 0;
     this.poseFallAnimations.length = 0;
 
-    for (const stream of this.hydrantWaterStreams) {
-      stream.destroy();
+    for (const stream of this.hydrantWaterStreams.splice(0)) {
+      stream.setVisualsEnabled(false);
+      this.pendingHydrantDestroy.push(stream);
     }
-    this.hydrantWaterStreams.length = 0;
 
     for (const [node, home] of this.poseFallHomePoses) {
       if (!node.parent) {
@@ -418,19 +491,13 @@ export class StreetLampDismantlingSystem {
     }
     this.poseFallHomePoses.clear();
 
-    // Mesh reloads after scrap GPU teardown (staged day transition waits first).
-    const meshSwaps = this.meshSwapRecords.splice(0);
-    if (meshSwaps.length > 0) {
-      window.setTimeout(() => {
-        for (const record of meshSwaps) {
-          if (!record.node.parent || !record.modelUrl) {
-            continue;
-          }
-          void record.node.loadModel(ENGINE.AssetPath.fromString(record.modelUrl)).then(() => {
-            void record.node.waitForLoad();
-          });
-        }
-      }, 220);
+    // Mesh reloads stay queued — processDeferredMeshSwaps loads one at a time
+    // after GPU throttle lifts so we do not upload many GLBs in one frame.
+
+    for (const lamp of this.yankedStreetLamps.splice(0)) {
+      if (!lamp.parent) {
+        world.add(lamp);
+      }
     }
 
     for (const node of [...this.dismantledTargets]) {
@@ -443,6 +510,7 @@ export class StreetLampDismantlingSystem {
     this.hidePoseFallTargets(world);
     this.bindHydrantProjectileHits(world);
     this.parentPoleCutBoardsOntoUtilityPoles(world);
+    refreshStreetLampGroundLights(world);
   }
 
   /**
@@ -455,8 +523,6 @@ export class StreetLampDismantlingSystem {
     }
     this.prepareScrapForCinematic();
     this.retireAllScrap();
-    this.pendingDestroyFrames = 99;
-    this.flushPendingScrapDestroys();
     this.finishDayReset(world);
   }
 
@@ -507,10 +573,12 @@ export class StreetLampDismantlingSystem {
     this.restoreHitFlash();
     this.bushAppearAnimations.length = 0;
     this.poseFallAnimations.length = 0;
-    for (const stream of this.hydrantWaterStreams) {
+    for (const stream of this.hydrantWaterStreams.splice(0)) {
       stream.destroy();
     }
-    this.hydrantWaterStreams.length = 0;
+    for (const stream of this.pendingHydrantDestroy.splice(0)) {
+      stream.destroy();
+    }
     this.unbindHydrantProjectileHits();
     this.healthDisplayTarget = null;
     this.healthDisplayTime = 0;
@@ -521,9 +589,14 @@ export class StreetLampDismantlingSystem {
     for (const scrap of this.spawnedScrapRoots.splice(0)) {
       this.retireScrapRoot(scrap);
     }
-    this.pendingDestroyFrames = 99;
-    this.flushPendingScrapDestroys();
+    this.pendingDestroyFrames = 0;
+    this.flushPendingScrapDestroys(true);
     this.meshSwapRecords.length = 0;
+    this.yankedStreetLamps.length = 0;
+    for (const scraps of this.streetLampScrapPool.splice(0)) {
+      scraps.destroy();
+    }
+    this.streetLampScrapWarming = false;
     this.dismantledTargets.clear();
     this.dismantledPhysics.clear();
     this.nonPickupableScrapRoots.clear();
@@ -566,27 +639,84 @@ export class StreetLampDismantlingSystem {
       }
     }
     scrap.removeFromParent();
+    const wasEmpty = this.pendingDestroyRoots.length === 0;
     this.pendingDestroyRoots.push(scrap);
-    this.pendingDestroyFrames = 0;
+    // Extra retires must not restart the settle timer (or every add delays forever).
+    if (wasEmpty) {
+      this.pendingDestroyFrames = 0;
+    }
   }
 
-  private flushPendingScrapDestroys(): void {
+  private flushPendingScrapDestroys(forceAll = false): void {
+    if (forceAll) {
+      for (const scrap of this.pendingDestroyRoots.splice(0)) {
+        try {
+          scrap.destroy();
+        } catch (error) {
+          console.warn('[StreetLampDismantlingSystem] Scrap destroy after retire failed.', error);
+        }
+      }
+      this.pendingDestroyFrames = 0;
+      return;
+    }
     if (this.pendingDestroyRoots.length === 0) {
       return;
     }
     this.pendingDestroyFrames += 1;
     // Wait enough update ticks for WebGPU to drop mesh/shadow refs before destroy.
-    if (this.pendingDestroyFrames < 16) {
+    if (this.pendingDestroyFrames < StreetLampDismantlingSystem.SCRAP_DESTROY_SETTLE_FRAMES) {
       return;
     }
-    for (const scrap of this.pendingDestroyRoots.splice(0)) {
-      try {
-        scrap.destroy();
-      } catch (error) {
-        console.warn('[StreetLampDismantlingSystem] Scrap destroy after retire failed.', error);
-      }
+    const sinceSettle =
+      this.pendingDestroyFrames - StreetLampDismantlingSystem.SCRAP_DESTROY_SETTLE_FRAMES;
+    if (sinceSettle % StreetLampDismantlingSystem.SCRAP_DESTROY_STRIDE_FRAMES !== 0) {
+      return;
     }
-    this.pendingDestroyFrames = 0;
+    const scrap = this.pendingDestroyRoots.shift();
+    if (!scrap) {
+      return;
+    }
+    try {
+      scrap.destroy();
+    } catch (error) {
+      console.warn('[StreetLampDismantlingSystem] Scrap destroy after retire failed.', error);
+    }
+    if (this.pendingDestroyRoots.length === 0) {
+      this.pendingDestroyFrames = 0;
+    }
+  }
+
+  private flushPendingHydrantDestroys(): void {
+    if (this.pendingHydrantDestroy.length === 0) {
+      return;
+    }
+    // Never destroy spray GPU resources in the same burst as scrap.
+    if (this.pendingDestroyRoots.length > 0) {
+      return;
+    }
+    const stream = this.pendingHydrantDestroy.shift();
+    stream?.destroy();
+  }
+
+  private processDeferredMeshSwaps(): void {
+    if (this.gpuThrottled || this.meshSwapRecords.length === 0) {
+      return;
+    }
+    if (this.pendingDestroyRoots.length > 0 || this.pendingHydrantDestroy.length > 0) {
+      return;
+    }
+    this.meshSwapCooldownFrames += 1;
+    if (this.meshSwapCooldownFrames < 18) {
+      return;
+    }
+    this.meshSwapCooldownFrames = 0;
+    const record = this.meshSwapRecords.shift();
+    if (!record?.node.parent || !record.modelUrl) {
+      return;
+    }
+    void record.node.loadModel(ENGINE.AssetPath.fromString(record.modelUrl)).then(() => {
+      void record.node.waitForLoad();
+    });
   }
 
   /** Shadows on large scrap meshes are expensive for WebGPU; physics stays unchanged. */
@@ -630,9 +760,99 @@ export class StreetLampDismantlingSystem {
     node.overridePhysicsOptions({ enabled: false });
   }
 
-  /** Street-lamp ordinance boards are not spawned on scrap — hide + disable physics. */
-  private hideStreetLampOrdinanceBoards(lamp: ENGINE.ModelMeshNode): void {
-    this.hideMountedOrdinanceBoards(lamp, STREET_LIGHTS_BOARD_NAME);
+  /**
+   * Printed ordinance cards are children of the physical blank board.  Axe
+   * targeting resolves the printed child, but dismantling must replace the
+   * complete assembly or the parent board is left standing in the scene.
+   */
+  private getOrdinanceBoardAssemblyRoot(node: ENGINE.ModelMeshNode): ENGINE.ModelMeshNode {
+    const isPrintedCard = /_Card_/i.test(node.modelUrl ?? '')
+      || /\s+Card\s+Upright\s+v5(?:\s|$)/i.test(node.name ?? '');
+    if (isPrintedCard && node.parent instanceof ENGINE.ModelMeshNode) {
+      return node.parent;
+    }
+    return node;
+  }
+
+  private hideDismantledOrdinanceAssembly(
+    target: ENGINE.ModelMeshNode,
+    root: ENGINE.ModelMeshNode,
+  ): void {
+    // Keep the selected card in the dismantled set too, so it cannot be
+    // reacquired by the axe before the next-day reset restores the assembly.
+    if (target !== root) {
+      this.markDismantled(target);
+    }
+    this.hideDismantledOriginal(root);
+  }
+
+  /**
+   * Final lamp hit: spots are already world-roots (not lamp children). Mark only;
+   * hide/detach the lamp after scrap is in, extinguish the spot after settle.
+   */
+  private beginStreetLampDismantle(lamp: ENGINE.ModelMeshNode): void {
+    this.markDismantled(lamp);
+  }
+
+  private hideAndDetachStreetLampAfterScrap(lamp: ENGINE.ModelMeshNode): void {
+    lamp.visible = false;
+    if (this.yankedStreetLamps.includes(lamp)) {
+      return;
+    }
+    if (lamp.parent) {
+      lamp.removeFromParent();
+    }
+    this.yankedStreetLamps.push(lamp);
+  }
+
+  /** Cook lamp scrap GLBs during play start, not on the axe frame. */
+  private warmStreetLampScrapPool(want: number): void {
+    if (this.destroyed || this.streetLampScrapWarming) {
+      return;
+    }
+    const need = want - this.streetLampScrapPool.length;
+    if (need <= 0) {
+      return;
+    }
+    this.streetLampScrapWarming = true;
+    void (async () => {
+      try {
+        for (let i = 0; i < need; i += 1) {
+          if (this.destroyed) {
+            return;
+          }
+          const scraps = await ENGINE.spawnAsync<ENGINE.SceneNode>(STREET_LAMP_SCRAP_PREFAB);
+          this.preparePooledStreetLampScrap(scraps);
+          this.streetLampScrapPool.push(scraps);
+        }
+      } catch (error) {
+        console.warn('[StreetLampDismantlingSystem] Lamp scrap warm failed.', error);
+      } finally {
+        this.streetLampScrapWarming = false;
+      }
+    })();
+  }
+
+  private preparePooledStreetLampScrap(scraps: ENGINE.SceneNode): void {
+    scraps.visible = false;
+    const pieces = scraps instanceof ENGINE.ModelMeshNode
+      ? [scraps]
+      : scraps.getNodes(ENGINE.ModelMeshNode);
+    for (const piece of pieces) {
+      piece.castShadow = false;
+      piece.receiveShadow = false;
+      piece.overridePhysicsOptions({
+        ...piece.getPhysicsOptions(),
+        enabled: false,
+        motionType: ENGINE.PhysicsMotionType.Dynamic,
+        collisionProfile: ENGINE.DefaultCollisionProfile.Ragdoll,
+        collisionMeshType: ENGINE.CollisionMeshType.BoundingBox,
+      });
+    }
+  }
+
+  private takePooledStreetLampScrap(): ENGINE.SceneNode | null {
+    return this.streetLampScrapPool.pop() ?? null;
   }
 
   /** Tree-mounted Trees Cutting boards stay on the tree — hide when the tree is cut. */
@@ -749,6 +969,40 @@ export class StreetLampDismantlingSystem {
         collisionProfile: ENGINE.DefaultCollisionProfile.IgnoreOnlyPawns,
         motionType: ENGINE.PhysicsMotionType.Static,
       });
+    }
+  }
+
+  /**
+   * Nested ModelMeshNodes / MeshNodes under Street Lamps break collider rebuild
+   * when the lamp is moved in the editor (`expected instance of Ii`). Keep child
+   * boards visual-only; LampTrigger is bounds-only (mail flow disables physics).
+   */
+  private hardenStreetLampChildPhysics(world: ENGINE.World): void {
+    for (const lamp of world.getNodes(ENGINE.ModelMeshNode)) {
+      if (!STREET_LAMP_NAME.test(lamp.name ?? '')) {
+        continue;
+      }
+      for (const child of [...lamp.children]) {
+        if (child instanceof ENGINE.ModelMeshNode) {
+          child.overridePhysicsOptions({
+            enabled: false,
+            motionType: ENGINE.PhysicsMotionType.Static,
+          });
+          child.setPhysicsTransformUpdateFlags({
+            sendPosition: false,
+            sendRotation: false,
+            receivePosition: false,
+            receiveRotation: false,
+          });
+        }
+        if (child instanceof ENGINE.MeshNode && /^LampTrigger$/i.test(child.name ?? '')) {
+          child.overridePhysicsOptions({
+            enabled: false,
+            motionType: ENGINE.PhysicsMotionType.Static,
+            collisionMeshType: ENGINE.CollisionMeshType.BoundingBox,
+          });
+        }
+      }
     }
   }
 
@@ -918,6 +1172,11 @@ export class StreetLampDismantlingSystem {
     this.projectileHitTime.set(hitKey, this.simulationTime);
     this.projectileHitReady.set(hitKey, false);
     this.applyTargetHit(hydrant);
+    if (this.isSmallRockProjectile(projectile)) {
+      const hitAt = new THREE.Vector3();
+      hydrant.getWorldPosition(hitAt);
+      playSoundAt(hydrant.getWorld(), GameSound.OrdinanceStamp, hitAt, 4);
+    }
     this.healthDisplayTarget = hydrant;
     this.healthDisplayTime = PROJECTILE_HEALTH_BAR_TIME;
   }
@@ -1015,7 +1274,7 @@ export class StreetLampDismantlingSystem {
     this.cherryTreeHealth.set(target, health);
     const hitAt = new THREE.Vector3();
     target.getWorldPosition(hitAt);
-    playSoundAt(target.getWorld(), GameSound.AxeChop, hitAt, 0.85);
+    playSoundAt(target.getWorld(), this.getAxeHitSound(target), hitAt, 3.4);
     // Mark a final hit before applying feedback so the standing lamp is never
     // moved while its dismantled replacement is being created.
     if (health <= 0) {
@@ -1031,6 +1290,20 @@ export class StreetLampDismantlingSystem {
       }
     }
     return health;
+  }
+
+  /** Timber / foliage props get a wood impact; metal and stone use the metal hit. */
+  private getAxeHitSound(target: ENGINE.ModelMeshNode): string {
+    const name = target.name ?? '';
+    return CHERRY_BLOSSOM_TREE_NAME.test(name)
+      || CARGO_CRATE_NAME.test(name)
+      || KANJI_SIGN_NAME.test(name)
+      || KANJI_SIGN_POSE_NAME.test(name)
+      || TRAIL_MAP_KIOSK_NAME.test(name)
+      || BUSH_8_BB_NAME.test(name)
+      || /\bbush\b/i.test(name)
+      ? GameSound.AxeHitWood
+      : GameSound.AxeHitMetal;
   }
 
   private getProjectileSpeed(projectile: ENGINE.PrimitiveNode): number {
@@ -1056,6 +1329,13 @@ export class StreetLampDismantlingSystem {
     }
     const modelUrl = node.modelUrl ?? '';
     return SMALL_ROCK_MODEL.test(modelUrl) || PEACH_PROJECTILE_MODEL.test(modelUrl);
+  }
+
+  private isSmallRockProjectile(node: ENGINE.PrimitiveNode): boolean {
+    if (SMALL_ROCK_NAME.test(node.name ?? '')) {
+      return true;
+    }
+    return node instanceof ENGINE.ModelMeshNode && SMALL_ROCK_MODEL.test(node.modelUrl ?? '');
   }
 
   private findHydrantNode(node: ENGINE.SceneNode | null): ENGINE.ModelMeshNode | null {
@@ -1423,9 +1703,11 @@ export class StreetLampDismantlingSystem {
       this.hitShakeBaseQuaternion.copy(target.quaternion);
     }
 
-    target.traverse((object) => {
+    // Own GLB meshes only — street lamps parent boards / LampTrigger / spots;
+    // traversing those children flashed extras and fought the green overlay.
+    for (const object of target.getAllMeshes()) {
       if (!(object instanceof THREE.Mesh)) {
-        return;
+        continue;
       }
       const originalMaterial = object.material;
       const flashMaterial = Array.isArray(originalMaterial)
@@ -1433,7 +1715,7 @@ export class StreetLampDismantlingSystem {
         : this.createRedFlashMaterial(originalMaterial);
       this.hitFlashRecords.push({ mesh: object, originalMaterial, flashMaterial });
       object.material = flashMaterial;
-    });
+    }
   }
 
   private createRedFlashMaterial(material: THREE.Material): THREE.Material {
@@ -1522,20 +1804,25 @@ export class StreetLampDismantlingSystem {
     if (this.flashedTarget === target) {
       this.restoreHitFlash();
     }
-    this.targetBounds.setFromObject(target);
     const isOrdinanceBoard = this.isOrdinanceBoardTarget(target);
+    const ordinanceAssembly = isOrdinanceBoard
+      ? this.getOrdinanceBoardAssemblyRoot(target)
+      : null;
+    const transformTarget = ordinanceAssembly ?? target;
+    this.targetBounds.setFromObject(transformTarget);
     const spawnAtNodePosition = BUSH_8_BB_NAME.test(target.name ?? '')
+      || STREET_LAMP_NAME.test(target.name ?? '')
       || UTILITY_POLE_16_NAME.test(target.name ?? '')
       || UTILITY_POLE_17_NAME.test(target.name ?? '')
       || UTILITY_POLE_18_TARGET_NAME.test(target.name ?? '')
       || this.isUtilityPole15Or20Target(target.name ?? '')
       || isOrdinanceBoard;
     if (spawnAtNodePosition || this.targetBounds.isEmpty()) {
-      target.getWorldPosition(this.targetCenter);
+      transformTarget.getWorldPosition(this.targetCenter);
     } else {
       this.targetBounds.getCenter(this.targetCenter);
     }
-    target.getWorldQuaternion(this.targetRotation);
+    transformTarget.getWorldQuaternion(this.targetRotation);
 
     const targetName = target.name ?? '';
     if (FIRE_HYDRANT_NAME.test(targetName)) {
@@ -1563,7 +1850,7 @@ export class StreetLampDismantlingSystem {
         );
         return;
       }
-      this.hideDismantledOriginal(target);
+      this.hideDismantledOrdinanceAssembly(target, ordinanceAssembly ?? target);
       this.setTarget(world, null);
       void this.spawnScrapPrefab(
         world,
@@ -1622,22 +1909,19 @@ export class StreetLampDismantlingSystem {
       : null;
 
     if (isStreetLamp) {
-      this.hideStreetLampOrdinanceBoards(target);
+      this.beginStreetLampDismantle(target);
+    } else {
+      if (isCherryTree) {
+        this.hideTreesCuttingBoards(target);
+      }
+      this.hideDismantledOriginal(target);
     }
-    if (isCherryTree) {
-      this.hideTreesCuttingBoards(target);
-    }
-    this.hideDismantledOriginal(target);
     this.setTarget(world, null);
 
-    void this.spawnScrapPrefab(
-      world,
-      prefabPath,
-      this.targetCenter.clone(),
-      this.targetRotation.clone(),
-      poleOrdinanceDrops,
-      parkBenchMaterials,
-    ).then(() => {
+    const afterScrap = (): void => {
+      if (isStreetLamp) {
+        this.hideAndDetachStreetLampAfterScrap(target);
+      }
       // Metal poles and lamps clatter; trees, benches and kiosks land woody.
       playSoundAt(
         world,
@@ -1657,7 +1941,31 @@ export class StreetLampDismantlingSystem {
       if (isTrailMapKiosk) {
         this.trailMapKioskDismantledHandler?.();
       }
-    });
+    };
+
+    const spawnPos = this.targetCenter.clone();
+    // Drop metal scrap from mid-lamp height so it falls as debris, not a ground pile.
+    if (isStreetLamp) {
+      spawnPos.y += 2.8;
+    }
+    const spawnRot = this.targetRotation.clone();
+    const spawnScrap = (): void => {
+      void this.spawnScrapPrefab(
+        world,
+        prefabPath,
+        spawnPos,
+        spawnRot,
+        poleOrdinanceDrops,
+        parkBenchMaterials,
+      ).then(afterScrap);
+    };
+
+    // Lamps: scrap first (spots stay world-roots and stay lit), then hide/detach lamp.
+    if (isStreetLamp) {
+      window.setTimeout(spawnScrap, 0);
+    } else {
+      spawnScrap();
+    }
   }
 
   private async spawnScrapPrefab(
@@ -1669,10 +1977,24 @@ export class StreetLampDismantlingSystem {
     sourceMaterials?: THREE.Material[] | null,
   ): Promise<void> {
     try {
-      const scraps = await ENGINE.spawnAsync<ENGINE.SceneNode>(prefabPath);
+      const isStreetLampScrap = prefabPath === STREET_LAMP_SCRAP_PREFAB;
+      let scraps = isStreetLampScrap ? this.takePooledStreetLampScrap() : null;
+      if (!scraps) {
+        scraps = await ENGINE.spawnAsync<ENGINE.SceneNode>(prefabPath);
+        if (isStreetLampScrap) {
+          this.preparePooledStreetLampScrap(scraps);
+        }
+      }
       scraps.position.copy(position);
       scraps.quaternion.copy(rotation);
-      world.add(scraps);
+
+      if (isStreetLampScrap) {
+        await this.addStreetLampScrapStaggered(world, scraps);
+        this.warmStreetLampScrapPool(2);
+      } else {
+        world.add(scraps);
+      }
+
       this.spawnedScrapRoots.push(scraps);
       if (FALLEN_UTILITY_POLE_PREFABS.has(prefabPath)) {
         this.nonPickupableScrapRoots.add(scraps);
@@ -1704,6 +2026,79 @@ export class StreetLampDismantlingSystem {
     }
   }
 
+  /**
+   * Add lamp scrap as an empty root, then attach one piece per frame so three
+   * Metal Scrapt bodies never cook/appear on a single hitch frame.
+   * Pieces spawn elevated and fall. Lamp spots stay lit forever (turning them
+   * off jitters the camera).
+   */
+  private async addStreetLampScrapStaggered(
+    world: ENGINE.World,
+    scraps: ENGINE.SceneNode,
+  ): Promise<void> {
+    const pieces = [...scraps.children].filter(
+      (child): child is ENGINE.SceneNode => child instanceof ENGINE.SceneNode,
+    );
+    for (const piece of pieces) {
+      scraps.remove(piece);
+      piece.visible = false;
+      if (piece instanceof ENGINE.PrimitiveNode) {
+        piece.overridePhysicsOptions({
+          ...piece.getPhysicsOptions(),
+          enabled: false,
+          motionType: ENGINE.PhysicsMotionType.Dynamic,
+          collisionProfile: ENGINE.DefaultCollisionProfile.Ragdoll,
+          collisionMeshType: ENGINE.CollisionMeshType.BoundingBox,
+        });
+      }
+    }
+
+    scraps.visible = true;
+    world.add(scraps);
+
+    for (let index = 0; index < pieces.length; index += 1) {
+      const piece = pieces[index];
+      if (!piece) {
+        continue;
+      }
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, index === 0 ? 0 : 50);
+      });
+      if (!scraps.parent) {
+        return;
+      }
+      scraps.add(piece);
+      piece.visible = true;
+      if (piece instanceof ENGINE.PrimitiveNode) {
+        piece.overridePhysicsOptions({
+          ...piece.getPhysicsOptions(),
+          enabled: true,
+          motionType: ENGINE.PhysicsMotionType.Dynamic,
+          collisionProfile: ENGINE.DefaultCollisionProfile.Ragdoll,
+          collisionMeshType: ENGINE.CollisionMeshType.BoundingBox,
+        });
+      }
+    }
+
+    window.setTimeout(() => {
+      if (!scraps.parent) {
+        return;
+      }
+      for (const piece of pieces) {
+        if (!(piece instanceof ENGINE.PrimitiveNode) || !piece.parent) {
+          continue;
+        }
+        piece.overridePhysicsOptions({
+          ...piece.getPhysicsOptions(),
+          enabled: true,
+          motionType: ENGINE.PhysicsMotionType.Dynamic,
+          collisionProfile: ENGINE.DefaultCollisionProfile.BlockAllDynamic,
+          collisionMeshType: ENGINE.CollisionMeshType.BoundingBox,
+        });
+      }
+    }, 1200);
+  }
+
   private async waitForScrapModels(scraps: ENGINE.SceneNode): Promise<void> {
     const models = scraps instanceof ENGINE.ModelMeshNode
       ? [scraps]
@@ -1731,6 +2126,9 @@ export class StreetLampDismantlingSystem {
       model.userData[SKIP_ENVIRONMENT_ART_FLAG] = true;
       model.onMeshLoaded.add(() => {
         model.userData[SKIP_ENVIRONMENT_ART_FLAG] = true;
+        if (this.gpuThrottled) {
+          return;
+        }
         this.applySourceMaterialsToScrap(scraps, sourceMaterials);
       });
     }
@@ -1757,6 +2155,9 @@ export class StreetLampDismantlingSystem {
     scraps: ENGINE.SceneNode,
     sourceMaterials: THREE.Material[],
   ): void {
+    if (this.gpuThrottled) {
+      return;
+    }
     if (sourceMaterials.length === 0) {
       return;
     }

@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/FireHydrant.glb",
+      "modelUrl": "@project/assets/OrdinanceCards/Clean/FireHydrant_Clean.glb",
           "name": "Fire Hydrant Fallen Mesh",
           "nodeId": 17800,
           "physicsOptions": {

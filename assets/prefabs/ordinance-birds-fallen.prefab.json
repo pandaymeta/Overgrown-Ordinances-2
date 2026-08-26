@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/Birds.glb",
+      "modelUrl": "@project/assets/OrdinanceCards/Clean/Birds_Clean.glb",
           "name": "Birds Fallen Mesh",
           "nodeId": 30079,
           "physicsOptions": {

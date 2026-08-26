@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/HighVoltage.glb",
+      "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/HighVoltage_Board_v2.glb",
           "name": "High Voltage Fallen Mesh",
           "nodeId": 29660,
           "physicsOptions": {

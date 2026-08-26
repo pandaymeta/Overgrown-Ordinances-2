@@ -26,8 +26,12 @@ for card in CARDS:
         # transpose into the *bitmap* (rather than rotating any UVs).  This
         # avoids the mirrored/upside-down result in the Studio importer.
         image.save(DESTINATION / f"{card}_RuntimeFront.png")
-        image.transpose(Image.Transpose.TRANSPOSE).save(
-            DESTINATION / f"{card}_RuntimeBack.png")
+        back = image.transpose(Image.Transpose.TRANSPOSE)
+        if card == "HighVoltage":
+            # Studio shows the High Voltage rear upright relative to the pole;
+            # bake an extra half-turn so the printed back reads upside-down.
+            back = back.transpose(Image.Transpose.ROTATE_180)
+        back.save(DESTINATION / f"{card}_RuntimeBack.png")
     else:
         # Preserve the already-correct Do Not Step card transforms.
         image.transpose(Image.Transpose.FLIP_LEFT_RIGHT).save(

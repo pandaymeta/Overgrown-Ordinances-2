@@ -19,7 +19,7 @@
               "throwDistanceOverride": 5
             }
           ],
-          "modelUrl": "@project/assets/PolyforkAssets/Ordinances/PoleCut.glb",
+      "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/PoleCut_Board_v2.glb",
           "name": "Pole Cut Fallen Mesh",
           "nodeId": 36330,
           "physicsOptions": {

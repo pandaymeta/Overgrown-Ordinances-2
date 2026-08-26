@@ -1,7 +1,7 @@
 {
   "$root": {
     "$bc": "ENGINE.Prefab",
-    "$uuid": "36b6b96c073ce29e",
+    "$uuid": "2c95aa91753c68cb",
     "rootNode": {
       "$bc": "ENGINE.SceneNode",
       "children": [
@@ -23,20 +23,27 @@
           "name": "Metal Scrapt 3",
           "nodeId": 44502,
           "physicsOptions": {
-            "collisionMeshType": "boundingBox",
             "density": 1000,
             "motionType": "dynamic"
           },
           "position": {
             "$bc": "v3",
             "_": [
-              -0.4,
-              0.2,
-              0
+              -1.1,
+              0.35,
+              -0.15
             ]
           },
           "prefabId": "8190e80b88416868",
           "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              0.4,
+              -0.35
+            ]
+          },
           "scale": {
             "$bc": "v3",
             "_": [
@@ -77,13 +84,21 @@
           "position": {
             "$bc": "v3",
             "_": [
-              0.4,
-              0.4,
-              0.15
+              1.05,
+              0.35,
+              0.2
             ]
           },
           "prefabId": "0b0e80b2a3f8e072b",
           "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0.15,
+              -0.55,
+              0.25
+            ]
+          },
           "scale": {
             "$bc": "v3",
             "_": [
@@ -118,20 +133,27 @@
           "name": "Metal Scrapt 1",
           "nodeId": 51260,
           "physicsOptions": {
-            "collisionMeshType": "boundingBox",
             "density": 1000,
             "motionType": "dynamic"
           },
           "position": {
             "$bc": "v3",
             "_": [
-              0,
-              0.65,
-              -0.3
+              0.05,
+              0.4,
+              -1
             ]
           },
           "prefabId": "2f4ff62c92aa864e",
           "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0.2,
+              0.9,
+              -0.15
+            ]
+          },
           "scale": {
             "$bc": "v3",
             "_": [
