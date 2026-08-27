@@ -21,7 +21,7 @@ const LIST_TITLE = 'Overgrown Ordinances';
 const LIST_EMPTY = 'No ordinances broken yet. Keep exploring.';
 const COMPLETION_TITLE = 'Congratulations!';
 const COMPLETION_BODY =
-  `You just created ${DELIVERY_WAY_GOAL} ordinances!\n\nHowever, that’s only half of them. Can you find the remaining ways?`;
+  `You just created ${DELIVERY_WAY_GOAL} ordinances! However, that’s only half of them. Can you find the remaining ways?`;
 const MYSTERY_MESSAGE = 'We don\'t know how you deliver it. You won!';
 const COMPLETION_CONTINUE = 'Continue Playing';
 const COMPLETION_VICTORY = 'Victory';
@@ -243,7 +243,6 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
         'margin:18px 0 0',
         'color:#6b6560',
         'font:700 20px/1.55 "Overgrown Averia","Segoe UI",sans-serif',
-        'white-space:pre-wrap',
       ].join(';');
       modal.panel.appendChild(body);
     }
@@ -298,7 +297,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     this.choiceModal?.remove();
     this.choiceModal = null;
     this.mysteryWinShown = false;
-    this.getFlow()?.continuePlayingAfterCompletion();
+    this.getFlow()?.dismissCompletionOverlay();
   }
 
   private onVictory(): void {

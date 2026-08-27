@@ -12315,6 +12315,38 @@
           "temperature": 0,
           "tint": 0,
           "type": "colorGrading"
+        },
+        {
+          "depthEdgeStrength": 0,
+          "enabled": false,
+          "normalEdgeStrength": 0,
+          "pixelSize": 5,
+          "type": "pixelation"
+        },
+        {
+          "affineDistortion": 0,
+          "bleeding": 0.001,
+          "colorDepthSteps": 32,
+          "curvature": 0.02,
+          "enabled": false,
+          "scanlineDensity": 1,
+          "scanlineIntensity": 0.3,
+          "scanlineSpeed": 0,
+          "type": "retro",
+          "vignetteIntensity": 0.3
+        },
+        {
+          "edgeBlur": 0.2,
+          "edgeGlow": 0,
+          "edgeStrength": 3,
+          "edgeThickness": 1,
+          "enabled": false,
+          "hiddenEdgeColor": 8947848,
+          "resolutionScale": 1,
+          "showHiddenEdge": true,
+          "type": "objectOutline",
+          "useRootGrouping": true,
+          "visibleEdgeColor": 16777215
         }
       ]
     },

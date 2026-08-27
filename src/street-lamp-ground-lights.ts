@@ -52,10 +52,36 @@ function findNamedChild<T extends ENGINE.SceneNode>(
 function removeLegacyOverlays(lamp: ENGINE.ModelMeshNode): void {
   for (const child of [...lamp.getNodes(ENGINE.MeshNode)]) {
     const name = child.name ?? '';
-    if (POOL_NAME.test(name) || GLASS_GLOW_NAME.test(name)) {
+    if (!POOL_NAME.test(name) && !GLASS_GLOW_NAME.test(name)) {
+      continue;
+    }
+    // Mid-play overlays may still be NotStarted — removeFromParent/endPlay would ensure-fail.
+    if (child.isPlaying()) {
       child.destroy();
+    } else if (child.parent) {
+      THREE.Object3D.prototype.remove.call(child.parent, child);
     }
   }
+}
+
+/**
+ * Reparent a spot to the world without SceneNode.removeFromParent().
+ * That path calls endPlay when an ancestor is playing — NotStarted spots fail
+ * ensure, and Playing spots become Ended so world.add beginPlay also fails.
+ * Prefer detachSceneNodeForReparent (world roots) or raw Object3D.remove (keeps
+ * playState; also bypasses SceneNode's deferred remove-while-ticking queue).
+ */
+function reparentSpotToWorld(
+  world: ENGINE.World,
+  spot: ENGINE.SpotLightNode,
+): void {
+  if (spot.parent === world) {
+    return;
+  }
+  if (!world.detachSceneNodeForReparent(spot) && spot.parent) {
+    THREE.Object3D.prototype.remove.call(spot.parent, spot);
+  }
+  world.add(spot);
 }
 
 function findSpotForLamp(lamp: ENGINE.ModelMeshNode): ENGINE.SpotLightNode | null {
@@ -129,8 +155,7 @@ export function detachStreetLampSpotsToWorld(
     spot.matrixWorld.decompose(scratchWorldPos, scratchWorldQuat, scratchWorldScale);
 
     if (spot.parent !== world) {
-      spot.removeFromParent();
-      world.add(spot);
+      reparentSpotToWorld(world, spot);
       spot.position.copy(scratchWorldPos);
       spot.quaternion.copy(scratchWorldQuat);
       spot.scale.copy(scratchWorldScale);

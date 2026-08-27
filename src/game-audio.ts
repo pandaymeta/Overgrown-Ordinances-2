@@ -26,6 +26,8 @@ export const GameSound = {
   EnvelopePaper: '@project/assets/audio/sfx/envelope-paper.mp3',
   AxeHitWood: '@project/assets/audio/sfx/axe-hit-wood.mp3',
   AxeHitMetal: '@project/assets/audio/sfx/axe-hit-metal.ogg',
+  AxeHitRock: '@project/assets/audio/sfx/axe-hit-rock.ogg',
+  AxeHitBush: '@project/assets/audio/sfx/axe-hit-bush.ogg',
   WoodCrash: '@project/assets/audio/sfx/wood-crash.mp3',
   MetalCrash: '@project/assets/audio/sfx/metal-crash.mp3',
   PickupTool: '@project/assets/audio/sfx/pickup-tool.mp3',
@@ -45,16 +47,16 @@ const FOOTSTEPS = [
   '@project/assets/audio/sfx/footstep-04.mp3',
 ] as const;
 
-const MUSIC_TRACK = '@project/assets/audio/music/golden-hour-stroll.mp3';
-const AMBIENCE_TRACK = '@project/assets/audio/ambience/evening-crickets.mp3';
+const MUSIC_TRACK = '@project/assets/audio/music/sonican-sneaky-curious-jazzy-loop-no2.mp3';
+const AMBIENCE_TRACK = '@project/assets/audio/ambience/Street-Corner.mp3';
 
-/**
- * Temporary mute for golden-hour BGM. Flip back to `true` when restoring music.
- * Ambience / SFX are unaffected.
- */
-const MUSIC_ENABLED = false;
+/** Master mute for looping BGM. Ambience / SFX are unaffected. */
+const MUSIC_ENABLED = true;
 
-const MUSIC_VOLUME = 0.34;
+/** Master mute for looping street ambience. Music / SFX are unaffected. */
+const AMBIENCE_ENABLED = false;
+
+const MUSIC_VOLUME = 0.17;
 const AMBIENCE_VOLUME = 0.2;
 // Keep effect requests at their authored gain.  Individual calls below are
 // responsible for balancing; a reduced master SFX bus made the requested
@@ -68,9 +70,9 @@ const RUN_STRIDE_SEC = 0.33;
  * Footstep playback gain. Loudness is baked into the MP3s (peak ~0.33);
  * keep these near unity so a broken runtime gain path cannot re-blast them.
  */
-const FOOTSTEP_WALK_VOLUME = 1;
-const FOOTSTEP_RUN_VOLUME = 1;
-const FOOTSTEP_LAND_VOLUME = 1.15;
+const FOOTSTEP_WALK_VOLUME = 2.1;
+const FOOTSTEP_RUN_VOLUME = 2.1;
+const FOOTSTEP_LAND_VOLUME = 2.325;
 
 let activeWorld: ENGINE.World | null = null;
 let busesConfigured = false;
@@ -113,7 +115,7 @@ function configureBuses(world: ENGINE.World): void {
   }
   // Music sits well under the effects so the stamp always cuts through.
   music.setVolume(MUSIC_ENABLED ? MUSIC_VOLUME : 0);
-  manager.getBus('Ambience')?.setVolume(AMBIENCE_VOLUME);
+  manager.getBus('Ambience')?.setVolume(AMBIENCE_ENABLED ? AMBIENCE_VOLUME : 0);
   manager.getBus('SFX')?.setVolume(SFX_BUS_VOLUME);
   busesConfigured = true;
 }
@@ -255,12 +257,14 @@ function startLoops(world: ENGINE.World): void {
       bus: 'Music',
     });
   }
-  // Dusk crickets — a small, very Japanese golden-hour detail.
-  void manager.playGlobalSound(AMBIENCE_TRACK, {
-    volume: 1,
-    loop: true,
-    bus: 'Ambience',
-  });
+  if (AMBIENCE_ENABLED) {
+    // Street-corner ambience for the overgrown town loop.
+    void manager.playGlobalSound(AMBIENCE_TRACK, {
+      volume: 1,
+      loop: true,
+      bus: 'Ambience',
+    });
+  }
 }
 
 /**

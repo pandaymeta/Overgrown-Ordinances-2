@@ -52,6 +52,12 @@ export type CatMailCourierHooks = {
   /** Fired when the cat arrives at the mailbox with mail. */
   onCatDeliveredMail: (via: 'peach' | 'unfed') => void;
   /**
+   * Fired as soon as the cat starts walking mail to the mailbox (before arrival).
+   * Lets the day claim the cat ordinance immediately so deferred rocks / a mailbox
+   * click cannot steal the unlock while the cat is still en route.
+   */
+  onCatBeganMailboxDelivery: (via: 'peach' | 'unfed') => void;
+  /**
    * Fired when the player clicks the cat without a peach-feed credit.
    * Return true if the click was consumed (e.g. soft-loop) and delivery must not start.
    */
@@ -314,6 +320,11 @@ export class CatMailCourier {
       return false;
     }
     return this.peachFedPending || this.streetsClickable || this.interactable;
+  }
+
+  /** True while the cat is carrying mail to the mailbox. */
+  public isDeliveringMail(): boolean {
+    return this.state === CatState.DeliverToMailbox;
   }
 
   private buildPatrolWaypoints(world: ENGINE.World): void {
@@ -874,6 +885,7 @@ export class CatMailCourier {
     this.attachEnvelope();
     this.state = CatState.DeliverToMailbox;
     this.setAnimWalk();
+    this.hooks.onCatBeganMailboxDelivery(via);
   }
 
   private tickDeliverToMailbox(deltaTime: number): void {

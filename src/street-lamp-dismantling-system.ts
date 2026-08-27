@@ -2,7 +2,7 @@ import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 import { CarryableCrateNode } from './carryable-crate-node.js';
 import { SKIP_ENVIRONMENT_ART_FLAG } from './environment-art-direction.js';
-import { GameSound, playSoundAt } from './game-audio.js';
+import { GameSound, playSound, playSoundAt } from './game-audio.js';
 import { HoverSilhouette } from './hover-silhouette.js';
 import { HydrantWaterStream } from './hydrant-water-stream.js';
 import { refreshStreetLampGroundLights } from './street-lamp-ground-lights.js';
@@ -174,6 +174,14 @@ export class StreetLampDismantlingSystem {
   private readonly hitShakeEuler = new THREE.Euler();
   private readonly healthAnchor = new THREE.Vector3();
   private readonly healthScreenPosition = new THREE.Vector3();
+  /** Screen-space AABB of the visible health bar (game-container pixels). */
+  private readonly healthBarScreenRect = {
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    valid: false,
+  };
   private readonly aimRaycaster = new THREE.Raycaster();
   private readonly dismantledTargets = new Set<ENGINE.SceneNode>();
   private readonly dismantledPhysics = new Map<ENGINE.SceneNode, ENGINE.NodePhysicsOptions>();
@@ -308,6 +316,8 @@ export class StreetLampDismantlingSystem {
       }
       this.treeHealthBarReady = true;
       healthBar.setPosition({ display: 'none' }, '[data-progress-bar-header]');
+      // World-space aim must still work when the cursor sits on the bar.
+      this.disableHealthBarPointerEvents();
       healthBar.hide();
     });
 
@@ -366,7 +376,7 @@ export class StreetLampDismantlingSystem {
     this.aimOutlineElapsed += deltaTime;
     if (this.aimOutlineElapsed >= StreetLampDismantlingSystem.AIM_OUTLINE_INTERVAL) {
       this.aimOutlineElapsed = 0;
-      const target = this.findPointedDismantleTarget(
+      let target = this.findPointedDismantleTarget(
         player,
         carriedObject,
         camera,
@@ -374,7 +384,15 @@ export class StreetLampDismantlingSystem {
         // Mesh fallback so dense foliage (bushes) still outline when physics misses.
         { meshFallback: true },
       );
+      // Cursor on the floating health bar still counts as aiming at that target.
+      if (!target) {
+        target = this.resolveStickyHealthBarTarget(player, aimNdc);
+      }
       this.setTarget(world, target);
+      if (target) {
+        this.healthDisplayTarget = target;
+        this.healthDisplayTime = Math.max(this.healthDisplayTime, 0.45);
+      }
     }
     this.updateTreeHealthBar(world, camera, this.healthDisplayTarget ?? this.targetObject);
   }
@@ -494,11 +512,9 @@ export class StreetLampDismantlingSystem {
     // Mesh reloads stay queued — processDeferredMeshSwaps loads one at a time
     // after GPU throttle lifts so we do not upload many GLBs in one frame.
 
-    for (const lamp of this.yankedStreetLamps.splice(0)) {
-      if (!lamp.parent) {
-        world.add(lamp);
-      }
-    }
+    // Lamps stay parented (see hideAndDetachStreetLampAfterScrap). Clearing the
+    // yank list is enough — restoreDismantledNode brings visibility/physics back.
+    this.yankedStreetLamps.length = 0;
 
     for (const node of [...this.dismantledTargets]) {
       this.restoreDismantledNode(node);
@@ -507,6 +523,8 @@ export class StreetLampDismantlingSystem {
     this.dismantledPhysics.clear();
     this.clearAllTargetHealth();
 
+    // Re-assert lamp child visuals stay non-physical after the root collider rebuild.
+    this.hardenStreetLampChildPhysics(world);
     this.hidePoseFallTargets(world);
     this.bindHydrantProjectileHits(world);
     this.parentPoleCutBoardsOntoUtilityPoles(world);
@@ -544,12 +562,16 @@ export class StreetLampDismantlingSystem {
     }
 
     // Prefer outlined aim; otherwise full resolve (physics + mesh) on click only.
-    const target = (this.targetObject
+    // If the cursor is on the health bar above the prop, sticky-hit that target.
+    let target = (this.targetObject
       && this.isValidDismantleTarget(player, this.targetObject))
       ? this.targetObject
       : this.findPointedDismantleTarget(player, carriedObject, camera, aimNdc, {
         meshFallback: true,
       });
+    if (!target) {
+      target = this.resolveStickyHealthBarTarget(player, aimNdc);
+    }
     if (!target) {
       return false;
     }
@@ -638,7 +660,14 @@ export class StreetLampDismantlingSystem {
         }
       }
     }
-    scrap.removeFromParent();
+    // Day baseline may already have detached the root; a second removeFromParent
+    // during World.tick defers another World.remove and can endPlay twice.
+    if (scrap.parent) {
+      scrap.removeFromParent();
+    }
+    if (this.pendingDestroyRoots.includes(scrap)) {
+      return;
+    }
     const wasEmpty = this.pendingDestroyRoots.length === 0;
     this.pendingDestroyRoots.push(scrap);
     // Extra retires must not restart the settle timer (or every add delays forever).
@@ -788,7 +817,7 @@ export class StreetLampDismantlingSystem {
 
   /**
    * Final lamp hit: spots are already world-roots (not lamp children). Mark only;
-   * hide/detach the lamp after scrap is in, extinguish the spot after settle.
+   * hide the lamp after scrap is in, extinguish the spot after settle.
    */
   private beginStreetLampDismantle(lamp: ENGINE.ModelMeshNode): void {
     this.markDismantled(lamp);
@@ -796,11 +825,14 @@ export class StreetLampDismantlingSystem {
 
   private hideAndDetachStreetLampAfterScrap(lamp: ENGINE.ModelMeshNode): void {
     lamp.visible = false;
+    // Drop collider while hidden. Keep the lamp in the scene tree — removeFromParent
+    // ends play, and world.add on day reset then fails SceneNode.beginPlay ensure
+    // (playState Ended, not NotStarted).
+    if (lamp instanceof ENGINE.PrimitiveNode) {
+      lamp.overridePhysicsOptions({ enabled: false });
+    }
     if (this.yankedStreetLamps.includes(lamp)) {
       return;
-    }
-    if (lamp.parent) {
-      lamp.removeFromParent();
     }
     this.yankedStreetLamps.push(lamp);
   }
@@ -892,11 +924,13 @@ export class StreetLampDismantlingSystem {
     const physics = this.dismantledPhysics.get(node);
     node.visible = true;
     if (node instanceof ENGINE.PrimitiveNode) {
-      if (physics) {
-        node.overridePhysicsOptions({ ...physics, enabled: physics.enabled !== false });
-      } else {
-        node.overridePhysicsOptions({ enabled: true });
-      }
+      const restored: ENGINE.NodePhysicsOptions = physics
+        ? { ...physics, enabled: physics.enabled !== false }
+        : { enabled: true };
+      // Force collider rebuild after yank/disable (override with the same enabled
+      // flag can no-op and leave street lamps non-collidable next day).
+      node.overridePhysicsOptions({ enabled: false });
+      node.replacePhysicsOptions(restored);
       node.setPhysicsVectorParam(ENGINE.PhysicsVectorParam.LinearVelocity, [0, 0, 0]);
       node.setPhysicsVectorParam(ENGINE.PhysicsVectorParam.AngularVelocity, [0, 0, 0]);
     }
@@ -1173,9 +1207,17 @@ export class StreetLampDismantlingSystem {
     this.projectileHitReady.set(hitKey, false);
     this.applyTargetHit(hydrant);
     if (this.isSmallRockProjectile(projectile)) {
-      const hitAt = new THREE.Vector3();
-      hydrant.getWorldPosition(hitAt);
-      playSoundAt(hydrant.getWorld(), GameSound.OrdinanceStamp, hitAt, 4);
+      const rockAt = new THREE.Vector3();
+      projectile.getWorldPosition(rockAt);
+      // Match scrap metal land: positional 2× (non-positional played louder).
+      playSoundAt(hydrant.getWorld(), GameSound.AxeHitRock, rockAt, 2);
+      // Suppress the flight-land cue so the hydrant hit is the only axe-hit-rock.
+      for (const pawn of hydrant.getWorld()?.getNodes(ENGINE.CharacterPawn) ?? []) {
+        const marker = pawn as ENGINE.CharacterPawn & {
+          markThrownLandSoundPlayed?: (node: ENGINE.PrimitiveNode) => void;
+        };
+        marker.markThrownLandSoundPlayed?.(projectile);
+      }
     }
     this.healthDisplayTarget = hydrant;
     this.healthDisplayTime = PROJECTILE_HEALTH_BAR_TIME;
@@ -1272,9 +1314,13 @@ export class StreetLampDismantlingSystem {
       (this.cherryTreeHealth.get(target) ?? CHERRY_TREE_MAX_HEALTH) - 1,
     );
     this.cherryTreeHealth.set(target, health);
+    this.healthDisplayTarget = target;
+    this.healthDisplayTime = PROJECTILE_HEALTH_BAR_TIME;
     const hitAt = new THREE.Vector3();
     target.getWorldPosition(hitAt);
-    playSoundAt(target.getWorld(), this.getAxeHitSound(target), hitAt, 3.4);
+    const hitSound = this.getAxeHitSound(target);
+    // All axe impact clips at 3.4× (metal / wood / rock / bush).
+    playSoundAt(target.getWorld(), hitSound, hitAt, 3.4);
     // Mark a final hit before applying feedback so the standing lamp is never
     // moved while its dismantled replacement is being created.
     if (health <= 0) {
@@ -1292,16 +1338,23 @@ export class StreetLampDismantlingSystem {
     return health;
   }
 
-  /** Timber / foliage props get a wood impact; metal and stone use the metal hit. */
+  /** Timber / foliage / stone props pick material-matched impact clips. */
   private getAxeHitSound(target: ENGINE.ModelMeshNode): string {
     const name = target.name ?? '';
+    if (STONE_LANTERN_NAME.test(name)) {
+      return GameSound.AxeHitRock;
+    }
+    if (
+      BUSH_8_BB_NAME.test(name)
+      || /\bbush\b/i.test(name)
+    ) {
+      return GameSound.AxeHitBush;
+    }
     return CHERRY_BLOSSOM_TREE_NAME.test(name)
       || CARGO_CRATE_NAME.test(name)
       || KANJI_SIGN_NAME.test(name)
       || KANJI_SIGN_POSE_NAME.test(name)
       || TRAIL_MAP_KIOSK_NAME.test(name)
-      || BUSH_8_BB_NAME.test(name)
-      || /\bbush\b/i.test(name)
       ? GameSound.AxeHitWood
       : GameSound.AxeHitMetal;
   }
@@ -1589,6 +1642,85 @@ export class StreetLampDismantlingSystem {
     return null;
   }
 
+  /**
+   * When the cursor sits on the floating health bar (which sits above the mesh),
+   * the world aim ray misses — keep hitting the bar's bound target instead.
+   */
+  private resolveStickyHealthBarTarget(
+    player: ENGINE.SceneNode,
+    aimNdc: THREE.Vector2,
+  ): ENGINE.ModelMeshNode | null {
+    const sticky = this.healthDisplayTarget;
+    if (!sticky || !this.isValidDismantleTarget(player, sticky)) {
+      return null;
+    }
+    if (!this.isCloseEnoughDismantleTarget(player, sticky)) {
+      return null;
+    }
+    const container = player.getWorld()?.gameContainer;
+    if (!container || !this.isAimOverHealthBar(aimNdc, container)) {
+      return null;
+    }
+    return sticky;
+  }
+
+  private isAimOverHealthBar(aimNdc: THREE.Vector2, container: HTMLElement): boolean {
+    if (!this.healthBarScreenRect.valid) {
+      return false;
+    }
+    const canvas = container.querySelector('canvas');
+    const rect = (canvas ?? container).getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) {
+      return false;
+    }
+    // Match setCarryAimCursor: NDC is relative to the canvas (or container) rect.
+    const clientX = rect.left + (aimNdc.x * 0.5 + 0.5) * rect.width;
+    const clientY = rect.top + (-aimNdc.y * 0.5 + 0.5) * rect.height;
+    const pad = 10;
+    const bar = this.healthBarScreenRect;
+    return clientX >= bar.left - pad
+      && clientX <= bar.right + pad
+      && clientY >= bar.top - pad
+      && clientY <= bar.bottom + pad;
+  }
+
+  private disableHealthBarPointerEvents(): void {
+    const bar = this.treeHealthBar;
+    if (!bar) {
+      return;
+    }
+    bar.setPosition({ 'pointer-events': 'none' });
+    const root = bar.getElement() as { element?: HTMLElement } | null;
+    const html = root?.element ?? null;
+    if (html) {
+      html.style.pointerEvents = 'none';
+      html.querySelectorAll('*').forEach((node) => {
+        if (node instanceof HTMLElement) {
+          node.style.pointerEvents = 'none';
+        }
+      });
+    }
+  }
+
+  private syncHealthBarScreenRectFromDom(_container: HTMLElement): void {
+    const root = this.treeHealthBar?.getElement() as { element?: HTMLElement } | null;
+    const html = root?.element ?? null;
+    if (!html) {
+      return;
+    }
+    const barRect = html.getBoundingClientRect();
+    if (barRect.width <= 0 || barRect.height <= 0) {
+      return;
+    }
+    // Store client coordinates so isAimOverHealthBar can compare without
+    // canvas-vs-container offset errors.
+    this.healthBarScreenRect.left = barRect.left;
+    this.healthBarScreenRect.top = barRect.top;
+    this.healthBarScreenRect.right = barRect.right;
+    this.healthBarScreenRect.bottom = barRect.bottom;
+    this.healthBarScreenRect.valid = true;
+  }
+
   private updateTreeHealthBar(
     world: ENGINE.World | null,
     camera: THREE.Camera,
@@ -1597,6 +1729,7 @@ export class StreetLampDismantlingSystem {
     const bar = this.treeHealthBar;
     const target = displayTarget;
     if (!world || !bar || !this.treeHealthBarReady || !target) {
+      this.healthBarScreenRect.valid = false;
       if (this.treeHealthBarReady) {
         bar?.hide();
       }
@@ -1639,17 +1772,36 @@ export class StreetLampDismantlingSystem {
     camera.updateMatrixWorld(true);
     this.healthScreenPosition.copy(this.healthAnchor).project(camera);
     if (this.healthScreenPosition.z < -1 || this.healthScreenPosition.z > 1) {
+      this.healthBarScreenRect.valid = false;
       bar.hide();
       return;
     }
 
     const container = world.gameContainer;
     if (!container) {
+      this.healthBarScreenRect.valid = false;
       bar.hide();
       return;
     }
     const x = (this.healthScreenPosition.x * 0.5 + 0.5) * container.clientWidth;
     const y = (-this.healthScreenPosition.y * 0.5 + 0.5) * container.clientHeight;
+    const barWidth = 80;
+    const barHeight = 16;
+    const containerRect = container.getBoundingClientRect();
+    const clientX = containerRect.left + x;
+    const clientY = containerRect.top + y;
+    if (placeAboveModel) {
+      this.healthBarScreenRect.left = clientX - barWidth * 0.5;
+      this.healthBarScreenRect.right = clientX + barWidth * 0.5;
+      this.healthBarScreenRect.top = clientY - barHeight - 4;
+      this.healthBarScreenRect.bottom = clientY - 4;
+    } else {
+      this.healthBarScreenRect.left = clientX - barWidth * 0.5;
+      this.healthBarScreenRect.right = clientX + barWidth * 0.5;
+      this.healthBarScreenRect.top = clientY - barHeight * 0.5;
+      this.healthBarScreenRect.bottom = clientY + barHeight * 0.5;
+    }
+    this.healthBarScreenRect.valid = true;
     bar.setValue(this.cherryTreeHealth.get(target) ?? CHERRY_TREE_MAX_HEALTH, false);
     bar.setPosition({
       position: 'absolute',
@@ -1662,6 +1814,8 @@ export class StreetLampDismantlingSystem {
       'pointer-events': 'none',
     });
     bar.show();
+    // Prefer live DOM bounds (size/theme may differ from the 80×16 options).
+    this.syncHealthBarScreenRectFromDom(container);
   }
 
   private spawnPeachForHit(
@@ -1789,14 +1943,22 @@ export class StreetLampDismantlingSystem {
     }
     this.targetObject = target;
     if (!target) {
-      this.treeHealthBar?.hide();
+      // Keep the health bar when sticky display still owns a target (cursor on bar).
+      // updateTreeHealthBar decides visibility from healthDisplayTarget.
       // Do not clear a pickup/scrap silhouette — only dismiss our dismantle outline.
-      if (previous && this.hoverSilhouette.activeTarget === previous) {
+      const previousHover = previous && this.isOrdinanceBoardTarget(previous)
+        ? this.getOrdinanceBoardAssemblyRoot(previous)
+        : previous;
+      if (previousHover && this.hoverSilhouette.activeTarget === previousHover) {
         this.hoverSilhouette.setTarget(world, null);
       }
       return;
     }
-    this.hoverSilhouette.setTarget(world, target);
+    // Printed cards are children of the blank board — highlight the whole assembly.
+    const hoverRoot = this.isOrdinanceBoardTarget(target)
+      ? this.getOrdinanceBoardAssemblyRoot(target)
+      : target;
+    this.hoverSilhouette.setTarget(world, hoverRoot);
   }
 
   private dismantleTarget(world: ENGINE.World, target: ENGINE.ModelMeshNode): void {
@@ -1903,7 +2065,9 @@ export class StreetLampDismantlingSystem {
     const poleOrdinanceDrops = notifyPoleCut
       ? this.collectPoleOrdinanceDropFlags(target)
       : undefined;
-    // Capture before hide — scrap prefab GLBs use a different baked palette.
+    // Drop green hover (and any leftover hit flash) before cloning materials —
+    // otherwise scrap inherits the highlight tint and stays green forever.
+    this.setTarget(world, null);
     const parkBenchMaterials = isParkBench
       ? this.captureModelMaterials(target)
       : null;
@@ -1916,7 +2080,6 @@ export class StreetLampDismantlingSystem {
       }
       this.hideDismantledOriginal(target);
     }
-    this.setTarget(world, null);
 
     const afterScrap = (): void => {
       if (isStreetLamp) {
@@ -2031,6 +2194,10 @@ export class StreetLampDismantlingSystem {
    * Metal Scrapt bodies never cook/appear on a single hitch frame.
    * Pieces spawn elevated and fall. Lamp spots stay lit forever (turning them
    * off jitters the camera).
+   *
+   * Children must stay parented through {@link ENGINE.World.add} so beginPlay
+   * walks the whole tree. Detaching first and re-adding later left pieces in
+   * NotStarted; World.remove → endPlay then ensure-failed on those children.
    */
   private async addStreetLampScrapStaggered(
     world: ENGINE.World,
@@ -2040,7 +2207,6 @@ export class StreetLampDismantlingSystem {
       (child): child is ENGINE.SceneNode => child instanceof ENGINE.SceneNode,
     );
     for (const piece of pieces) {
-      scraps.remove(piece);
       piece.visible = false;
       if (piece instanceof ENGINE.PrimitiveNode) {
         piece.overridePhysicsOptions({
@@ -2064,10 +2230,9 @@ export class StreetLampDismantlingSystem {
       await new Promise<void>((resolve) => {
         window.setTimeout(resolve, index === 0 ? 0 : 50);
       });
-      if (!scraps.parent) {
+      if (!scraps.parent || !piece.parent) {
         return;
       }
-      scraps.add(piece);
       piece.visible = true;
       if (piece instanceof ENGINE.PrimitiveNode) {
         piece.overridePhysicsOptions({
@@ -2134,7 +2299,7 @@ export class StreetLampDismantlingSystem {
     }
   }
 
-  /** Full material clones from the standing prop (keeps green albedo maps). */
+  /** Full material clones from the standing prop (matches scrap to authored albedo). */
   private captureModelMaterials(source: ENGINE.ModelMeshNode): THREE.Material[] {
     const materials: THREE.Material[] = [];
     for (const mesh of source.getAllMeshes()) {

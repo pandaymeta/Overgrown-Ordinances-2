@@ -54,6 +54,16 @@ export class HoverSilhouette {
   /** Drain deferred restores after a red hit flash releases the mesh. */
   public syncTransforms(): void {
     this.flushPendingRestores();
+    // Recover if something stripped the tint while we still track a target
+    // (e.g. legacy flushDeferredDestroys callers during cinematic frames).
+    if (
+      this.target
+      && this.swaps.length === 0
+      && this.pendingRestores.length === 0
+      && !isOutlineExcludedTrigger(this.target)
+    ) {
+      this.applyHighlightMaterials(this.target, this.loadToken);
+    }
   }
 
   public clear(): void {
@@ -62,9 +72,12 @@ export class HoverSilhouette {
     this.restoreMaterials(true);
   }
 
-  /** Kept for cinematic callers; material swaps have nothing to defer-destroy. */
+  /**
+   * Kept for cinematic callers that used to tear down deferred wireframe MeshNodes.
+   * Material highlights restore via clear()/setTarget — do not strip tint every frame.
+   */
   public flushDeferredDestroys(_forceAll = false): void {
-    this.restoreMaterials(true);
+    // no-op
   }
 
   private waitForPrefabMeshes(
@@ -178,8 +191,8 @@ export class HoverSilhouette {
   }
 
   /**
-   * ModelMeshNode targets: only that node's own GLB meshes via getAllMeshes —
-   * never SceneNode children (boards, triggers, spots under lamps).
+   * ModelMeshNode targets: that node's GLB meshes, plus child ModelMeshNodes
+   * (ordinance blank board + printed card). Skip climb/contact trigger volumes.
    */
   private collectMeshes(root: THREE.Object3D): THREE.Mesh[] {
     const meshes: THREE.Mesh[] = [];
@@ -197,8 +210,17 @@ export class HoverSilhouette {
     };
 
     if (root instanceof ENGINE.ModelMeshNode) {
-      if (!isOutlineExcludedTrigger(root)) {
-        for (const mesh of root.getAllMeshes()) {
+      const models: ENGINE.ModelMeshNode[] = [root];
+      for (const child of root.getNodes(ENGINE.ModelMeshNode)) {
+        if (child !== root) {
+          models.push(child);
+        }
+      }
+      for (const model of models) {
+        if (isOutlineExcludedTrigger(model) || isUnderOutlineExcludedTrigger(model)) {
+          continue;
+        }
+        for (const mesh of model.getAllMeshes()) {
           addMesh(mesh);
         }
       }

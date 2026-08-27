@@ -133,7 +133,9 @@ export class HydrantWaterStream {
     }
     this.droplets.length = 0;
     for (const collider of this.walkColliders) {
-      collider.destroy();
+      if (collider.parent || collider.isPlaying()) {
+        collider.destroy();
+      }
     }
     this.walkColliders.length = 0;
     this.pendingWalkSegments.length = 0;

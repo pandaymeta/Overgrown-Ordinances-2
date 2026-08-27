@@ -144,10 +144,12 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     remaining: number;
     gravityScale: number;
     settleFlat: boolean;
-    /** Impact cue for dismantled wood / metal scrap after a throw. */
-    landSound: 'wood' | 'metal' | null;
+    /** Impact cue after a throw (scrap wood/metal, or rock → axe-hit-rock). */
+    landSound: 'wood' | 'metal' | 'rock' | null;
     wasFalling: boolean;
     landPlayed: boolean;
+    /** Elapsed since throw — rock land SFX stays silent until this clears the arm delay. */
+    armedElapsed: number;
   }> = [];
   private trajectoryRibbon: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial> | null = null;
   private readonly trajectoryPoints: THREE.Vector3[] = Array.from(
@@ -1104,6 +1106,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     const originalGravityScale = this.carriedPhysicsOptions?.gravityScale ?? 1;
     const isThrow = linearVelocity !== undefined;
     const settleFlat = isThrow && this.shouldSettleCarriedObjectFlat();
+    const landSound = isThrow ? this.classifyThrownLandSound(crate) : null;
     crate.replacePhysicsOptions({
       ...this.carriedPhysicsOptions,
       enabled: true,
@@ -1117,16 +1120,19 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     ]);
     crate.setPhysicsVectorParam(ENGINE.PhysicsVectorParam.AngularVelocity, [0, 0, 0]);
     if (isThrow) {
-      // 2× the carried-pickup soft cue.
+      // Throw cue only — rock axe-hit-rock waits for land / hydrant (see playThrownLandSound).
       playSound(this.getWorld(), GameSound.PickupSoft, 1.6);
+      // Same pattern as metal scrap: watch past predicted flight, then force a land cue.
+      const landWatchSec = Math.max(this.calculatedThrowFlightTime, 0.5) + 0.35;
       this.thrownGravityRestores.push({
         crate,
-        remaining: this.calculatedThrowFlightTime + 0.15,
+        remaining: landWatchSec,
         gravityScale: originalGravityScale,
         settleFlat,
-        landSound: this.classifyThrownLandSound(crate),
+        landSound,
         wasFalling: false,
         landPlayed: false,
+        armedElapsed: 0,
       });
     }
 
@@ -1198,6 +1204,12 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
 
   private updateSmoothCameraZoom(deltaTime: number): void {
     if (!this.springArm) {
+      return;
+    }
+    // Keep arm length pinned while a cinematic owns the view so return blends
+    // do not chase a moving spring-arm (next-day ordinance zoom-out jitter).
+    if (this.cinematicCameraLock) {
+      this.springArm.armLength = this.cameraTargetDistance;
       return;
     }
 
@@ -1545,12 +1557,13 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
   private updateThrownCrateGravity(deltaTime: number): void {
     for (let index = this.thrownGravityRestores.length - 1; index >= 0; index--) {
       const record = this.thrownGravityRestores[index];
+      record.armedElapsed += deltaTime;
       this.updateThrownLandSound(record);
       record.remaining -= deltaTime;
       if (record.remaining > 0) {
         continue;
       }
-      // Flight timer ended — play a land cue if the velocity check never fired.
+      // Flight timer ended — same forced land cue metal scrap uses.
       this.playThrownLandSound(record, true);
       this.restoreCrateGravity(record.crate, record.gravityScale);
       if (record.settleFlat) {
@@ -1561,12 +1574,15 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
   }
 
   /**
-   * Dismantled wood scraps → axe-hit-wood; Metal Scrapt / metal drops → axe-hit-metal.
-   * Other throwables (rocks, peaches, cones, …) stay silent on land.
+   * Dismantled wood scraps → axe-hit-wood; Metal Scrapt / metal drops → axe-hit-metal;
+   * Small rocks → axe-hit-rock. Other throwables (peaches, cones, …) stay silent on land.
    */
   private classifyThrownLandSound(
     crate: ENGINE.PrimitiveNode,
-  ): 'wood' | 'metal' | null {
+  ): 'wood' | 'metal' | 'rock' | null {
+    if (this.isThrownSmallRock(crate)) {
+      return 'rock';
+    }
     const name = crate.name ?? '';
     const modelUrl = crate instanceof ENGINE.ModelMeshNode ? (crate.modelUrl ?? '') : '';
     if (
@@ -1589,24 +1605,106 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     return null;
   }
 
+  private isThrownSmallRock(crate: ENGINE.PrimitiveNode): boolean {
+    const looksLikeRock = (node: THREE.Object3D): boolean => {
+      const name = node.name ?? '';
+      if (/rock/i.test(name)) {
+        return true;
+      }
+      return node instanceof ENGINE.ModelMeshNode
+        && /small-rock|rock/i.test(node.modelUrl ?? '');
+    };
+    if (looksLikeRock(crate)) {
+      return true;
+    }
+    if (
+      crate.getNodesByPredicate(
+        (node) => looksLikeRock(node) || /Carryable Crate Rock/i.test(node.name ?? ''),
+        1,
+      ).length > 0
+    ) {
+      return true;
+    }
+    let ancestor: THREE.Object3D | null = crate.parent;
+    while (ancestor) {
+      if (looksLikeRock(ancestor)) {
+        return true;
+      }
+      ancestor = ancestor.parent;
+    }
+    return false;
+  }
+
+  /**
+   * Hydrant (and other) impact handlers call this so the flight land cue does not
+   * double-fire wood-crash on the same throw.
+   */
+  public markThrownLandSoundPlayed(node: ENGINE.PrimitiveNode | null | undefined): void {
+    if (!node) {
+      return;
+    }
+    for (const record of this.thrownGravityRestores) {
+      if (record.landPlayed) {
+        continue;
+      }
+      if (
+        record.crate === node
+        || record.crate === node.parent
+        || node.parent === record.crate
+        || this.isThrownNodeRelated(record.crate, node)
+      ) {
+        record.landPlayed = true;
+      }
+    }
+  }
+
+  private isThrownNodeRelated(a: ENGINE.SceneNode, b: ENGINE.SceneNode): boolean {
+    let current: THREE.Object3D | null = b;
+    while (current) {
+      if (current === a) {
+        return true;
+      }
+      current = current.parent;
+    }
+    current = a;
+    while (current) {
+      if (current === b) {
+        return true;
+      }
+      current = current.parent;
+    }
+    return false;
+  }
+
+  /**
+   * Same settle detection scrap metal uses: mark airborne on a hard descent, then
+   * play when vertical speed nearly stops. Rocks use the same path (no collide —
+   * release overlaps the player and was firing axe-hit-rock over PickupSoft).
+   */
   private updateThrownLandSound(record: {
     crate: ENGINE.PrimitiveNode;
-    landSound: 'wood' | 'metal' | null;
+    landSound: 'wood' | 'metal' | 'rock' | null;
     wasFalling: boolean;
     landPlayed: boolean;
+    armedElapsed: number;
   }): void {
     if (record.landPlayed || !record.landSound) {
+      return;
+    }
+    // Keep throw cue clear — ignore settle for a short arm window.
+    if (record.landSound === 'rock' && record.armedElapsed < 0.4) {
       return;
     }
     const verticalSpeed = this.getThrownVerticalSpeed(record.crate);
     if (verticalSpeed === null) {
       return;
     }
-    // Descending fast enough to count as airborne after the throw.
-    if (verticalSpeed < -1.1) {
+    const fallGate = record.landSound === 'rock' ? -0.85 : -1.1;
+    const landGate = record.landSound === 'rock' ? 0.75 : 0.55;
+    if (verticalSpeed < fallGate) {
       record.wasFalling = true;
     }
-    if (record.wasFalling && Math.abs(verticalSpeed) < 0.55) {
+    if (record.wasFalling && Math.abs(verticalSpeed) < landGate) {
       this.playThrownLandSound(record, false);
     }
   }
@@ -1614,24 +1712,32 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
   private playThrownLandSound(
     record: {
       crate: ENGINE.PrimitiveNode;
-      landSound: 'wood' | 'metal' | null;
+      landSound: 'wood' | 'metal' | 'rock' | null;
       wasFalling: boolean;
       landPlayed: boolean;
+      armedElapsed: number;
     },
     forceAfterFlight: boolean,
   ): void {
     if (record.landPlayed || !record.landSound) {
       return;
     }
+    if (record.landSound === 'rock' && record.armedElapsed < 0.4 && !forceAfterFlight) {
+      return;
+    }
     if (!forceAfterFlight && !record.wasFalling) {
       return;
     }
     record.landPlayed = true;
+    const at = record.crate.getWorldPosition(new THREE.Vector3());
+    // Same 2× positional gain as scrap wood/metal land (non-positional was louder).
+    if (record.landSound === 'rock') {
+      playSoundAt(this.getWorld(), GameSound.AxeHitRock, at, 2);
+      return;
+    }
     const sound = record.landSound === 'wood'
       ? GameSound.AxeHitWood
       : GameSound.AxeHitMetal;
-    const at = record.crate.getWorldPosition(new THREE.Vector3());
-    // 2× default one-shot gain.
     playSoundAt(this.getWorld(), sound, at, 2);
   }
 
@@ -1704,6 +1810,15 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
   }
 
   private updateMailEnvelope(deltaTime: number): void {
+    // After mailbox delivery, keep the hand letter hidden until the next day
+    // re-requests it — do not force visible=true every frame.
+    if (!this.mailEnvelopeRequested) {
+      if (this.mailEnvelopeMesh) {
+        this.mailEnvelopeMesh.visible = false;
+      }
+      return;
+    }
+
     this.ensureMailEnvelope();
     const mesh = this.mailEnvelopeMesh;
     const leftHandAnchor = this.visualNode?.getObjectByName('Left_Hand-Global');

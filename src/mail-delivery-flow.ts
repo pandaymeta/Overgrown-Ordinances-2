@@ -78,6 +78,8 @@ const SPEECH_DURATION_SEC = 3;
 const ORDINANCE_FOCUS_SEC = 2;
 /** Hold after envelope finishes before fading to cream. */
 const DELIVERY_POST_INSERT_SEC = 0.55;
+/** Latch first, then deliver SFX — avoids overlap on envelope insert. */
+const MAIL_DELIVER_SOUND_DELAY_SEC = 0.38;
 /** Smooth blend from gameplay cam into model-front cinematic. */
 const CINEMATIC_BLEND_SEC = 1.15;
 /** Smooth blend from ordinance cinematic back to the player cam. */
@@ -103,6 +105,13 @@ const DAY_TRANSITION_CINEMATIC_COOLDOWN_SEC = 0.35;
 /** Maximum authored props restored per frame while the screen is cream. */
 const DAY_TRANSITION_RESTORE_BATCH_SIZE = 4;
 const DELIVER_MAX_DISTANCE = 2.5;
+/** Throttle mailbox aim/hover work — every-frame raycasts hitch the camera when close. */
+const MAILBOX_HOVER_INTERVAL = 0.1;
+/** Sticky aim: require this many consecutive misses before clearing green hover. */
+const MAILBOX_HOVER_EXIT_MISSES = 3;
+/** Bounds pad while hover is already active (hysteresis vs enter pad). */
+const MAILBOX_AIM_ENTER_PAD = 0.35;
+const MAILBOX_AIM_STICKY_PAD = 0.55;
 /** Pool capacity; only arrows that fit on the current route are rendered. */
 const TRAIL_ARROW_MAX_COUNT = 32;
 /** Constant player-to-target gap between consecutive arrows, in world units. */
@@ -181,6 +190,8 @@ const STREET_LIGHTS_DESTROY_ANY_NAME =
   /^(?:DontDestroyTheStreetLights|Dont destroy the street lights|Street Lights Destroy)(?:\s+\d+)?$/i;
 /** Street-lamp scrap meshes used as road platforms (not bench/guardrail scrap). */
 const STREET_LAMP_SCRAP_PLATFORM_NAME = /^Metal Scrapt(?:\s+\d+)?$/i;
+/** Authored street lamp roots — need collider rebuild after dismantle day reset. */
+const STREET_LAMP_ROOT_NAME = /^Street Lamp(?:\s|$)/i;
 /** Scene board is named Cat Feed (visual: Dont feed the cat). */
 const DONT_FEED_THE_CAT_NAME =
   /^(?:DontFeedTheCat|Dont feed the cat|Cat Feed)$/i;
@@ -595,6 +606,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   /** World position of the small rock that last violated a road/track. */
   private readonly noRocksFocusAnchor = new THREE.Vector3();
   private hasNoRocksFocusAnchor = false;
+  /**
+   * A loose rock rested on a road/track today. Lowest-priority Family A vote —
+   * only becomes pendingOrdinance if nothing else claimed the day.
+   */
+  private rocksOnRoadViolationSeen = false;
   /** World position of the park bench that last violated a road/track. */
   private readonly noBenchFocusAnchor = new THREE.Vector3();
   private hasNoBenchFocusAnchor = false;
@@ -631,6 +647,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
    * camera zoom-out. Not used for delivery next-day transitions.
    */
   private creamReturnAfterOrdinanceFocus = false;
+  /** Countdown after mailbox-latch before playing mail-deliver. */
+  private mailDeliverSoundDelayRemaining = -1;
   /** ZoomOutToPlay uses cream wipe (day-reset) vs cinematic blend (other returns). */
   private zoomOutUsesCreamReveal = false;
   /** The player pressed movement while the focus camera was returning. */
@@ -682,6 +700,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private outlineReady = false;
   private outlinePassEnabled = false;
   private mailboxHovered = false;
+  private mailboxHoverElapsed = 0;
+  private mailboxAimMissStreak = 0;
   private readonly mailboxHoverSilhouette = new HoverSilhouette();
   /** Occlusion / lamp / hydrant GPU budget while a cinematic or fade owns the screen. */
   private gpuSafeTransitionActive = false;
@@ -743,6 +763,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private readonly cinematicStartPos = new THREE.Vector3();
   private readonly cinematicEndPos = new THREE.Vector3();
   private readonly cinematicLookAt = new THREE.Vector3();
+  private readonly cinematicStartLookAt = new THREE.Vector3();
+  private readonly cinematicEndLookAt = new THREE.Vector3();
   private readonly cinematicStartQuat = new THREE.Quaternion();
   private readonly cinematicEndQuat = new THREE.Quaternion();
   private viewTargetCam: ENGINE.ViewTargetCameraNode | null = null;
@@ -750,6 +772,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private cinematicBlend = 0;
   /** When true, cinematic blends toward the player orbit cam instead of a model. */
   private cinematicReturningToPlayer = false;
+  /**
+   * Next-day zoom-out: lerp look-at + position (not quaternion slerp). Board→player
+   * slerps take a harsh arc that reads as a snap at the start of the return.
+   */
+  private cinematicReturnUsesLookAt = false;
   private cinematicReturnDistance = DEFAULT_CAMERA_DISTANCE;
   private envelopeMesh: THREE.Mesh | null = null;
   private readonly envelopeStartPos = new THREE.Vector3();
@@ -771,6 +798,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       || this.phase === FlowPhase.IntroSpeech
     ),
     onCatReachedPeach: () => this.onCatReachedPeach(),
+    onCatBeganMailboxDelivery: (via) => {
+      this.claimCatDeliveryOrdinanceOnStart(via);
+    },
     onCatDeliveredMail: (via) => {
       this.deliveryVia = via === 'unfed' ? 'catUnfed' : 'catPeach';
       this.resolvePendingOrdinanceForSuccessfulDelivery();
@@ -956,6 +986,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     this.updateModelFrontCinematic(deltaTime);
     this.updateEnvelopeInsert(deltaTime);
+    this.tickMailDeliverSoundDelay(deltaTime);
     this.updateTypingAnimations(deltaTime);
     this.updateSpeechBubblePosition();
     this.updateTrail();
@@ -969,8 +1000,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.tickPhase(deltaTime);
   }
 
-  public override tickPostPhysics(_deltaTime: number): void {
-    super.tickPostPhysics(_deltaTime);
+  public override tickPostPhysics(deltaTime: number): void {
+    super.tickPostPhysics(deltaTime);
     if (
       this.baselineReinforceRemaining > 0
       && !this.isGpuCriticalPhase()
@@ -985,8 +1016,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       }
     }
     if (this.phase === FlowPhase.AwaitingDelivery || this.phase === FlowPhase.ZoomOutReveal) {
-      this.updateMailboxHoverOutline();
-      this.mailboxHoverSilhouette.syncTransforms();
+      this.updateMailboxHoverOutline(deltaTime);
+      // Only drain/recover when hover is live — avoids per-frame work while walking up.
+      if (this.mailboxHovered) {
+        this.mailboxHoverSilhouette.syncTransforms();
+      }
       this.catMailCourier.tickHoverOutline();
     } else {
       this.setMailboxHoverOutline(false);
@@ -1169,6 +1203,15 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
             this.fadeAfterOrdinanceFocus = false;
             this.setFade(0);
             this.setPhase(FlowPhase.FadeToBlack);
+          } else if (this.creamReturnAfterOrdinanceFocus) {
+            // Soft-loop day reset: cream wipe (no cinematic zoom-out jitter).
+            this.creamReturnAfterOrdinanceFocus = false;
+            this.zoomOutUsesCreamReveal = true;
+            this.dayResetCreamRevealDone = false;
+            this.stopModelFrontCinematic();
+            this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+            void this.beginDayResetCreamReturn();
+            this.setPhase(FlowPhase.ZoomOutToPlay);
           } else {
             this.zoomOutUsesCreamReveal = false;
             this.beginCinematicReturnToPlayer();
@@ -1228,6 +1271,16 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         this.finishNextDayIntoPlayable();
         break;
       case FlowPhase.ZoomOutToPlay:
+        if (this.zoomOutUsesCreamReveal) {
+          this.player?.setMovementFrozen(true);
+          this.player?.forceIdlePose();
+          if (this.dayResetCreamRevealDone) {
+            this.zoomOutUsesCreamReveal = false;
+            this.finishNextDayIntoPlayable(true);
+            this.beginPendingRoadHighlight();
+          }
+          break;
+        }
         if (this.player?.hasMovementInput()) {
           // Keep the cinematic camera active while its target follows the live
           // gameplay camera. This lets movement interrupt the return without a
@@ -1298,6 +1351,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.noCatsOnStreetsLoopTriggered = false;
       this.noCratesOnRoadsLoopTriggered = false;
       this.noRocksOnRoadsLoopTriggered = false;
+      this.rocksOnRoadViolationSeen = false;
+      this.hasNoRocksFocusAnchor = false;
       this.noBenchOnRoadsLoopTriggered = false;
       this.noLogsOnRoadsLoopTriggered = false;
       this.noWoodPlanksOnRoadsLoopTriggered = false;
@@ -1381,6 +1436,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     if (this.catMailCourier.tryInteractByClick()) {
       this.player?.setMailEnvelopeCarried(false);
+      return true;
+    }
+    // Cat already carrying mail — wait for arrival; do not let a mailbox click
+    // resolve as a plain mailbox delivery (which can promote deferred rocks).
+    if (this.catMailCourier.isDeliveringMail()) {
       return true;
     }
     // Only evaluate mailbox on click: far away → ignore (no hover/outline work).
@@ -1542,22 +1602,50 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   }
 
   /**
-   * Pick at most one delivery-route ordinance after a successful mail delivery.
-   * Family A pending (roads / litter / etc.) is left alone.
+   * Claim the cat ordinance as soon as the handoff starts (not on mailbox arrival).
+   * Rocks on the road stay deferred and must not beat a deliberate cat delivery.
    */
-  private resolvePendingOrdinanceForSuccessfulDelivery(): void {
-    if (this.pendingOrdinance) {
+  private claimCatDeliveryOrdinanceOnStart(via: 'peach' | 'unfed'): void {
+    this.deliveryVia = via === 'unfed' ? 'catUnfed' : 'catPeach';
+    if (via === 'peach' && !this.dontFeedTheCatOrdinanceActive) {
+      this.pendingOrdinance = 'dontFeedTheCat';
+      this.rocksOnRoadViolationSeen = false;
+      this.markRouteCandidate('dontFeedTheCat');
       return;
     }
+    if (via === 'unfed' && !this.noCatsOnStreetsOrdinanceActive) {
+      this.pendingOrdinance = 'noCatsOnStreets';
+      this.rocksOnRoadViolationSeen = false;
+      this.markRouteCandidate('noCatsOnStreets');
+    }
+  }
 
+  /**
+   * Pick at most one delivery-route ordinance after a successful mail delivery.
+   * Family A pending (roads / litter / etc.) is left alone, except No Rocks on
+   * Roads which is deferred until the end so any other same-day trigger wins.
+   */
+  private resolvePendingOrdinanceForSuccessfulDelivery(): void {
     // Cat deliveries always map to their ordinance when that board is not yet live.
-    // Do this before generic route-candidate sorting so a peach feed cannot mystery-win.
+    // Runs before the pending early-out so a deferred rocks flag (or provisional
+    // rocks claim) cannot beat No cats / Dont feed.
     if (this.deliveryVia === 'catPeach' && !this.dontFeedTheCatOrdinanceActive) {
       this.pendingOrdinance = 'dontFeedTheCat';
+      this.rocksOnRoadViolationSeen = false;
       return;
     }
     if (this.deliveryVia === 'catUnfed' && !this.noCatsOnStreetsOrdinanceActive) {
       this.pendingOrdinance = 'noCatsOnStreets';
+      this.rocksOnRoadViolationSeen = false;
+      return;
+    }
+
+    // Rocks never stays as a provisional claim once anything else is in play.
+    if (this.pendingOrdinance === 'noRocksOnRoads') {
+      this.pendingOrdinance = null;
+    }
+
+    if (this.pendingOrdinance) {
       return;
     }
 
@@ -1581,6 +1669,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       filtered = filtered.filter((id) => id !== 'noClimbingOnTheTree');
     }
     if (filtered.length === 0) {
+      this.promoteDeferredRocksOrdinanceIfAlone();
       return;
     }
 
@@ -1593,6 +1682,25 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     });
 
     this.pendingOrdinance = filtered[0];
+    this.rocksOnRoadViolationSeen = false;
+    this.promoteDeferredRocksOrdinanceIfAlone();
+  }
+
+  /**
+   * No Rocks on Roads is the lowest-priority same-day unlock: only promote it when
+   * no other Family A / delivery-route ordinance already claimed the day.
+   */
+  private promoteDeferredRocksOrdinanceIfAlone(): void {
+    if (this.pendingOrdinance || !this.rocksOnRoadViolationSeen) {
+      return;
+    }
+    if (this.routeCandidates.size > 0) {
+      return;
+    }
+    if (this.noRocksOnRoadsOrdinanceActive) {
+      return;
+    }
+    this.pendingOrdinance = 'noRocksOnRoads';
   }
 
   private isMailboxInRange(): boolean {
@@ -1610,8 +1718,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     return this.tmpPlayerPos.distanceTo(this.mailboxCenter) <= this.mailboxRangeRadius;
   }
 
-  /** Cursor aims at mailbox meshes or their expanded bounds (top-down friendly). Click-only. */
-  private isAimingAtMailbox(): boolean {
+  /** Cursor aims at mailbox meshes or their expanded bounds (top-down friendly). */
+  private isAimingAtMailbox(options: { sticky?: boolean } = {}): boolean {
     if (!this.player || !this.mailbox) {
       return false;
     }
@@ -1626,20 +1734,26 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!this.mailboxBoundsReady) {
       this.refreshMailboxCache();
     }
+    // Bounds-first: cheaper and more stable for iso aim than mesh raycasts every probe.
+    this.tmpBounds.copy(this.mailboxBounds);
+    if (this.tmpBounds.isEmpty()) {
+      this.tmpBounds.setFromCenterAndSize(this.mailboxCenter, new THREE.Vector3(1.2, 2.2, 1.2));
+    } else {
+      this.tmpBounds.expandByScalar(
+        options.sticky ? MAILBOX_AIM_STICKY_PAD : MAILBOX_AIM_ENTER_PAD,
+      );
+    }
+    if (this.raycaster.ray.intersectBox(this.tmpBounds, this.tmpHitPoint) !== null) {
+      return true;
+    }
+    // Precise mesh test only when bounds miss (click / enter edge cases).
     if (this.mailboxMeshes.length > 0) {
       const hits = this.raycaster.intersectObjects(this.mailboxMeshes, true);
       if (hits.length > 0) {
         return true;
       }
     }
-
-    this.tmpBounds.copy(this.mailboxBounds);
-    if (this.tmpBounds.isEmpty()) {
-      this.tmpBounds.setFromCenterAndSize(this.mailboxCenter, new THREE.Vector3(1.2, 2.2, 1.2));
-    } else {
-      this.tmpBounds.expandByScalar(0.35);
-    }
-    return this.raycaster.ray.intersectBox(this.tmpBounds, this.tmpHitPoint) !== null;
+    return false;
   }
 
   private refreshMailboxCache(): void {
@@ -1899,17 +2013,18 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
   }
 
-  /** Continue Playing — run the next-day transition (from goal/goal or mystery win). */
-  public continuePlayingAfterCompletion(): void {
+  /**
+   * Continue Playing from the completion panel without consuming a day.
+   * The panel is an optional pause in exploration, not a next-day checkpoint.
+   */
+  public dismissCompletionOverlay(): void {
     this.mysteryDeliveryWinPending = false;
     this.mysteryDeliveryWinReady = false;
     this.setCompletionInteractionPaused(false);
     this.stopModelFrontCinematic();
-    this.hideEnvelopeForGpu();
     this.setFade(0);
-    this.player?.setMovementFrozen(true);
-    this.player?.forceIdlePose();
-    this.setPhase(FlowPhase.FadeToBlack);
+    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.setPhase(FlowPhase.AwaitingDelivery);
   }
 
   private ensureWakeOrdinanceCinematic(): void {
@@ -1973,8 +2088,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
     if (this.focusNoRocksOnRoadsOnWake) {
+      // Same board-face framing as Jaywalking (not the pole/prop AABB midpoint).
       this.startModelFrontCinematic(
-        this.findNearestNoRocksOnRoads(),
+        this.noRocksOnRoads ?? this.findNearestNoRocksOnRoads(),
         MODEL_FOCUS_DISTANCE,
         true,
       );
@@ -2526,7 +2642,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   }
 
   private triggerBlockedNoRocksOnRoadsLoop(): void {
-    this.beginImmediateSoftLoop(this.findNearestNoRocksOnRoads());
+    this.beginImmediateSoftLoop(this.noRocksOnRoads ?? this.findNearestNoRocksOnRoads());
   }
 
   private triggerBlockedNoBenchOnRoadsLoop(): void {
@@ -2798,8 +2914,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
 
-    if (!this.pendingOrdinance && !this.noRocksOnRoadsOrdinanceActive) {
-      this.pendingOrdinance = 'noRocksOnRoads';
+    // Defer claiming pendingOrdinance — rocks is lowest priority and must not
+    // block other same-day discoveries (climbs, hydrant, other litter, etc.).
+    if (!this.noRocksOnRoadsOrdinanceActive) {
+      this.rocksOnRoadViolationSeen = true;
     }
   }
 
@@ -6253,13 +6371,37 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.outlinePassEnabled = enabled;
   }
 
-  private updateMailboxHoverOutline(): void {
+  private updateMailboxHoverOutline(deltaTime: number): void {
     if (this.phase !== FlowPhase.AwaitingDelivery) {
       this.setMailboxHoverOutline(false);
       return;
     }
-    const show = this.isMailboxInRange() && this.isAimingAtMailbox();
-    this.setMailboxHoverOutline(show);
+    // Far away: clear immediately, no aim work.
+    if (!this.isMailboxInRange()) {
+      this.mailboxHoverElapsed = 0;
+      this.mailboxAimMissStreak = 0;
+      this.setMailboxHoverOutline(false);
+      return;
+    }
+
+    this.mailboxHoverElapsed += deltaTime;
+    if (this.mailboxHoverElapsed < MAILBOX_HOVER_INTERVAL) {
+      return;
+    }
+    this.mailboxHoverElapsed = 0;
+
+    const aiming = this.isAimingAtMailbox({ sticky: this.mailboxHovered });
+    if (aiming) {
+      this.mailboxAimMissStreak = 0;
+      this.setMailboxHoverOutline(true);
+      return;
+    }
+    // Hysteresis: iso aim flickers at the mailbox silhouette edge; do not
+    // thrash green material swaps every probe (reads as camera hitch).
+    this.mailboxAimMissStreak += 1;
+    if (!this.mailboxHovered || this.mailboxAimMissStreak >= MAILBOX_HOVER_EXIT_MISSES) {
+      this.setMailboxHoverOutline(false);
+    }
   }
 
   private setMailboxHoverOutline(enabled: boolean): void {
@@ -6267,6 +6409,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
     this.mailboxHovered = enabled;
+    if (!enabled) {
+      this.mailboxAimMissStreak = 0;
+    }
     const world = this.getWorld();
     if (!world || !this.mailbox) {
       this.mailboxHoverSilhouette.setTarget(null, null);
@@ -6324,6 +6469,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
   private updateMailboxPulse(): void {
     if (!this.mailboxHighlightActive) {
+      return;
+    }
+    // Green hover owns mailbox materials while aimed — skip red pulse writes so
+    // the two systems do not fight (material thrash → frame hitch near the box).
+    if (this.mailboxHovered) {
       return;
     }
     if (this.mailboxPulseRecords.length === 0) {
@@ -6728,93 +6878,53 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
   /** Resume the GitHub-style post-day fade once the new ordinance is visible. */
   private continueAfterDayReveal(): void {
-    const enterWakeFocus = (roadHighlight?: 'mainRoad' | 'leftSideRoad'): void => {
-      if (roadHighlight) {
-        this.pendingRoadHighlight = roadHighlight;
+    const wake =
+      this.focusOrdinanceOnWake ? { road: 'mainRoad' as const, clear: () => { this.focusOrdinanceOnWake = false; } }
+      : this.focusJaywalkingOnWake ? { road: 'leftSideRoad' as const, clear: () => { this.focusJaywalkingOnWake = false; } }
+      : this.focusDoNotStepCarOnWake ? { road: undefined, clear: () => { this.focusDoNotStepCarOnWake = false; } }
+      : this.focusDoNotStepTramOnWake ? { road: undefined, clear: () => { this.focusDoNotStepTramOnWake = false; } }
+      : this.focusStreetLightsClimbOnWake ? { road: undefined, clear: () => { this.focusStreetLightsClimbOnWake = false; } }
+      : this.focusDontDestroyTheStreetLightsOnWake ? { road: undefined, clear: () => { this.focusDontDestroyTheStreetLightsOnWake = false; } }
+      : this.focusDontFeedTheCatOnWake ? { road: undefined, clear: () => { this.focusDontFeedTheCatOnWake = false; } }
+      : this.focusNoCatsOnStreetsOnWake ? { road: undefined, clear: () => { this.focusNoCatsOnStreetsOnWake = false; } }
+      : this.focusNoCratesOnRoadsOnWake ? { road: undefined, clear: () => { this.focusNoCratesOnRoadsOnWake = false; } }
+      : this.focusNoRocksOnRoadsOnWake ? { road: undefined, clear: () => { this.focusNoRocksOnRoadsOnWake = false; } }
+      : this.focusNoBenchOnRoadsOnWake ? { road: undefined, clear: () => { this.focusNoBenchOnRoadsOnWake = false; } }
+      : this.focusNoLogsOnRoadsOnWake ? { road: undefined, clear: () => { this.focusNoLogsOnRoadsOnWake = false; } }
+      : this.focusNoWoodPlanksOnRoadsOnWake ? { road: undefined, clear: () => { this.focusNoWoodPlanksOnRoadsOnWake = false; } }
+      : this.focusDontRemoveTheConesOnWake ? { road: undefined, clear: () => { this.focusDontRemoveTheConesOnWake = false; } }
+      : this.focusNoScrapMetalsOnRoadsOnWake ? { road: undefined, clear: () => { this.focusNoScrapMetalsOnRoadsOnWake = false; } }
+      : this.focusDontRemoveThisBushOnWake ? { road: undefined, clear: () => { this.focusDontRemoveThisBushOnWake = false; } }
+      : this.focusDontRemoveThisKioskOnWake ? { road: undefined, clear: () => { this.focusDontRemoveThisKioskOnWake = false; } }
+      : this.focusDontCutThisPoleOnWake ? { road: undefined, clear: () => { this.focusDontCutThisPoleOnWake = false; } }
+      : this.focusDoNotDestroyThisSignOnWake ? { road: undefined, clear: () => { this.focusDoNotDestroyThisSignOnWake = false; } }
+      : this.focusDontHitTheFireHydrantOnWake ? { road: undefined, clear: () => { this.focusDontHitTheFireHydrantOnWake = false; } }
+      : this.focusHighVoltageOnWake ? { road: undefined, clear: () => { this.focusHighVoltageOnWake = false; } }
+      : this.focusNoCuttingOfTreesOnWake ? { road: undefined, clear: () => { this.focusNoCuttingOfTreesOnWake = false; } }
+      : this.focusNoClimbingOnTheTreeOnWake ? { road: undefined, clear: () => { this.focusNoClimbingOnTheTreeOnWake = false; } }
+      : this.focusDoNotRemoveTheSignsOnWake ? { road: undefined, clear: () => { this.focusDoNotRemoveTheSignsOnWake = false; } }
+      : null;
+
+    if (wake) {
+      // Ensure cinematic while wake flags are still set, then hold on the board.
+      this.ensureWakeOrdinanceCinematic();
+      wake.clear();
+      if (wake.road) {
+        this.pendingRoadHighlight = wake.road;
       }
-      // Hold on the board, then use the original smooth return to the player camera.
       this.fadeAfterOrdinanceFocus = false;
       this.ordinanceFocusHoldElapsed = 0;
       this.player?.setCinematicCameraLock(true);
+      if (this.viewTargetCam && this.cinematicActive) {
+        this.viewTargetCam.setActive(true);
+        this.matchCinematicFovToGameplay();
+      }
       this.setPhase(FlowPhase.OrdinanceFocus);
-    };
-
-    if (this.focusOrdinanceOnWake) {
-      this.focusOrdinanceOnWake = false;
-      enterWakeFocus('mainRoad');
-    } else if (this.focusJaywalkingOnWake) {
-      this.focusJaywalkingOnWake = false;
-      enterWakeFocus('leftSideRoad');
-    } else if (this.focusDoNotStepCarOnWake) {
-      this.focusDoNotStepCarOnWake = false;
-      enterWakeFocus();
-    } else if (this.focusDoNotStepTramOnWake) {
-      this.focusDoNotStepTramOnWake = false;
-      enterWakeFocus();
-    } else if (this.focusStreetLightsClimbOnWake) {
-      this.focusStreetLightsClimbOnWake = false;
-      enterWakeFocus();
-    } else if (this.focusDontDestroyTheStreetLightsOnWake) {
-      this.focusDontDestroyTheStreetLightsOnWake = false;
-      enterWakeFocus();
-    } else if (this.focusDontFeedTheCatOnWake) {
-      this.focusDontFeedTheCatOnWake = false;
-      enterWakeFocus();
-    } else if (this.focusNoCatsOnStreetsOnWake) {
-      this.focusNoCatsOnStreetsOnWake = false;
-      enterWakeFocus();
-    } else if (this.focusNoCratesOnRoadsOnWake) {
-      this.focusNoCratesOnRoadsOnWake = false;
-      enterWakeFocus();
-    } else if (this.focusNoRocksOnRoadsOnWake) {
-      this.focusNoRocksOnRoadsOnWake = false;
-      enterWakeFocus();
-    } else if (this.focusNoBenchOnRoadsOnWake) {
-      this.focusNoBenchOnRoadsOnWake = false;
-      enterWakeFocus();
-    } else if (this.focusNoLogsOnRoadsOnWake) {
-      this.focusNoLogsOnRoadsOnWake = false;
-      enterWakeFocus();
-    } else if (this.focusNoWoodPlanksOnRoadsOnWake) {
-      this.focusNoWoodPlanksOnRoadsOnWake = false;
-      enterWakeFocus();
-    } else if (this.focusDontRemoveTheConesOnWake) {
-      this.focusDontRemoveTheConesOnWake = false;
-      enterWakeFocus();
-    } else if (this.focusNoScrapMetalsOnRoadsOnWake) {
-      this.focusNoScrapMetalsOnRoadsOnWake = false;
-      enterWakeFocus();
-    } else if (this.focusDontRemoveThisBushOnWake) {
-      this.focusDontRemoveThisBushOnWake = false;
-      enterWakeFocus();
-    } else if (this.focusDontRemoveThisKioskOnWake) {
-      this.focusDontRemoveThisKioskOnWake = false;
-      enterWakeFocus();
-    } else if (this.focusDontCutThisPoleOnWake) {
-      this.focusDontCutThisPoleOnWake = false;
-      enterWakeFocus();
-    } else if (this.focusDoNotDestroyThisSignOnWake) {
-      this.focusDoNotDestroyThisSignOnWake = false;
-      enterWakeFocus();
-    } else if (this.focusDontHitTheFireHydrantOnWake) {
-      this.focusDontHitTheFireHydrantOnWake = false;
-      enterWakeFocus();
-    } else if (this.focusHighVoltageOnWake) {
-      this.focusHighVoltageOnWake = false;
-      enterWakeFocus();
-    } else if (this.focusNoCuttingOfTreesOnWake) {
-      this.focusNoCuttingOfTreesOnWake = false;
-      enterWakeFocus();
-    } else if (this.focusNoClimbingOnTheTreeOnWake) {
-      this.focusNoClimbingOnTheTreeOnWake = false;
-      enterWakeFocus();
-    } else if (this.focusDoNotRemoveTheSignsOnWake) {
-      this.focusDoNotRemoveTheSignsOnWake = false;
-      enterWakeFocus();
-    } else {
-      this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
-      this.finishNextDayIntoPlayable();
+      return;
     }
+
+    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.finishNextDayIntoPlayable();
   }
 
   /**
@@ -7308,6 +7418,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
 
+    // Same order as staged day transition: re-parent yanked lamps + rebuild
+    // colliders before baseline scrap retirement and pose reinforce.
+    this.player?.finishDayResetRest();
     this.beginDayBaselineRestore(world);
     this.applyAllSnapshotPoses();
     this.completeDayBaselineRestore();
@@ -7426,6 +7539,17 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     // Static scenery never moves during play. Reset its scene transform once, but avoid
     // flooding the physics/GPU bridge with redundant teleports and velocity writes.
     if (!isMovable) {
+      // Street lamps yanked for scrap lose their Rapier body; re-assert authored
+      // static physics after day reset so climbing/standing works again.
+      if (
+        physicsOptions
+        && STREET_LAMP_ROOT_NAME.test(node.name ?? '')
+      ) {
+        node.replacePhysicsOptions({
+          ...physicsOptions,
+          enabled: physicsOptions.enabled !== false,
+        });
+      }
       return;
     }
 
@@ -7529,6 +7653,18 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.envelopeProgress = 0;
   }
 
+  private tickMailDeliverSoundDelay(deltaTime: number): void {
+    if (this.mailDeliverSoundDelayRemaining < 0) {
+      return;
+    }
+    this.mailDeliverSoundDelayRemaining -= deltaTime;
+    if (this.mailDeliverSoundDelayRemaining > 0) {
+      return;
+    }
+    this.mailDeliverSoundDelayRemaining = -1;
+    playSound(this.getWorld(), GameSound.MailDelivered, 0.7);
+  }
+
   private updateEnvelopeInsert(deltaTime: number): void {
     if (!this.envelopeMesh || this.phase !== FlowPhase.DeliveryFocus) {
       return;
@@ -7543,7 +7679,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (t >= 1) {
       if (this.envelopeMesh.visible) {
         playSound(this.getWorld(), GameSound.MailboxLatch, 3.6);
-        playSound(this.getWorld(), GameSound.MailDelivered, 0.7);
+        this.mailDeliverSoundDelayRemaining = MAIL_DELIVER_SOUND_DELAY_SEC;
       }
       this.envelopeMesh.visible = false;
     }
@@ -7608,7 +7744,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
 
     this.cinematicReturningToPlayer = false;
+    this.cinematicReturnUsesLookAt = false;
     this.resolveOrdinanceCinematicLookAt(target, this.cinematicLookAt);
+    this.matchCinematicFovToGameplay();
 
     // Pick the board side nearest the current gameplay view.  Several ordinance
     // models have opposite local axes, so assuming local +Z can make the shot
@@ -7644,12 +7782,16 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       .addScaledVector(this.tmpForward, horizontal)
       .addScaledVector(this.upAxis, height);
 
-    // Hard-enforce Euclidean distance so elev / float drift cannot drift off 2.2m.
-    if (elev === 0) {
-      this.cinematicEndPos
-        .copy(this.cinematicLookAt)
-        .addScaledVector(this.tmpForward, focusDistance);
+    // Always pin Euclidean distance so look-at / elev drift cannot leave 2.2m.
+    this.tmpDir.copy(this.cinematicEndPos).sub(this.cinematicLookAt);
+    if (this.tmpDir.lengthSq() < 1e-8) {
+      this.tmpDir.copy(this.tmpForward);
     }
+    this.tmpDir.normalize();
+    this.cinematicEndPos
+      .copy(this.cinematicLookAt)
+      .addScaledVector(this.tmpDir, focusDistance);
+
 
     this.tmpMatrix.lookAt(this.cinematicEndPos, this.cinematicLookAt, this.upAxis);
     this.cinematicEndQuat.setFromRotationMatrix(this.tmpMatrix);
@@ -7705,6 +7847,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       || DONT_FEED_THE_CAT_ANY_NAME.test(name)
       || NO_CATS_ON_STREETS_ANY_NAME.test(name)
       || NO_CRATES_ON_ROADS_ANY_NAME.test(name)
+      || NO_ROCKS_ON_ROADS_ANY_NAME.test(name)
       || NO_BENCH_ON_ROADS_ANY_NAME.test(name)
       || NO_LOGS_ON_ROADS_ANY_NAME.test(name)
       || NO_WOOD_PLANKS_ON_ROADS_ANY_NAME.test(name)
@@ -7735,7 +7878,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         return;
       }
       const childName = child.name ?? '';
-      if (/board|sign|panel|jaywalk|step|hydrant|tree|cutting|cats?|notice|maintenance/i.test(childName)) {
+      if (/board|sign|panel|jaywalk|step|hydrant|tree|cutting|cats?|rocks?|notice|maintenance/i.test(childName)) {
         boardObject = child;
       }
     });
@@ -7760,8 +7903,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!(target instanceof ENGINE.ModelMeshNode)) {
       return false;
     }
-    let count = 0;
-    out.set(0, 0, 0);
+    // Prefer the largest textured mesh so dual front/back boards do not pull the
+    // look-at into the board thickness (focus distance then feels inconsistent).
+    let bestArea = -1;
+    let found = false;
     for (const mesh of target.getAllMeshes()) {
       if (!mesh?.isMesh) {
         continue;
@@ -7778,24 +7923,43 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       if (this.tmpBounds.isEmpty()) {
         continue;
       }
-      this.tmpBounds.getCenter(this.tmpDir);
-      out.add(this.tmpDir);
-      count += 1;
+      const size = this.tmpBounds.getSize(this.tmpDir);
+      const area = Math.max(size.x * size.y, size.y * size.z, size.z * size.x);
+      if (area > bestArea) {
+        bestArea = area;
+        this.tmpBounds.getCenter(out);
+        found = true;
+      }
     }
-    if (count < 1) {
-      return false;
-    }
-    out.multiplyScalar(1 / count);
-    return true;
+    return found;
   }
 
   /** Blend the view-target cam from the current shot back onto the player. */
   private beginCinematicReturnToPlayer(distance = DEFAULT_CAMERA_DISTANCE): void {
     this.cinematicReturnDistance = distance;
-    if (!this.player || !this.viewTargetCam || !this.cinematicActive) {
+    if (!this.player || !this.viewTargetCam) {
       this.stopModelFrontCinematic();
       this.player?.resetGameplayCameraToDefault(this.cinematicReturnDistance);
       return;
+    }
+
+    // If the wake cinematic was lost (brush / staging), rebuild from the live
+    // camera instead of hard-cutting to the spring arm.
+    if (!this.cinematicActive) {
+      const active = this.getWorld()?.getActiveCamera();
+      if (active) {
+        active.updateMatrixWorld(true);
+        active.getWorldPosition(this.cinematicStartPos);
+        active.getWorldQuaternion(this.cinematicStartQuat);
+      } else {
+        this.player.resetGameplayCameraToDefault(this.cinematicReturnDistance);
+        return;
+      }
+      this.viewTargetCam.position.copy(this.cinematicStartPos);
+      this.viewTargetCam.quaternion.copy(this.cinematicStartQuat);
+      this.viewTargetCam.updateMatrixWorld(true);
+      this.viewTargetCam.setActive(true);
+      this.cinematicActive = true;
     }
 
     // The next-day teleport already plants the pawn while the screen is covered.
@@ -7806,16 +7970,28 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
     this.viewTargetCam.getWorldPosition(this.cinematicStartPos);
     this.viewTargetCam.getWorldQuaternion(this.cinematicStartQuat);
+    // Board look-at from the focus shot (or approximate from current forward).
+    this.cinematicStartLookAt.copy(this.cinematicLookAt);
+    if (this.cinematicStartLookAt.distanceToSquared(this.cinematicStartPos) < 1e-4) {
+      this.tmpForward.set(0, 0, -1).applyQuaternion(this.cinematicStartQuat).normalize();
+      this.cinematicStartLookAt.copy(this.cinematicStartPos).addScaledVector(this.tmpForward, MODEL_FOCUS_DISTANCE);
+    }
 
     // Only set the arm target. Resetting the gameplay camera here is a second
     // camera writer while the cinematic camera is blending and causes a snap.
-    this.player.setCameraTargetDistance(this.cinematicReturnDistance, false);
+    this.player.setCameraTargetDistance(this.cinematicReturnDistance, true);
+    this.player.updateMatrixWorld(true);
     this.syncCinematicReturnEndPose(false);
+    // End look-at must match gameplay forward so t=1 equals the spring-arm pose.
+    this.tmpForward.set(0, 0, -1).applyQuaternion(this.cinematicEndQuat).normalize();
+    this.cinematicEndLookAt.copy(this.cinematicEndPos).addScaledVector(this.tmpForward, 10);
     this.matchCinematicFovToGameplay();
 
+    this.cinematicReturnUsesLookAt = true;
     this.cinematicReturningToPlayer = true;
     this.cinematicBlend = 0;
     this.cinematicActive = true;
+    this.updateModelFrontCinematic(0);
   }
 
   private syncCinematicReturnEndPose(resetCamera = true): void {
@@ -7868,7 +8044,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     // Arm length only — avoid resetGameplayCamera / follow-height snaps after the blend.
     // The gameplay camera already supplied the exact end pose for this blend.
     // Do not force the spring arm again here: that was the final one-frame snap.
-    this.player?.setCameraTargetDistance(this.cinematicReturnDistance, false);
+    this.player?.setCameraTargetDistance(this.cinematicReturnDistance, true);
   }
 
   private updateModelFrontCinematic(deltaTime: number): void {
@@ -7880,6 +8056,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     // remains continuous instead of snapping to a stale pose.
     if (this.cinematicReturningToPlayer && this.cinematicReturnInterrupted) {
       this.syncCinematicReturnEndPose(false);
+      this.tmpForward.set(0, 0, -1).applyQuaternion(this.cinematicEndQuat).normalize();
+      this.cinematicEndLookAt.copy(this.cinematicEndPos).addScaledVector(this.tmpForward, 10);
     }
     const blendSec = this.cinematicReturningToPlayer ? CINEMATIC_RETURN_SEC : CINEMATIC_BLEND_SEC;
     if (blendSec <= 0) {
@@ -7890,16 +8068,29 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     const t = this.cinematicBlend;
     // Smootherstep: zero 1st/2nd derivatives at ends — no visible kick at handoff.
     const eased = t * t * t * (t * (t * 6 - 15) + 10);
-    this.viewTargetCam.position.lerpVectors(
-      this.cinematicStartPos,
-      this.cinematicEndPos,
-      eased,
-    );
-    this.viewTargetCam.quaternion.slerpQuaternions(
-      this.cinematicStartQuat,
-      this.cinematicEndQuat,
-      eased,
-    );
+
+    if (this.cinematicReturningToPlayer && this.cinematicReturnUsesLookAt) {
+      // Position + look-at lerp keeps the board→player pull continuous (no slerp whip).
+      this.viewTargetCam.position.lerpVectors(
+        this.cinematicStartPos,
+        this.cinematicEndPos,
+        eased,
+      );
+      this.tmpDir.lerpVectors(this.cinematicStartLookAt, this.cinematicEndLookAt, eased);
+      this.tmpMatrix.lookAt(this.viewTargetCam.position, this.tmpDir, this.upAxis);
+      this.viewTargetCam.quaternion.setFromRotationMatrix(this.tmpMatrix);
+    } else {
+      this.viewTargetCam.position.lerpVectors(
+        this.cinematicStartPos,
+        this.cinematicEndPos,
+        eased,
+      );
+      this.viewTargetCam.quaternion.slerpQuaternions(
+        this.cinematicStartQuat,
+        this.cinematicEndQuat,
+        eased,
+      );
+    }
     this.viewTargetCam.updateMatrixWorld(true);
   }
 
@@ -7910,5 +8101,6 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.cinematicActive = false;
     this.cinematicBlend = 0;
     this.cinematicReturningToPlayer = false;
+    this.cinematicReturnUsesLookAt = false;
   }
 }
