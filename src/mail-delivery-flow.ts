@@ -86,8 +86,6 @@ const MODEL_FOCUS_DISTANCE = 2.2;
 /** Read hold after the typewriter finishes (intro + morning bubbles). */
 const SPEECH_READ_HOLD_SEC = 3.5;
 const ORDINANCE_FOCUS_SEC = 2;
-/** Hold after envelope finishes before fading to cream. */
-const DELIVERY_POST_INSERT_SEC = 0.55;
 /** Latch first, then deliver SFX — avoids overlap on envelope insert. */
 const MAIL_DELIVER_SOUND_DELAY_SEC = 0.38;
 /** Smooth blend from gameplay cam into model-front cinematic. */
@@ -137,6 +135,8 @@ const MORNING_SPEECH_THIRD_SIGN =
   'They\'re posting signs faster\nthan I can walk.';
 /** Recurring morning line from the fourth next-day onward. */
 const MORNING_SPEECH_AGAIN = 'How do I deliver\nthis letter?';
+/** Read hold after the delivery-reaction typewriter finishes. */
+const DELIVERY_SPEECH_READ_HOLD_SEC = 2.5;
 /** Goal shown on the left HUD counter (delivery / ordinance discovery ways). */
 export const DELIVERY_WAY_GOAL = 12;
 /** Solid road cue after first reveal or breaking active Maintenance / Jaywalking ordinances. */
@@ -435,6 +435,43 @@ const ORDINANCE_DISPLAY_TITLES: Record<PendingOrdinance, string> = {
   noCuttingOfTrees: 'No cutting of trees.',
   doNotRemoveTheSigns: "Don't remove the signs.",
 };
+
+const DELIVERY_SPEECH_FIRST = 'That was easy!';
+const DELIVERY_SPEECH_MYSTERY = 'Delivered.\nNo rule for that. Yet.';
+const DELIVERY_SPEECH_CAT_PEACH = 'Outsourced.\nDon\'t tell the mailbox.';
+const DELIVERY_SPEECH_CAT_UNFED = 'Freelance delivery.\nNo benefits.';
+const DELIVERY_SPEECH_BY_ORDINANCE: Record<PendingOrdinance, string> = {
+  maintenance: 'Road\'s closed.\nI\'m not.',
+  jaywalking: 'The crosswalk\nis a suggestion.',
+  doNotStepCar: 'It\'s a shortcut.\nThe car can wait.',
+  doNotStepTram: 'Tram tracks are just…\nwide sidewalks.',
+  streetLightsClimb: 'Nice view.\nDon\'t look down.',
+  dontDestroyTheStreetLights: 'I only borrowed\nthe ladder part.',
+  dontFeedTheCat: 'One peach.\nOne felony. Worth it.',
+  noCatsOnStreets: 'The cat had a shift.\nI had a letter.',
+  noCratesOnRoads: 'It\'s not litter.\nIt\'s infrastructure.',
+  noRocksOnRoads: 'Rocks are just\nslow crates.',
+  noBenchOnRoads: 'Public seating.\nMobile edition.',
+  noLogsOnRoads: 'That\'s timber,\nnot trash.',
+  noWoodPlanksOnRoads: 'DIY bridge.\nVery legal.',
+  dontRemoveTheCones: 'The cone chose\nthis life.',
+  noScrapMetalsOnRoads: 'Recycling\non the go.',
+  dontRemoveThisBush: 'It\'s a disguise.\nVery professional.',
+  dontRemoveThisKiosk: 'Kiosk parts are\nload-bearing now.',
+  dontCutThisPole: 'Timber!\n…Wrong kind of timber.',
+  doNotDestroyThisSign: 'The sign was\nalready leaning.',
+  dontHitTheFireHydrant: 'I wanted mail,\nnot a fountain.',
+  highVoltage: 'The wires held.\nMy nerves didn\'t.',
+  noClimbingOnTheTree: 'The tree had\na mailbox line of sight.',
+  noCuttingOfTrees: 'The tree had\nit coming.',
+  doNotRemoveTheSigns: 'I\'m not removing signs.\nGravity is.',
+};
+const DELIVERY_SPEECH_GENERIC = [
+  'Posted.\nMy conscience didn\'t.',
+  'In the box.\nOut of my hands.',
+  'Delivered.\nPlease don\'t make a sign.',
+  'Mailbox happy.\nTown suspicious.',
+] as const;
 
 type MailboxPulseRecord = {
   mesh: THREE.Mesh;
@@ -848,7 +885,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private readonly envelopeQuat = new THREE.Quaternion();
   private envelopeProgress = 0;
   private envelopeStarted = false;
-  private envelopeFinishedElapsed = 0;
+  /** Player quip after mailbox latch; blocks fade until read hold ends. */
+  private deliveryReactionText = '';
+  private deliveryReactionSpeechShown = false;
   /** Immutable session baseline (authored transforms) — never overwritten after first capture. */
   private readonly daySnapshots: DayTransformSnapshot[] = [];
   private readonly dayBaselineIds = new Set<string>();
@@ -1257,18 +1296,6 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         if (!this.envelopeStarted && this.cinematicBlend >= 0.98) {
           this.startEnvelopeInsert();
           this.envelopeStarted = true;
-        }
-        if (this.envelopeStarted && this.envelopeProgress >= 1) {
-          this.envelopeFinishedElapsed += _deltaTime;
-          if (this.envelopeFinishedElapsed >= DELIVERY_POST_INSERT_SEC) {
-            this.hideEnvelopeForGpu();
-            if (this.mysteryDeliveryWinPending) {
-              this.mysteryDeliveryWinReady = true;
-              this.setPhase(FlowPhase.MysteryWinHold);
-            } else {
-              this.setPhase(FlowPhase.FadeToBlack);
-            }
-          }
         }
         break;
       case FlowPhase.MysteryWinHold:
@@ -1898,6 +1925,50 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.mailboxBoundsReady = true;
   }
 
+  private getDeliveryReactionText(): string {
+    if (this.brokenOrdinanceOrder.length === 0) {
+      return DELIVERY_SPEECH_FIRST;
+    }
+    if (this.mysteryDeliveryWinPending) {
+      return DELIVERY_SPEECH_MYSTERY;
+    }
+    if (this.deliveryVia === 'catPeach') {
+      return DELIVERY_SPEECH_CAT_PEACH;
+    }
+    if (this.deliveryVia === 'catUnfed') {
+      return DELIVERY_SPEECH_CAT_UNFED;
+    }
+    if (this.pendingOrdinance) {
+      return DELIVERY_SPEECH_BY_ORDINANCE[this.pendingOrdinance];
+    }
+    const genericIndex = Math.max(0, this.brokenOrdinanceOrder.length - 1)
+      % DELIVERY_SPEECH_GENERIC.length;
+    return DELIVERY_SPEECH_GENERIC[genericIndex] ?? DELIVERY_SPEECH_GENERIC[0];
+  }
+
+  private showDeliveryReactionSpeech(): void {
+    if (this.deliveryReactionSpeechShown || !this.deliveryReactionText) {
+      return;
+    }
+    this.deliveryReactionSpeechShown = true;
+    this.showSpeechBubble(
+      this.deliveryReactionText,
+      DELIVERY_SPEECH_READ_HOLD_SEC,
+      false,
+      true,
+    );
+  }
+
+  private finishDeliveryAfterReactionSpeech(): void {
+    this.hideEnvelopeForGpu();
+    if (this.mysteryDeliveryWinPending) {
+      this.mysteryDeliveryWinReady = true;
+      this.setPhase(FlowPhase.MysteryWinHold);
+      return;
+    }
+    this.setPhase(FlowPhase.FadeToBlack);
+  }
+
   private completeDelivery(): void {
     this.player?.setMailEnvelopeCarried(false);
     this.hideSpeechBubble();
@@ -1909,10 +1980,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.player?.forceIdlePose();
     this.player?.setCinematicCameraLock(true);
     this.envelopeStarted = false;
-    this.envelopeFinishedElapsed = 0;
+    this.deliveryReactionSpeechShown = false;
     this.clearEnvelope();
     // No known listed ordinance for this delivery → mystery / unknown win.
     this.mysteryDeliveryWinPending = this.pendingOrdinance === null;
+    this.deliveryReactionText = this.getDeliveryReactionText();
     this.mysteryDeliveryWinReady = false;
     this.startModelFrontCinematic(
       this.mailbox,
@@ -6923,6 +6995,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         'max-width:min(420px,80vw)',
       ].join(';');
       const tail = document.createElement('div');
+      tail.dataset.speechTail = '1';
       tail.style.cssText = [
         'position:absolute',
         'left:50%',
@@ -6938,6 +7011,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       el.appendChild(tail);
       const label = document.createElement('span');
       label.dataset.speechLabel = '1';
+      label.style.whiteSpace = 'pre-line';
       el.appendChild(label);
       container.appendChild(el);
       this.speechEl = el;
@@ -7174,7 +7248,12 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
    * HUD element.  The timer is optional because the opening prompt remains up
    * for the existing intro phase, while later-day prompts dismiss themselves.
    */
-  private showSpeechBubble(text: string, readHoldSeconds = 0): void {
+  private showSpeechBubble(
+    text: string,
+    readHoldSeconds = 0,
+    highlightEnvelope = true,
+    deliveryCaption = false,
+  ): void {
     const world = this.getWorld();
     if (!this.speechEl && world) {
       this.ensureUi(world);
@@ -7182,6 +7261,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!this.speechEl) {
       return;
     }
+    this.applySpeechBubblePresentation(deliveryCaption);
     const label = this.speechEl.querySelector('[data-speech-label]') as HTMLSpanElement | null;
     if (label) {
       label.textContent = '';
@@ -7195,10 +7275,44 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.speechEl.style.display = 'block';
     this.speechEl.style.left = '50%';
     this.speechEl.style.top = '18%';
-    this.player?.setMailEnvelopeHighlightPulsing(true);
+    if (highlightEnvelope) {
+      this.player?.setMailEnvelopeHighlightPulsing(true);
+    }
     this.updateSpeechBubblePosition();
     if (text.length === 0) {
       this.armSpeechReadHoldIfPending();
+    }
+  }
+
+  private applySpeechBubblePresentation(deliveryCaption: boolean): void {
+    const el = this.speechEl;
+    if (!el) {
+      return;
+    }
+    const tail = el.querySelector('[data-speech-tail]') as HTMLElement | null;
+    if (deliveryCaption) {
+      // Screen-space thought caption above the player — no tail.
+      el.style.transform = 'translate(-50%, -100%)';
+      el.style.padding = '20px 28px';
+      el.style.borderRadius = '22px';
+      el.style.font =
+        '700 24px/1.35 "Overgrown Averia","Segoe UI Rounded","Segoe UI",sans-serif';
+      el.style.maxWidth = 'min(480px, 44vw)';
+      el.style.boxShadow = '0 12px 32px rgba(74,70,63,0.24)';
+      if (tail) {
+        tail.style.display = 'none';
+      }
+      return;
+    }
+    el.style.transform = 'translate(-50%, -100%)';
+    el.style.padding = '12px 16px';
+    el.style.borderRadius = '16px';
+    el.style.font =
+      '700 16px/1.35 "Overgrown Averia","Segoe UI Rounded","Segoe UI",sans-serif';
+    el.style.maxWidth = 'min(420px, 80vw)';
+    el.style.boxShadow = '0 8px 22px rgba(74,70,63,0.18)';
+    if (tail) {
+      tail.style.display = 'block';
     }
   }
 
@@ -7212,6 +7326,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   }
 
   private handleSpeechBubbleAutoDismiss(): void {
+    if (this.phase === FlowPhase.DeliveryFocus) {
+      this.finishDeliveryAfterReactionSpeech();
+      return;
+    }
     if (this.phase === FlowPhase.IntroSpeech) {
       this.playTutorialKeysHint();
       this.setMailboxHighlight(true);
@@ -7232,6 +7350,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private hideSpeechBubble(): void {
     if (this.speechEl) {
       this.speechEl.style.display = 'none';
+      this.applySpeechBubblePresentation(false);
     }
     this.speechTypingText = '';
     this.speechTypingElapsed = 0;
@@ -7297,8 +7416,42 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     const world = this.getWorld();
     const container = world?.gameContainer;
-    const camera = this.player?.getGameplayCamera();
-    if (!container || !camera || !this.player) {
+    if (!container) {
+      return;
+    }
+
+    if (this.phase === FlowPhase.DeliveryFocus) {
+      const camera = world?.getActiveCamera() ?? this.player?.getGameplayCamera() ?? null;
+      if (!camera || !this.player) {
+        this.speechEl.style.left = '72%';
+        this.speechEl.style.top = '30%';
+        return;
+      }
+
+      this.resolvePlayerHeadWorld(this.tmpHead);
+      this.tmpProjected.copy(this.tmpHead).project(camera);
+
+      const canvas = container.querySelector('canvas');
+      const containerRect = container.getBoundingClientRect();
+      const canvasRect = canvas?.getBoundingClientRect() ?? containerRect;
+      if (canvasRect.width <= 0 || canvasRect.height <= 0) {
+        return;
+      }
+
+      const x = (this.tmpProjected.x * 0.5 + 0.5) * canvasRect.width
+        + (canvasRect.left - containerRect.left);
+      const y = (-this.tmpProjected.y * 0.5 + 0.5) * canvasRect.height
+        + (canvasRect.top - containerRect.top);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) {
+        return;
+      }
+
+      this.clampSpeechBubbleToScreen(x, y, canvasRect.width, canvasRect.height, 12);
+      return;
+    }
+
+    const camera = this.player?.getGameplayCamera() ?? null;
+    if (!camera || !this.player) {
       return;
     }
 
@@ -7324,6 +7477,39 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     this.speechEl.style.left = `${x}px`;
     this.speechEl.style.top = `${Math.max(16, y)}px`;
+  }
+
+  /**
+   * Keep the speech bubble fully on-screen. Anchor is the bubble bottom-center
+   * (transform: translate(-50%, -100%)).
+   */
+  private clampSpeechBubbleToScreen(
+    anchorX: number,
+    anchorY: number,
+    canvasWidth: number,
+    canvasHeight: number,
+    gapAboveAnchor = 12,
+  ): void {
+    const el = this.speechEl;
+    if (!el) {
+      return;
+    }
+
+    const marginX = canvasWidth * 0.2;
+    const marginY = canvasHeight * 0.2;
+    let x = anchorX;
+    let y = anchorY - gapAboveAnchor;
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+
+    const width = el.offsetWidth || 280;
+    const height = el.offsetHeight || 96;
+
+    const halfW = width * 0.5;
+    x = THREE.MathUtils.clamp(x, marginX + halfW, canvasWidth - marginX - halfW);
+    y = THREE.MathUtils.clamp(y, marginY + height, canvasHeight - marginY);
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
   }
 
   private resolvePlayerHeadWorld(out: THREE.Vector3): void {
@@ -8040,6 +8226,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       if (this.envelopeMesh.visible) {
         playSound(this.getWorld(), GameSound.MailboxLatch, 3.6);
         this.mailDeliverSoundDelayRemaining = MAIL_DELIVER_SOUND_DELAY_SEC;
+        this.showDeliveryReactionSpeech();
       }
       this.envelopeMesh.visible = false;
     }
