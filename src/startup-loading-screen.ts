@@ -12,7 +12,7 @@ const CREAM_CSS = '#f4f1ea';
 const TEXT_CSS = '#6b6560';
 const LOADING_MESSAGES = [
   'You\'re playing Overgrown Ordinances...',
-  'Find ways to deliver the letter without breaking an ordinance...',
+  'One last letter. The mailbox is still open.',
 ] as const;
 const TYPEWRITER_CHAR_INTERVAL_MS = 55;
 const LOADING_MESSAGE_GAP_MS = 1000;
@@ -173,6 +173,7 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
   private typingGeneration = 0;
   private started = false;
   private sequenceGeneration = 0;
+  private earlyPreloadPromise: Promise<void> | null = null;
 
   constructor() {
     super();
@@ -181,6 +182,12 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
 
   public override initialize(options?: object): void {
     super.initialize({ name: 'Startup Loading Screen', ...options });
+  }
+
+  public override postLoad(): void {
+    super.postLoad();
+    // Consume Studio <link rel="preload"> hints before the browser warns (~3s).
+    this.earlyPreloadPromise = this.runEarlyAssetWarmup();
   }
 
   public override beginPlay(): boolean {
@@ -215,6 +222,20 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     return true;
   }
 
+  private async runEarlyAssetWarmup(): Promise<void> {
+    const world = this.getWorld();
+    if (!world) {
+      return;
+    }
+    const paths = Array.from(
+      new Set([
+        ...STARTUP_PRELOAD_ASSETS,
+        ...collectSceneModelUrls(world),
+      ]),
+    );
+    await preloadPool(paths);
+  }
+
   private async runSequence(): Promise<void> {
     const generation = this.sequenceGeneration;
     const world = this.getWorld();
@@ -242,6 +263,11 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
         ...(world ? collectSceneModelUrls(world) : []),
       ]),
     );
+
+    if (this.earlyPreloadPromise) {
+      await this.earlyPreloadPromise;
+      this.earlyPreloadPromise = null;
+    }
 
     // Reserve the last ~12% of the bar for waitForResources + min display time.
     await preloadPool(paths, (done, total) => {

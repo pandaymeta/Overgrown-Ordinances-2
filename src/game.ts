@@ -5,11 +5,18 @@
 import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
+import './consume-studio-link-preloads.js';
 import { installAnimationOneShotHostPatch } from './animation-oneshot-host-patch.js';
 import { CarryPlayerController } from './carry-player-controller.js';
 import { ClimbableLadder } from './climbable-ladder.js';
 import { ThirdPersonPlayer } from './player.js';
-import { patchTrimeshColliderScale } from './rapier-trimesh-patch.js';
+import { installEditorTrimeshPatch, patchTrimeshColliderScale } from './rapier-trimesh-patch.js';
+import { installStreetLampOrdinanceEditorPhysicsGuard } from './street-lamp-dismantling-system.js';
+import {
+  beginSpawnPhysicsGrace,
+  patchRapierSimulationBudget,
+  setRapierSimulationPaused,
+} from './rapier-simulation-budget.js';
 import { MailDeliveryFlowSystem } from './mail-delivery-flow.js';
 import { StairWalkRamp } from './stair-walk-ramp.js';
 import { ShophouseCameraOcclusionSystem } from './shophouse-camera-occlusion.js';
@@ -20,9 +27,14 @@ import { GameCursorSystem } from './game-cursor.js';
 import { StartupLoadingScreenSystem } from './startup-loading-screen.js';
 import { TutorialKeysGuide } from './tutorial-keys-guide.js';
 import { StreetLampGroundLightsSystem } from './street-lamp-ground-lights.js';
+import { applyDirectionalShadowBudget } from './environment-art-direction.js';
+import { guardSceneGeometryEarly } from './ordinance-sign-sharpness.js';
 import { preloadGameAudio } from './game-audio.js';
+import { waitForStartupLoading } from './startup-loading-screen.js';
 
 installAnimationOneShotHostPatch(ENGINE);
+installEditorTrimeshPatch(ENGINE);
+installStreetLampOrdinanceEditorPhysicsGuard(ENGINE);
 
 @ENGINE.GameClass()
 class ThirdPersonGameMode extends ENGINE.GameMode {
@@ -42,13 +54,20 @@ class ThirdPersonGameMode extends ENGINE.GameMode {
   }
 
   public override beginPlay(): boolean {
+    // Don't step Rapier until the pawn is planted — first ticks overlap WebGPU
+    // init and dump 0.0667s of catch-up (spawn hitch → late-game device loss).
+    beginSpawnPhysicsGrace();
     if (!super.beginPlay()) {
+      setRapierSimulationPaused(false);
       return false;
     }
+    guardSceneGeometryEarly(this.getWorld(), 'GameMode.beginPlay');
     // Cream cover before anything else so the world never flashes on the first frames.
     this.ensureStartupLoadingScreen();
-    // Warm the decode cache while the cream cover is up, so the first stamp lands.
-    void preloadGameAudio();
+    // Keep sun shadows/CSM off after scene load (isSunLight can re-enable expensive cascades).
+    applyDirectionalShadowBudget(this.getWorld());
+    // Warm audio after the cream screen — avoids parallel loadSound preloads at spawn.
+    void waitForStartupLoading().then(() => preloadGameAudio());
     this.ensureStartupBrushReveal();
     this.attachAccessStairWalkRamp();
     this.attachClimbableLadders();
@@ -210,6 +229,9 @@ class ThirdPersonGame extends ENGINE.BaseGameLoop {
   public override async ensurePhysicsEngine(world: ENGINE.World): Promise<void> {
     await super.ensurePhysicsEngine(world);
     patchTrimeshColliderScale(this.physicsEngine);
+    patchRapierSimulationBudget(this.physicsEngine);
+    // Physics stays off until mail-flow releases spawn grace after intro.
+    beginSpawnPhysicsGrace();
   }
 }
 

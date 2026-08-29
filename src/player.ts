@@ -5,6 +5,7 @@ import { createAirmailEnvelope, disposeAirmailEnvelope } from './airmail-envelop
 import { installAnimationOneShotHostPatch } from './animation-oneshot-host-patch.js';
 import { CarryableCrateNode } from './carryable-crate-node.js';
 import { FaceMovementCharacterMovementNode } from './face-movement-character-movement.js';
+import { beginSpawnPhysicsGrace } from './rapier-simulation-budget.js';
 import { FootstepPlayer, GameSound, playSound, playSoundAt } from './game-audio.js';
 import { HoverSilhouette } from './hover-silhouette.js';
 import { StreetLampDismantlingSystem } from './street-lamp-dismantling-system.js';
@@ -270,6 +271,12 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
         );
       }
     }
+    // GameMode restarts the pawn before mail-flow freeze. Hold still + skip
+    // Rapier catch-up so spawn gravity is never felt.
+    this.setMovementFrozen(true);
+    this.forceIdlePose();
+    this.settleOnGround();
+    beginSpawnPhysicsGrace();
     const visual = this.visualNode;
     if (visual instanceof ENGINE.ModelMeshNode) {
       void visual.waitForLoad().then(() => {
@@ -496,17 +503,16 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     this.cinematicCameraLock = locked;
   }
 
-  /** Drop carried/thrown objects so a day reset can restore their transforms. */
+  /** Drop carried/thrown objects and lighten scrap draw before a day reset. */
   public prepareForDayReset(): void {
     this.releaseHeldItemsForDayReset();
     this.streetLampDismantling.prepareScrapForCinematic();
-    this.streetLampDismantling.resetDay(this.getWorld());
   }
 
   /** Release carried/thrown items without touching scrap or world restore. */
   public releaseHeldItemsForDayReset(): void {
     this.releaseCarriedCrate();
-    this.releaseHeldTool();
+    this.releaseHeldToolForDayReset();
     for (const record of this.thrownGravityRestores) {
       this.restoreCrateGravity(record.crate, record.gravityScale);
       record.crate.setPhysicsVectorParam(ENGINE.PhysicsVectorParam.LinearVelocity, [0, 0, 0]);
@@ -557,7 +563,13 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
 
   /** Stage 1 of black-screen day transition: detach scrap, queue deferred destroy. */
   public retireScrapForDayReset(): void {
+    this.streetLampDismantling.enqueueParkedScrapForDestroy();
     this.streetLampDismantling.retireAllScrap();
+  }
+
+  /** Soft-loop: park scrap without MeshNode.destroy (keeps black short / WebGPU alive). */
+  public parkScrapForDayReset(): void {
+    this.streetLampDismantling.parkAllScrap();
   }
 
   public hasPendingScrapDestroys(): boolean {
@@ -569,8 +581,18 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     this.streetLampDismantling.retireDetachedRoot(root);
   }
 
-  public flushPendingScrapDestroys(): void {
-    this.streetLampDismantling.flushPendingScrapDestroysNow();
+  /** Soft-loop: park orphan without destroying. */
+  public parkDetachedRootForDayReset(root: ENGINE.SceneNode): void {
+    this.streetLampDismantling.parkDetachedRoot(root);
+  }
+
+  public flushPendingScrapDestroys(forceAll = false): void {
+    this.streetLampDismantling.flushPendingScrapDestroysNow(forceAll);
+  }
+
+  /** Prefer over force-flush during uncover — keeps WebGPU alive through cutscenes. */
+  public parkPendingScrapDestroys(): void {
+    this.streetLampDismantling.parkPendingDestroysForLater();
   }
 
   /** Stage 2: restore dismantled props / health after scrap GPU teardown. */
@@ -777,10 +799,34 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     });
     movementNode.setVelocities(0, 0, 0);
     movementNode.setGrounded(found);
+    this.syncPhysicsBodyToPawn();
     this.updateMatrixWorld(true);
     this.resetSmoothCameraFollowHeight();
     this.forceIdlePose();
     return found;
+  }
+
+  /**
+   * Teleport the Rapier capsule to the current visual pose and clear velocities.
+   * Required after long physics pauses so the first KCC step does not fall through.
+   */
+  public syncPhysicsBodyToPawn(): void {
+    const physicsEngine = this.getPhysicsEngine();
+    if (!physicsEngine) {
+      return;
+    }
+
+    this.getWorldPosition(this.settlePosition);
+    this.getWorldQuaternion(this.settleQuaternion);
+    physicsEngine.teleportBody(this, this.settlePosition, this.settleQuaternion);
+    this.setPhysicsVectorParam(ENGINE.PhysicsVectorParam.LinearVelocity, [0, 0, 0]);
+    this.setPhysicsVectorParam(ENGINE.PhysicsVectorParam.AngularVelocity, [0, 0, 0]);
+
+    const movementNode = this.movementNode;
+    if (movementNode instanceof ENGINE.CharacterMovementNode) {
+      movementNode.setVelocities(0, 0, 0);
+      movementNode.setGrounded(true);
+    }
   }
 
   /** Teleport home, plant on the floor, then idle — safe before cinematic freezes. */
@@ -789,6 +835,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
       return false;
     }
     this.settleOnGround();
+    beginSpawnPhysicsGrace();
     return true;
   }
 
@@ -1162,6 +1209,18 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     return true;
   }
 
+  /**
+   * Drop the equipped tool for a day reset without waking physics. Mail flow
+   * snaps the axe back to its authored baseline while the screen is still black.
+   */
+  private releaseHeldToolForDayReset(): void {
+    if (!this.heldTool) {
+      return;
+    }
+    this.heldTool = null;
+    this.heldToolPhysicsOptions = null;
+  }
+
   protected override updateCamera(_deltaTime: number): void {
     const movementNode = this.movementNode;
     if (!(movementNode instanceof FaceMovementCharacterMovementNode)) {
@@ -1264,7 +1323,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     this.pickupOutlineElapsed = 0;
     // Sequence: cursor hit → pickupable (incl. dismantle scrap) → in range → outline.
     // Still works while holding the axe so scrap on the ground can outline.
-    const target = this.findPointedCarryable() ?? (!this.heldTool ? this.findNearestBodyCover() : null);
+    const target = this.findPointedCarryable() ?? this.findNearestBodyCover();
     if (target && this.heldTool && this.isToolObject(target)) {
       this.setHoveredCarryable(null);
       return;
@@ -1316,16 +1375,46 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     })[0];
 
     const hitObject = hit?.hitNode ?? hit?.hitRoot ?? null;
-    const carryable = this.findPickupableAncestor(hitObject);
+    const carryable = this.findPickupableAncestor(hitObject)
+      ?? this.streetLampDismantling.findWearableBushCarryable(hitObject);
     if (!carryable || carryable === this.heldTool) {
-      return null;
+      return this.findMeshRaycastCarryable();
     }
 
     // Only outline when the player is close enough (scrap may use marker range).
     const playerPosition = this.getWorldPosition(new THREE.Vector3());
     const distance = carryable.getWorldPosition(new THREE.Vector3()).distanceTo(playerPosition);
     const range = this.getPickupRangeFor(carryable);
-    return distance <= range ? carryable : null;
+    return distance <= range ? carryable : this.findMeshRaycastCarryable();
+  }
+
+  /**
+   * Bush drops have no physics collider — mesh raycast so the cursor can still
+   * pick them up (same idea as axe mesh fallback on dense foliage).
+   */
+  private findMeshRaycastCarryable(): ENGINE.PrimitiveNode | null {
+    const meshes = this.streetLampDismantling.getWearableBushMeshes();
+    if (meshes.length === 0) {
+      return null;
+    }
+
+    this.camera.updateMatrixWorld(true);
+    this.carryAimRaycaster.setFromCamera(this.carryAimNdc, this.camera);
+    this.carryAimRaycaster.far = PICKUP_AIM_RAY_MAX;
+    const hits = this.carryAimRaycaster.intersectObjects(meshes, false);
+    const playerPosition = this.getWorldPosition(new THREE.Vector3());
+    for (const hit of hits) {
+      const carryable = this.streetLampDismantling.findWearableBushCarryable(hit.object);
+      if (!carryable || carryable === this.heldTool) {
+        continue;
+      }
+      const distance = carryable.getWorldPosition(new THREE.Vector3()).distanceTo(playerPosition);
+      const range = this.getPickupRangeFor(carryable);
+      if (distance <= range) {
+        return carryable;
+      }
+    }
+    return null;
   }
 
   private findPickupableAncestor(node: THREE.Object3D | null): ENGINE.PrimitiveNode | null {
@@ -1383,7 +1472,11 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     const playerPosition = this.getWorldPosition(new THREE.Vector3());
     let nearest: ENGINE.PrimitiveNode | null = null;
     let nearestDistance = Infinity;
-    for (const primitive of world.getNodes(ENGINE.PrimitiveNode)) {
+    const candidates = [
+      ...world.getNodes(ENGINE.PrimitiveNode),
+      ...this.streetLampDismantling.getWearableBushCarryableRoots(),
+    ];
+    for (const primitive of candidates) {
       if (
         primitive === this.heldTool
         || !this.isDesignatedCarryableCrate(primitive)
@@ -2075,6 +2168,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
         }),
       );
       this.trajectoryRibbon.name = 'ThrowTrajectoryPreview';
+      this.trajectoryRibbon.visible = false;
       this.trajectoryRibbon.frustumCulled = false;
       this.trajectoryRibbon.renderOrder = 1000;
       this.trajectoryRibbon.setTransient(true);

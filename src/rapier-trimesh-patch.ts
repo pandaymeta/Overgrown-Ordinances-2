@@ -190,8 +190,14 @@ function rebuildTrimeshDesc(desc: ColliderDescLike): ColliderDescLike {
   let indices = shape.indices && shape.indices.length >= 3
     ? toUint32(shape.indices)
     : sequentialIndices(vertexCount);
-  if (indices.length % 3 !== 0) {
-    indices = sequentialIndices(vertexCount);
+  // Thin quads (e.g. ShopSign display cards) have too few verts / bad index
+  // counts for Rapier trimesh — use an AABB cuboid instead of "expected instance of I1".
+  if (vertexCount < 4 || indices.length < 3 || indices.length % 3 !== 0) {
+    const fallback = cuboidFromVertices(ctor, vertices) ?? desc;
+    if (fallback !== desc) {
+      copyColliderSettings(desc, fallback);
+    }
+    return fallback;
   }
 
   const rebuilt = ctor.trimesh(vertices, indices, TRIMESH_CLEANUP_FLAGS) as ColliderDescLike | null;

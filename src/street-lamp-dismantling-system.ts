@@ -4,6 +4,7 @@ import { CarryableCrateNode } from './carryable-crate-node.js';
 import { SKIP_ENVIRONMENT_ART_FLAG } from './environment-art-direction.js';
 import { GameSound, playSound, playSoundAt } from './game-audio.js';
 import { HoverSilhouette } from './hover-silhouette.js';
+import { patchTrimeshColliderScale } from './rapier-trimesh-patch.js';
 import { HydrantWaterStream } from './hydrant-water-stream.js';
 import { refreshStreetLampGroundLights } from './street-lamp-ground-lights.js';
 
@@ -111,6 +112,10 @@ const POLE_CUT_DROP_NAME = /^Pole Cut Drop$/i;
 const HIGH_VOLTAGE_BOARD_NAME = /^High Voltage(?:\s+\d+)?$/i;
 const HIGH_VOLTAGE_DROP_NAME = /^High Voltage Drop(?:\s+\d+)?$/i;
 const STREET_LIGHTS_BOARD_NAME = /^Street Lights (?:Climb|Destroy)(?:\s+\d+)?$/i;
+/** 4-vert display quads on street-lamp ordinance hosts — Rapier trimesh crashes in editor. */
+const STREET_LAMP_ORDINANCE_CARD_GLB =
+  /\/OrdinanceCards\/streetlights\/StreetLights(?:Climb|Destroy)_Card_ShopSignStyle\.glb$/i;
+const STREET_LAMP_ORDINANCE_CARD_NAME = /^StreetLights(?:Climb|Destroy) Card \(ShopSign setup\)$/i;
 const TREES_CUTTING_BOARD_NAME = /^(?:NoCuttingOfTrees|No cutting of trees|Trees Cutting)(?:\s+\d+)?$/i;
 const GUARDRAIL_SCRAP_PREFAB = '@project/assets/prefabs/guardrail-d-dismantled-parts.prefab.json';
 const GUARDRAIL_SECTION_DROP_PREFAB = '@project/assets/prefabs/guardrail-section-dismantled-parts.prefab.json';
@@ -127,6 +132,92 @@ const HIT_FLASH_DURATION = 0.18;
 const PROJECTILE_HIT_COOLDOWN = 0.8;
 const PROJECTILE_MIN_SPEED = 2;
 const PROJECTILE_HEALTH_BAR_TIME = 2.75;
+
+function isStreetLampOrdinanceDisplayCard(node: ENGINE.ModelMeshNode): boolean {
+  const url = String(node.modelUrl ?? '');
+  const name = node.name ?? '';
+  return STREET_LAMP_ORDINANCE_CARD_GLB.test(url)
+    || STREET_LAMP_ORDINANCE_CARD_NAME.test(name);
+}
+
+function isNestedUnderStreetLightsBoard(node: ENGINE.SceneNode): boolean {
+  let parent = node.parent as ENGINE.SceneNode | null;
+  while (parent) {
+    if (parent instanceof ENGINE.ModelMeshNode && STREET_LIGHTS_BOARD_NAME.test(parent.name ?? '')) {
+      return true;
+    }
+    parent = parent.parent as ENGINE.SceneNode | null;
+  }
+  return false;
+}
+
+function needsStreetLampOrdinanceVisualOnlyPhysics(node: ENGINE.ModelMeshNode): boolean {
+  return isStreetLampOrdinanceDisplayCard(node) || isNestedUnderStreetLightsBoard(node);
+}
+
+function disableStreetLampOrdinanceCardPhysics(node: ENGINE.ModelMeshNode): void {
+  if (!needsStreetLampOrdinanceVisualOnlyPhysics(node)) {
+    return;
+  }
+  node.overridePhysicsOptions({
+    enabled: false,
+    motionType: ENGINE.PhysicsMotionType.Static,
+    collisionProfile: ENGINE.DefaultCollisionProfile.NoCollision,
+  });
+  node.setPhysicsTransformUpdateFlags({
+    sendPosition: false,
+    sendRotation: false,
+    receivePosition: false,
+    receiveRotation: false,
+  });
+}
+
+/** Street-lamp ordinance display cards only — not other ordinance boards. */
+export function hardenStreetLampOrdinanceCardPhysics(world: ENGINE.World | null | undefined): void {
+  if (!world) {
+    return;
+  }
+  for (const node of world.getNodes(ENGINE.ModelMeshNode)) {
+    disableStreetLampOrdinanceCardPhysics(node);
+  }
+}
+
+/**
+ * Editor + play: StreetLights Climb/Destroy ShopSign quads crash Rapier when moved
+ * (`expected instance of I1`). Scope is street-lamp ordinances only.
+ */
+export function installStreetLampOrdinanceEditorPhysicsGuard(engine: typeof ENGINE): void {
+  const modelProto = engine.ModelMeshNode.prototype as unknown as {
+    onEditorPropertyChanged?: (...args: unknown[]) => void;
+    onEditorAddToWorld?: () => void;
+    getPhysicsEngine?: () => object | null;
+    __overgrownStreetLampOrdinancePhysicsHook?: boolean;
+  };
+  if (modelProto.__overgrownStreetLampOrdinancePhysicsHook) {
+    return;
+  }
+  modelProto.__overgrownStreetLampOrdinancePhysicsHook = true;
+
+  const wrap = (methodName: 'onEditorPropertyChanged' | 'onEditorAddToWorld'): void => {
+    const original = modelProto[methodName];
+    if (typeof original !== 'function') {
+      return;
+    }
+    modelProto[methodName] = function (
+      this: ENGINE.ModelMeshNode & { getPhysicsEngine?: () => object | null },
+      ...args: unknown[]
+    ) {
+      if (needsStreetLampOrdinanceVisualOnlyPhysics(this)) {
+        disableStreetLampOrdinanceCardPhysics(this);
+        patchTrimeshColliderScale(this.getPhysicsEngine?.() ?? null);
+      }
+      return original.apply(this, args);
+    };
+  };
+
+  wrap('onEditorPropertyChanged');
+  wrap('onEditorAddToWorld');
+}
 
 interface HitFlashRecord {
   mesh: THREE.Mesh;
@@ -208,6 +299,8 @@ export class StreetLampDismantlingSystem {
   private static readonly SCRAP_DESTROY_SETTLE_FRAMES = 12;
   /** Destroy at most one retired root every N ticks after settle. */
   private static readonly SCRAP_DESTROY_STRIDE_FRAMES = 3;
+  /** Soft-loop parks scrap here (no MeshNode.destroy) so black stays short. */
+  private readonly parkedScrapRoots: ENGINE.SceneNode[] = [];
   private readonly meshSwapRecords: Array<{ node: ENGINE.ModelMeshNode; modelUrl: string }> = [];
   /** Street lamps removed from the world on final hit; re-added on day reset. */
   private readonly yankedStreetLamps: ENGINE.ModelMeshNode[] = [];
@@ -324,6 +417,7 @@ export class StreetLampDismantlingSystem {
     this.enableBushAxeHits(world);
     this.parentPoleCutBoardsOntoUtilityPoles(world);
     this.hardenStreetLampChildPhysics(world);
+    hardenStreetLampOrdinanceCardPhysics(world);
     this.bindHydrantProjectileHits(world);
     this.cachePoseFallTargets(world);
     this.hidePoseFallTargets(world);
@@ -454,13 +548,62 @@ export class StreetLampDismantlingSystem {
     }
   }
 
+  /**
+   * Soft-loop day reset: hide + detach scrap without MeshNode.destroy.
+   * Parked scrap is destroyed on the next delivery HoldBlack.
+   */
+  public parkAllScrap(): void {
+    for (const scrap of this.spawnedScrapRoots.splice(0)) {
+      this.parkScrapRoot(scrap);
+    }
+  }
+
+  /** Move previously parked scrap into the destroy queue (delivery next-day). */
+  public enqueueParkedScrapForDestroy(): void {
+    while (this.parkedScrapRoots.length > 0) {
+      const scrap = this.parkedScrapRoots.shift();
+      if (!scrap || this.pendingDestroyRoots.includes(scrap)) {
+        continue;
+      }
+      this.pendingDestroyRoots.push(scrap);
+    }
+    if (this.pendingDestroyRoots.length > 0) {
+      this.pendingDestroyFrames = 0;
+    }
+  }
+
+  /** Park leftover destroy queue when uncovering — finish on a later HoldBlack. */
+  public parkPendingDestroysForLater(): void {
+    while (this.pendingDestroyRoots.length > 0) {
+      const scrap = this.pendingDestroyRoots.shift();
+      if (!scrap || this.parkedScrapRoots.includes(scrap)) {
+        continue;
+      }
+      this.parkedScrapRoots.push(scrap);
+    }
+    this.pendingDestroyFrames = 0;
+  }
+
   /** Queue an already-detached (or still-parented) root for deferred GPU-safe destroy. */
   public retireDetachedRoot(root: ENGINE.SceneNode): void {
     const tracked = this.spawnedScrapRoots.indexOf(root);
     if (tracked >= 0) {
       this.spawnedScrapRoots.splice(tracked, 1);
     }
+    const parked = this.parkedScrapRoots.indexOf(root);
+    if (parked >= 0) {
+      this.parkedScrapRoots.splice(parked, 1);
+    }
     this.retireScrapRoot(root);
+  }
+
+  /** Soft-loop: park an orphan root without destroying it. */
+  public parkDetachedRoot(root: ENGINE.SceneNode): void {
+    const tracked = this.spawnedScrapRoots.indexOf(root);
+    if (tracked >= 0) {
+      this.spawnedScrapRoots.splice(tracked, 1);
+    }
+    this.parkScrapRoot(root);
   }
 
   public hasPendingScrapDestroys(): boolean {
@@ -468,8 +611,14 @@ export class StreetLampDismantlingSystem {
   }
 
   /** Tick deferred scrap destroys (call while screen is black). */
-  public flushPendingScrapDestroysNow(): void {
-    this.flushPendingScrapDestroys();
+  public flushPendingScrapDestroysNow(forceAll = false): void {
+    this.flushPendingScrapDestroys(forceAll);
+    if (!forceAll) {
+      return;
+    }
+    while (this.pendingHydrantDestroy.length > 0) {
+      this.pendingHydrantDestroy.shift()?.destroy();
+    }
   }
 
   /**
@@ -611,8 +760,10 @@ export class StreetLampDismantlingSystem {
     for (const scrap of this.spawnedScrapRoots.splice(0)) {
       this.retireScrapRoot(scrap);
     }
+    this.enqueueParkedScrapForDestroy();
     this.pendingDestroyFrames = 0;
     this.flushPendingScrapDestroys(true);
+    this.parkedScrapRoots.length = 0;
     this.meshSwapRecords.length = 0;
     this.yankedStreetLamps.length = 0;
     for (const scraps of this.streetLampScrapPool.splice(0)) {
@@ -635,6 +786,39 @@ export class StreetLampDismantlingSystem {
       this.treeHealthBar?.setValue(CHERRY_TREE_MAX_HEALTH, false);
       this.treeHealthBar?.hide();
     }
+  }
+
+  private parkScrapRoot(scrap: ENGINE.SceneNode): void {
+    this.nonPickupableScrapRoots.delete(scrap);
+    this.disableScrapShadows(scrap);
+    const stack: ENGINE.SceneNode[] = [scrap];
+    while (stack.length > 0) {
+      const node = stack.pop();
+      if (!node) {
+        continue;
+      }
+      node.visible = false;
+      if (node instanceof ENGINE.PrimitiveNode) {
+        node.setPhysicsVectorParam(ENGINE.PhysicsVectorParam.LinearVelocity, [0, 0, 0]);
+        node.setPhysicsVectorParam(ENGINE.PhysicsVectorParam.AngularVelocity, [0, 0, 0]);
+        node.overridePhysicsOptions({ enabled: false });
+      }
+      for (const child of node.children) {
+        if (child instanceof ENGINE.SceneNode) {
+          stack.push(child);
+        }
+      }
+    }
+    if (scrap.parent) {
+      scrap.removeFromParent();
+    }
+    if (
+      this.parkedScrapRoots.includes(scrap)
+      || this.pendingDestroyRoots.includes(scrap)
+    ) {
+      return;
+    }
+    this.parkedScrapRoots.push(scrap);
   }
 
   private retireScrapRoot(scrap: ENGINE.SceneNode): void {
@@ -963,6 +1147,55 @@ export class StreetLampDismantlingSystem {
       current = current.parent;
     }
     return null;
+  }
+
+  /** Wearable bush dismantle drops skip physics colliders — pickup uses mesh rays. */
+  public isWearableBushScrapRoot(root: ENGINE.SceneNode): boolean {
+    return root.getNodes(CarryableCrateNode).some((node) => node.attachToBodyCenter);
+  }
+
+  public findWearableBushCarryable(from: THREE.Object3D | null): ENGINE.PrimitiveNode | null {
+    let current: THREE.Object3D | null = from;
+    while (current) {
+      if (current instanceof ENGINE.PrimitiveNode) {
+        for (const root of this.spawnedScrapRoots) {
+          if (!root.parent || !this.isWearableBushScrapRoot(root)) {
+            continue;
+          }
+          if (current === root || this.isNodeUnderRoot(current, root)) {
+            return current;
+          }
+        }
+      }
+      current = current.parent;
+    }
+    return null;
+  }
+
+  /** Model roots for proximity pickup / mesh raycasts (no physics collider on bush). */
+  public getWearableBushCarryableRoots(): ENGINE.ModelMeshNode[] {
+    const results: ENGINE.ModelMeshNode[] = [];
+    for (const root of this.spawnedScrapRoots) {
+      if (!root.parent || !this.isWearableBushScrapRoot(root)) {
+        continue;
+      }
+      for (const model of root.getNodes(ENGINE.ModelMeshNode)) {
+        results.push(model);
+      }
+    }
+    return results;
+  }
+
+  public getWearableBushMeshes(): THREE.Object3D[] {
+    const meshes: THREE.Object3D[] = [];
+    for (const model of this.getWearableBushCarryableRoots()) {
+      for (const mesh of model.getAllMeshes()) {
+        if (mesh.visible) {
+          meshes.push(mesh);
+        }
+      }
+    }
+    return meshes;
   }
 
   /** Fallen utility poles are platforms, not carryables. */
@@ -2178,7 +2411,7 @@ export class StreetLampDismantlingSystem {
         window.setTimeout(() => this.applySourceMaterialsToScrap(scraps, sourceMaterials), 1000);
       }
       if (prefabPath === BUSH_8_BB_DROP_PREFAB) {
-        this.enableWearableBushPhysics(scraps);
+        this.prepareWearableBushDrop(scraps);
         this.playBushTransformAnimation(scraps);
       }
       if (FALLEN_UTILITY_POLE_PREFABS.has(prefabPath) && poleOrdinanceDrops) {
@@ -2736,26 +2969,24 @@ export class StreetLampDismantlingSystem {
     });
   }
 
-  /** Ensure the hide-bush drop is physically pickable / wearable after spawn. */
-  private enableWearableBushPhysics(scraps: ENGINE.SceneNode): void {
+  /** Wearable bush drop: no collider — pickup uses proximity / carry marker, not physics. */
+  private prepareWearableBushDrop(scraps: ENGINE.SceneNode): void {
     const models = scraps instanceof ENGINE.ModelMeshNode
       ? [scraps]
       : scraps.getNodes(ENGINE.ModelMeshNode);
     for (const model of models) {
       model.replacePhysicsOptions({
-        enabled: true,
-        collisionMeshType: ENGINE.CollisionMeshType.BoundingBox,
-        collisionProfile: ENGINE.DefaultCollisionProfile.BlockAll,
-        motionType: ENGINE.PhysicsMotionType.Dynamic,
-        density: 40,
+        enabled: false,
+        motionType: ENGINE.PhysicsMotionType.Static,
       });
       model.setPhysicsTransformUpdateFlags({
-        sendPosition: true,
-        sendRotation: true,
-        receivePosition: true,
-        receiveRotation: true,
+        sendPosition: false,
+        sendRotation: false,
+        receivePosition: false,
+        receiveRotation: false,
       });
     }
+    this.disableScrapShadows(scraps);
   }
 
   private updateBushAppearAnimations(deltaTime: number): void {

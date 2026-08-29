@@ -419,6 +419,7 @@ export class HydrantWaterStream {
       }),
     );
     this.ribbon.name = 'HydrantWaterStream';
+    this.ribbon.visible = false;
     this.ribbon.frustumCulled = false;
     this.ribbon.renderOrder = 900;
     this.ribbon.setTransient(true);

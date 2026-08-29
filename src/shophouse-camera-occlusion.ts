@@ -2,6 +2,7 @@ import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
 import { ThirdPersonPlayer } from './player.js';
+import { isMissingPositionMesh } from './ordinance-sign-sharpness.js';
 
 const SHOPHOUSE_NAME = /shophouse/i;
 const STANDALONE_OCCLUDER_NAME = /^(?:Cherry Blossom Tree|City Tram$)/i;
@@ -63,7 +64,7 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
   private player: ThirdPersonPlayer | null = null;
   private tickCounter = 0;
   private hasSampledPose = false;
-  private paused = false;
+  private paused = true;
 
   constructor() {
     super();
@@ -132,10 +133,6 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
       return;
     }
     this.paused = paused;
-    if (paused) {
-      this.restoreAll();
-      this.restoreClouds();
-    }
     this.hasSampledPose = false;
   }
 
@@ -229,7 +226,10 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
   private getCachedMeshes(model: ENGINE.ModelMeshNode): THREE.Mesh[] {
     let meshes = this.meshCache.get(model);
     if (!meshes || meshes.length === 0) {
-      meshes = model.getAllMeshes();
+      meshes = model.getAllMeshes().filter((mesh) => {
+        const position = mesh.geometry?.getAttribute('position');
+        return !!position && position.count > 0 && !isMissingPositionMesh(mesh);
+      });
       this.meshCache.set(model, meshes);
     }
     return meshes;

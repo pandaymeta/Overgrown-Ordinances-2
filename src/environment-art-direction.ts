@@ -1,7 +1,12 @@
 import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
-import { refreshStreetLampGroundLights } from './street-lamp-ground-lights.js';
+import { detachStreetLampSpotsToWorld } from './street-lamp-ground-lights.js';
+import {
+  guardSceneGeometryEarly,
+  hideMissingPositionMeshesInWorld,
+  isMissingPositionMesh,
+} from './ordinance-sign-sharpness.js';
 
 type SurfaceStyle = {
   tint: THREE.Color;
@@ -270,9 +275,46 @@ function styleModel(node: ENGINE.ModelMeshNode, detailTexture: THREE.Texture | n
 
   const style = classifySurface(node);
   for (const mesh of node.getAllMeshes()) {
+    if (isMissingPositionMesh(mesh)) {
+      continue;
+    }
+    const position = mesh.geometry?.getAttribute('position');
+    if (!position || position.count < 1) {
+      continue;
+    }
     mesh.material = Array.isArray(mesh.material)
       ? mesh.material.map((material) => styleMaterial(material, style, detailTexture))
       : styleMaterial(mesh.material, style, detailTexture);
+  }
+}
+
+/**
+ * Clamp sun CSM to scene-authored budget values. Scene load + isSunLight can
+ * re-enable expensive cascades (shadowFar auto-raised to 2000) and tank FPS.
+ */
+const SUN_SHADOW_MAP_SIZE = 1024;
+const SUN_CSM_CASCADE_COUNT = 2;
+const SUN_CSM_MAX_FAR = 100;
+const SUN_SHADOW_FAR_CAP = 250;
+
+export function applyDirectionalShadowBudget(world: ENGINE.World | null | undefined): void {
+  if (!world) {
+    return;
+  }
+  for (const light of world.getNodes(ENGINE.DirectionalLightNode)) {
+    if (!light.isSunLight) {
+      light.castShadow = false;
+      light.useCsmShadows = false;
+      continue;
+    }
+    light.castShadow = true;
+    light.useCsmShadows = true;
+    light.csmCascadeCount = SUN_CSM_CASCADE_COUNT;
+    light.csmMaxFar = SUN_CSM_MAX_FAR;
+    light.shadowMapSize = SUN_SHADOW_MAP_SIZE;
+    if (light.shadowFar > SUN_SHADOW_FAR_CAP) {
+      light.shadowFar = SUN_SHADOW_FAR_CAP;
+    }
   }
 }
 
@@ -284,6 +326,7 @@ export async function refreshEnvironmentArtDirection(
     return 0;
   }
 
+  applyDirectionalShadowBudget(world);
   const detailTexture = await loadPainterlyDetailTexture();
   const models = world.getNodes(ENGINE.ModelMeshNode);
   await Promise.all(models.map(async (node) => {
@@ -296,13 +339,17 @@ export async function refreshEnvironmentArtDirection(
     }
     styleModel(node, detailTexture);
   }));
-  // Re-assert lamp spots after surface grading (glazing lives on the GLB lens).
-  refreshStreetLampGroundLights(world);
+  hideMissingPositionMeshesInWorld(world);
+  // Spots stay world-rooted after art pass — detach only, never retune/toggle.
+  detachStreetLampSpotsToWorld(world);
+  applyDirectionalShadowBudget(world);
   return models.length;
 }
 
 @ENGINE.GameClass()
 export class EnvironmentArtDirectionSystem extends ENGINE.SceneNode {
+  private shadowBudgetReinforceRemaining = 180;
+
   constructor() {
     super();
     this.isRoot = true;
@@ -317,6 +364,8 @@ export class EnvironmentArtDirectionSystem extends ENGINE.SceneNode {
 
   public override postLoad(): void {
     super.postLoad();
+    guardSceneGeometryEarly(this.getWorld(), 'EnvironmentArtDirection.postLoad');
+    applyDirectionalShadowBudget(this.getWorld());
     void refreshEnvironmentArtDirection(this.getWorld());
   }
 
@@ -324,7 +373,18 @@ export class EnvironmentArtDirectionSystem extends ENGINE.SceneNode {
     if (!super.beginPlay()) {
       return false;
     }
+    applyDirectionalShadowBudget(this.getWorld());
+    this.shadowBudgetReinforceRemaining = 180;
     void refreshEnvironmentArtDirection(this.getWorld());
     return true;
+  }
+
+  public override tickPostPhysics(_deltaTime: number): void {
+    super.tickPostPhysics(_deltaTime);
+    if (this.shadowBudgetReinforceRemaining <= 0) {
+      return;
+    }
+    applyDirectionalShadowBudget(this.getWorld());
+    this.shadowBudgetReinforceRemaining -= 1;
   }
 }

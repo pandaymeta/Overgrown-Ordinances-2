@@ -1,9 +1,10 @@
 /**
- * Street-lamp lighting for the late-afternoon haze:
- * - Real downward SpotLight (soft warm pool on the ground)
- * - Glazing "on" look comes from the street-lamp-29f365.glb lens material
- * - Spots live as world roots (not lamp children) so axe/dismantle never
- *   tears down an active SpotLight under a ModelMeshNode hierarchy
+ * Street-lamp ground spots:
+ * - Authored SpotLight nodes stay lit for the late-afternoon haze
+ * - Spots are detached to world roots so axe / dismantle / lamp physics
+ *   never tear down an active SpotLight under a Street Lamp hierarchy
+ * - Never toggle visible/intensity at runtime — day reset and cinematics
+ *   must leave these lights alone
  */
 
 import * as ENGINE from '@gnsx/genesys.js';
@@ -92,9 +93,9 @@ function findSpotForLamp(lamp: ENGINE.ModelMeshNode): ENGINE.SpotLightNode | nul
   return findNamedChild(lamp, ENGINE.SpotLightNode, SPOT_NAME);
 }
 
-function retuneSpot(spot: ENGINE.SpotLightNode): void {
-  spot.name = spot.name?.startsWith('Lamp Ground Spot') ? spot.name : 'Lamp Ground Spot';
-  spot.visible = true;
+/** Defaults only for newly created spots — never overwrite authored values. */
+function applyNewSpotDefaults(spot: ENGINE.SpotLightNode): void {
+  spot.name = 'Lamp Ground Spot';
   spot.color = SPOT_COLOR;
   spot.intensity = SPOT_INTENSITY;
   spot.distance = SPOT_DISTANCE;
@@ -102,35 +103,35 @@ function retuneSpot(spot: ENGINE.SpotLightNode): void {
   spot.angle = SPOT_ANGLE;
   spot.penumbra = SPOT_PENUMBRA;
   spot.castShadow = false;
+  spot.position.copy(SPOT_LOCAL_POS);
+  // Genesys light forward: +90° X aims at the ground.
+  spot.rotation.set(Math.PI / 2, 0, 0);
 }
 
-function ensureSpot(lamp: ENGINE.ModelMeshNode): ENGINE.SpotLightNode {
-  let spot = findSpotForLamp(lamp);
-  if (!spot) {
-    spot = ENGINE.SpotLightNode.create({
-      name: 'Lamp Ground Spot',
-      color: SPOT_COLOR,
-      intensity: SPOT_INTENSITY,
-      distance: SPOT_DISTANCE,
-      decay: SPOT_DECAY,
-      angle: SPOT_ANGLE,
-      penumbra: SPOT_PENUMBRA,
-      castShadow: false,
-    });
-    lamp.add(spot);
-    // Defaults only for newly created spots — authored transforms stay as-is.
-    spot.position.copy(SPOT_LOCAL_POS);
-    // Genesys light forward: +90° X aims at the ground.
-    spot.rotation.set(Math.PI / 2, 0, 0);
+function ensureSpotExists(lamp: ENGINE.ModelMeshNode): ENGINE.SpotLightNode {
+  const existing = findSpotForLamp(lamp);
+  if (existing) {
+    return existing;
   }
-
-  retuneSpot(spot);
+  const spot = ENGINE.SpotLightNode.create({
+    name: 'Lamp Ground Spot',
+    color: SPOT_COLOR,
+    intensity: SPOT_INTENSITY,
+    distance: SPOT_DISTANCE,
+    decay: SPOT_DECAY,
+    angle: SPOT_ANGLE,
+    penumbra: SPOT_PENUMBRA,
+    castShadow: false,
+  });
+  lamp.add(spot);
+  applyNewSpotDefaults(spot);
   return spot;
 }
 
 /**
  * Keep spots lit, but not parented under Street Lamps — dismantle / physics
  * rebuilds on the lamp must never touch an active SpotLight child.
+ * Does not change visible, intensity, or other authored spot properties.
  */
 export function detachStreetLampSpotsToWorld(
   world: ENGINE.World | null | undefined,
@@ -151,10 +152,9 @@ export function detachStreetLampSpotsToWorld(
       continue;
     }
 
-    spot.updateWorldMatrix(true, false);
-    spot.matrixWorld.decompose(scratchWorldPos, scratchWorldQuat, scratchWorldScale);
-
     if (spot.parent !== world) {
+      spot.updateWorldMatrix(true, false);
+      spot.matrixWorld.decompose(scratchWorldPos, scratchWorldQuat, scratchWorldScale);
       reparentSpotToWorld(world, spot);
       spot.position.copy(scratchWorldPos);
       spot.quaternion.copy(scratchWorldQuat);
@@ -163,50 +163,16 @@ export function detachStreetLampSpotsToWorld(
 
     spot.userData[OWNER_UUID_KEY] = lamp.uuid;
     detachedSpotsByLampUuid.set(lamp.uuid, spot);
-    retuneSpot(spot);
     count += 1;
   }
   return count;
 }
 
-/** Dim every lamp spot — extra lights are expensive during cinematics / fade. */
-export function setStreetLampGroundLightsEnabled(
-  world: ENGINE.World | null | undefined,
-  enabled: boolean,
-): void {
-  if (!world) {
-    return;
-  }
-
-  const seen = new Set<ENGINE.SpotLightNode>();
-  for (const spot of detachedSpotsByLampUuid.values()) {
-    if (!spot.parent) {
-      continue;
-    }
-    // Keep intensity stable — zeroing SpotLight intensity jitters the camera.
-    spot.visible = enabled;
-    if (enabled) {
-      spot.intensity = SPOT_INTENSITY;
-    }
-    seen.add(spot);
-  }
-
-  for (const lamp of world.getNodes(ENGINE.ModelMeshNode)) {
-    if (!STREET_LAMP_NAME.test(lamp.name ?? '')) {
-      continue;
-    }
-    const spot = findNamedChild(lamp, ENGINE.SpotLightNode, SPOT_NAME);
-    if (!spot || seen.has(spot)) {
-      continue;
-    }
-    spot.visible = enabled;
-    if (enabled) {
-      spot.intensity = SPOT_INTENSITY;
-    }
-  }
-}
-
-/** Attach / retune spots, detach to world roots, strip fake pool discs. */
+/**
+ * One-time / startup: strip legacy pool meshes, create missing spots if needed,
+ * then detach every spot to the world. Safe to call again — existing spots are
+ * not retuned or toggled.
+ */
 export function refreshStreetLampGroundLights(
   world: ENGINE.World | null | undefined,
 ): number {
@@ -214,17 +180,14 @@ export function refreshStreetLampGroundLights(
     return 0;
   }
 
-  let count = 0;
   for (const lamp of world.getNodes(ENGINE.ModelMeshNode)) {
     if (!STREET_LAMP_NAME.test(lamp.name ?? '')) {
       continue;
     }
     removeLegacyOverlays(lamp);
-    ensureSpot(lamp);
-    count += 1;
+    ensureSpotExists(lamp);
   }
-  detachStreetLampSpotsToWorld(world);
-  return count;
+  return detachStreetLampSpotsToWorld(world);
 }
 
 @ENGINE.GameClass()
@@ -250,7 +213,8 @@ export class StreetLampGroundLightsSystem extends ENGINE.SceneNode {
     if (!super.beginPlay()) {
       return false;
     }
-    refreshStreetLampGroundLights(this.getWorld());
+    // Detach only — never toggle spots during play / day reset.
+    detachStreetLampSpotsToWorld(this.getWorld());
     return true;
   }
 }

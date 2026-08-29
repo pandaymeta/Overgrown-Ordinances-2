@@ -13,6 +13,13 @@ const PROMPT_RANGE = 3;
 const PROMPT_ABOVE_MODEL = 0.12;
 const PROMPT_KEY_SIZE_PX = 42;
 const PROMPT_LABEL_SIZE_PX = Math.round(PROMPT_KEY_SIZE_PX / 3);
+/** Match tutorial-keys breathe rate. */
+const PULSE_HZ = 0.4;
+/** Hint pulse after tutorial keys end (or until the axe is picked up). */
+const PULSE_HINT_DURATION_SEC = 5;
+const PULSE_OPACITY_MIN = 0;
+const PULSE_OPACITY_MAX = 1;
+const RING_IDLE_OPACITY = 0.9;
 
 /** Red ground guide + screen-space "E / Pick/Drop" prompt for the Axe. */
 @ENGINE.GameClass()
@@ -20,8 +27,17 @@ export class AxePickupRingSystem extends ENGINE.SceneNode {
   private axe: ENGINE.ModelMeshNode | null = null;
   private player: ThirdPersonPlayer | null = null;
   private ring: ENGINE.MeshNode | null = null;
+  /** Kept by reference — Genesys may wrap `.material`, so instanceof checks can miss. */
+  private ringMaterial: THREE.MeshBasicMaterial | null = null;
   private promptEl: HTMLDivElement | null = null;
+  /** True while the axe is currently held this day. */
   private pickedUp = false;
+  /** Once true for the play session, next-day resets never show the ring again. */
+  private everPickedUp = false;
+  /** Day-0 hides the ring; unlocked after the first next-day reset / axe hint. */
+  private guideUnlocked = false;
+  private pulseRemaining = 0;
+  private pulseElapsed = 0;
   private readonly axeBounds = new THREE.Box3();
   private readonly axeAnchor = new THREE.Vector3();
   private readonly playerWorldPos = new THREE.Vector3();
@@ -37,16 +53,17 @@ export class AxePickupRingSystem extends ENGINE.SceneNode {
       name: 'Axe Pickup Ring',
       ...options,
     });
+    this.ringMaterial = new THREE.MeshBasicMaterial({
+      color: 0xfacc15,
+      transparent: true,
+      opacity: RING_IDLE_OPACITY,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
     this.ring = ENGINE.MeshNode.create({
       name: 'Axe Pickup Ring Visual',
       geometry: new THREE.RingGeometry(INNER_RADIUS, OUTER_RADIUS, 40),
-      material: new THREE.MeshBasicMaterial({
-        color: 0xfacc15,
-        transparent: true,
-        opacity: 0.9,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-      }),
+      material: this.ringMaterial,
       castShadow: false,
       receiveShadow: false,
       physicsOptions: { enabled: false },
@@ -72,9 +89,17 @@ export class AxePickupRingSystem extends ENGINE.SceneNode {
     const world = this.getWorld();
     if (world) {
       this.pickedUp = false;
+      this.everPickedUp = false;
+      this.guideUnlocked = false;
+      this.pulseRemaining = 0;
+      this.pulseElapsed = 0;
       this.initializePreview(world);
       this.player = world.getNodes(ThirdPersonPlayer)[0] ?? null;
       this.ensurePromptUi(world);
+      // Day one: no ground ring — unlock after the first next day.
+      if (this.ring) {
+        this.ring.visible = false;
+      }
     }
     return true;
   }
@@ -85,43 +110,165 @@ export class AxePickupRingSystem extends ENGINE.SceneNode {
     }
     // Restore the preview ring when returning to editor mode.
     this.pickedUp = false;
+    this.everPickedUp = false;
+    this.guideUnlocked = false;
+    this.pulseRemaining = 0;
+    this.pulseElapsed = 0;
     this.player = null;
     if (this.ring) {
       this.ring.visible = true;
+      this.setRingOpacity(RING_IDLE_OPACITY);
     }
     this.destroyPromptUi();
     return true;
   }
 
-  public override tickPostPhysics(_deltaTime: number): void {
-    super.tickPostPhysics(_deltaTime);
-    this.updatePrompt();
+  public override tickPostPhysics(deltaTime: number): void {
+    super.tickPostPhysics(deltaTime);
+    if (this.player?.isMovementFrozen()) {
+      this.hidePrompt();
+    } else {
+      this.updatePrompt();
+    }
+    this.updatePulse(deltaTime);
     if (this.pickedUp || !this.ring || !this.axe) {
       return;
     }
     const world = this.getWorld();
     this.player ??= world?.getNodes(ThirdPersonPlayer)[0] ?? null;
     if (this.player?.isHoldingTool(this.axe)) {
-      this.pickedUp = true;
-      this.destroyRing();
+      this.markAxePickedUp();
     }
+  }
+
+  /** True after the axe has been equipped at least once this play session. */
+  public hasEverPickedUp(): boolean {
+    return this.everPickedUp;
+  }
+
+  /**
+   * Tutorial-keys-style opacity pulse for {@link PULSE_HINT_DURATION_SEC},
+   * or until the axe is picked up.
+   */
+  public playHint(): void {
+    if (this.everPickedUp || !this.ring) {
+      return;
+    }
+    this.guideUnlocked = true;
+    const world = this.getWorld();
+    if (world) {
+      this.initializePreview(world);
+    }
+    this.ring.visible = true;
+    this.ring.scale.setScalar(1);
+    this.pulseElapsed = 0;
+    this.pulseRemaining = PULSE_HINT_DURATION_SEC;
+    this.setRingOpacity(PULSE_OPACITY_MIN);
   }
 
   /** Show the ring again at the axe after a next-day reset (axe is put back). */
   public resetForNewDay(): void {
     this.pickedUp = false;
+    this.pulseRemaining = 0;
+    this.pulseElapsed = 0;
     const world = this.getWorld();
     if (!world) {
       return;
     }
     this.axe = null;
     this.player = world.getNodes(ThirdPersonPlayer)[0] ?? null;
-    this.initializePreview(world);
-    if (this.ring) {
-      this.ring.visible = true;
-    }
     this.hidePrompt();
     this.ensurePromptUi(world);
+    if (this.everPickedUp) {
+      // First pickup already happened — never guide the axe again.
+      if (this.ring) {
+        this.ring.visible = false;
+      }
+      return;
+    }
+    this.initializePreview(world);
+    if (this.ring) {
+      // Stay hidden until the axe-speech morning calls playHint().
+      this.ring.visible = this.guideUnlocked;
+      this.ring.scale.setScalar(1);
+      this.setRingOpacity(RING_IDLE_OPACITY);
+    }
+  }
+
+  private markAxePickedUp(): void {
+    this.pickedUp = true;
+    this.everPickedUp = true;
+    this.pulseRemaining = 0;
+    this.pulseElapsed = 0;
+    this.destroyRing();
+  }
+
+  private updatePulse(deltaTime: number): void {
+    if (this.pulseRemaining <= 0 || !this.ring) {
+      return;
+    }
+    this.pulseRemaining = Math.max(0, this.pulseRemaining - deltaTime);
+    this.pulseElapsed += deltaTime;
+    // Transparent → opaque → transparent (same envelope as tutorial keys).
+    const wave = 0.5 - 0.5 * Math.cos(this.pulseElapsed * Math.PI * 2 * PULSE_HZ);
+    this.setRingOpacity(
+      PULSE_OPACITY_MIN + wave * (PULSE_OPACITY_MAX - PULSE_OPACITY_MIN),
+    );
+    // Slight scale breathe so the pulse reads even if opacity writes are muted.
+    const scale = 0.92 + wave * 0.2;
+    this.ring.scale.setScalar(scale);
+    if (this.pulseRemaining <= 0 && !this.everPickedUp) {
+      this.setRingOpacity(RING_IDLE_OPACITY);
+      this.ring.scale.setScalar(1);
+    }
+  }
+
+  private setRingOpacity(opacity: number): void {
+    const apply = (material: THREE.Material | THREE.Material[] | null | undefined): void => {
+      if (!material) {
+        return;
+      }
+      const list = Array.isArray(material) ? material : [material];
+      for (const entry of list) {
+        if (!entry || typeof entry.opacity !== 'number') {
+          continue;
+        }
+        entry.transparent = true;
+        entry.opacity = opacity;
+        entry.needsUpdate = true;
+      }
+    };
+
+    if (this.ringMaterial) {
+      this.ringMaterial.transparent = true;
+      this.ringMaterial.opacity = opacity;
+      this.ringMaterial.needsUpdate = true;
+    }
+    apply(this.ring?.material as THREE.Material | THREE.Material[] | undefined);
+    this.ring?.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (mesh.isMesh) {
+        apply(mesh.material);
+      }
+    });
+  }
+
+  private applyVisualStyle(): void {
+    if (!this.ring) {
+      return;
+    }
+    this.ringMaterial = new THREE.MeshBasicMaterial({
+      color: 0xfacc15,
+      transparent: true,
+      opacity: RING_IDLE_OPACITY,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+    this.ring.geometry = new THREE.RingGeometry(INNER_RADIUS, OUTER_RADIUS, 40);
+    this.ring.material = this.ringMaterial;
+    this.ring.rotation.x = -Math.PI / 2;
+    this.ring.renderOrder = 850;
+    this.ring.scale.setScalar(1);
   }
 
   private ensurePromptUi(world: ENGINE.World): void {
@@ -273,27 +420,11 @@ export class AxePickupRingSystem extends ENGINE.SceneNode {
     prompt.style.top = `${y}px`;
   }
 
-  private applyVisualStyle(): void {
-    if (!this.ring) {
-      return;
-    }
-    this.ring.geometry = new THREE.RingGeometry(INNER_RADIUS, OUTER_RADIUS, 40);
-    this.ring.material = new THREE.MeshBasicMaterial({
-      color: 0xfacc15,
-      transparent: true,
-      opacity: 0.9,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    });
-    this.ring.rotation.x = -Math.PI / 2;
-    this.ring.renderOrder = 850;
-  }
-
   private initializePreview(world: ENGINE.World): void {
     this.axe ??= world.getNodes(ENGINE.ModelMeshNode).find(
       (node) => AXE_NAME.test(node.name ?? ''),
     ) ?? null;
-    if (this.axe && !this.pickedUp && this.ring) {
+    if (this.axe && !this.pickedUp && !this.everPickedUp && this.guideUnlocked && this.ring) {
       // The authored scene transform keeps this ring flush with the pavement.
       this.ring.visible = true;
     }

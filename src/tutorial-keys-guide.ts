@@ -107,6 +107,7 @@ export class TutorialKeysGuide extends ENGINE.SceneNode {
   private readonly materials: THREE.MeshBasicMaterial[] = [];
   private pulseRemaining = 0;
   private pulseElapsed = 0;
+  private onHintFinished: (() => void) | null = null;
   private materialsReady = false;
   private materialsPromise: Promise<void> | null = null;
 
@@ -166,14 +167,22 @@ export class TutorialKeysGuide extends ENGINE.SceneNode {
     );
     if (this.pulseRemaining <= 0) {
       this.setIconsVisible(false);
+      const finished = this.onHintFinished;
+      this.onHintFinished = null;
+      finished?.();
     }
   }
 
   /** Show keys, pulse, then hide after {@link PULSE_DURATION_SEC}. */
-  public playHint(): void {
-    void this.ensureMaterials().then(() => {
-      this.beginPulse();
-    });
+  public playHint(onFinished?: () => void): void {
+    this.onHintFinished = onFinished ?? null;
+    void this.ensureMaterials()
+      .catch(() => {
+        // Still run the pulse so downstream axe-ring hints are not blocked.
+      })
+      .then(() => {
+        this.beginPulse();
+      });
   }
 
   private beginPulse(): void {

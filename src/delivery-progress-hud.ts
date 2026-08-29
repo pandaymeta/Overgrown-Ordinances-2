@@ -14,18 +14,47 @@ import { GameSound, playSound } from './game-audio.js';
 import { ensureOvergrownAveriaFont } from './overgrown-averia-font.js';
 
 const INFO_TITLE = 'Overgrown Rules';
-const INFO_BODY =
-  `There were at least ${DELIVERY_WAY_GOAL} ways you can deliver the letter to mailbox without breaking an ordinance. Let's see how many you can find.`;
+/** Before the first ordinance — no checklist spoiler. */
+const INFO_BODY_EARLY =
+  'Just get this letter to the mailbox. The town looks quiet enough.';
+/** After the first sign — teach the joke, then the collector goal. */
+const INFO_BODY_AFTER =
+  `Every new route becomes a new rule overnight. There are at least ${DELIVERY_WAY_GOAL} ways to deliver without breaking an ordinance — how many can you find?`;
 const INFO_SIGNATURE = '-Entenium';
 const LIST_TITLE = 'Overgrown Ordinances';
 const LIST_EMPTY = 'No ordinances broken yet. Keep exploring.';
 const COMPLETION_TITLE = 'Congratulations!';
 const COMPLETION_BODY =
-  `You just created ${DELIVERY_WAY_GOAL} ordinances! However, that’s only half of them. Can you find the remaining ways?`;
-const MYSTERY_MESSAGE = 'We don\'t know how you deliver it. You won!';
+  `You just posted ${DELIVERY_WAY_GOAL} new ordinances. That's only half of them — keep going, or open the letter.`;
+const MYSTERY_TITLE = 'No sign for that.';
+const MYSTERY_BODY =
+  'You found a way the town has no ordinance for. Yet.';
 const COMPLETION_CONTINUE = 'Continue Playing';
-const COMPLETION_VICTORY = 'Victory';
+const COMPLETION_VICTORY = 'Open the letter';
+const VICTORY_LETTER_TITLE = 'The letter';
+const VICTORY_LETTER_BODY =
+  'Too many signs on these streets.\nSomeone should do something.';
+const VICTORY_LETTER_FROM = '— A concerned resident';
+const VICTORY_PUNCHLINE_PREFIX = 'You created ';
+const VICTORY_PUNCHLINE_SUFFIX = ' more.';
 const VICTORY_THANKS = 'Thanks for playing.';
+
+/** Painterly grit — kept very light so cards stay clean, not muddy. */
+const PAPER_GRAIN_PATH = '@project/assets/textures/style/painterly-brush-detail-v1.png';
+/** Fine fiber fallback (low contrast). */
+const PAPER_FIBER_SVG =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.42 0 0 0 0 0.38 0 0 0 0 0.32 0 0 0 0.12 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
+/** Axis-aligned back sheet that peeks as the outline. */
+const PAPER_BACK = '#6a6560';
+/** Cream front sheet (no border). */
+const PAPER_CREAM = '#f7f3eb';
+/** Shared title / body / signature ink — never darker on headings. */
+const PAPER_TEXT = '#6b6560';
+/** Back sheet peek under the flat front (right + down). */
+const PAPER_BACK_OFFSET_X_PX = 8;
+const PAPER_BACK_OFFSET_Y_PX = 8;
+/** Dim scrim behind info / ordinances / choice / letter HUD (not loading). */
+const HUD_SCRIM = 'rgba(244,241,234,0.90)';
 
 /** Summer Afternoon–inspired left HUD + tip / ordinance list panels. */
 @ENGINE.GameClass()
@@ -40,6 +69,8 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
   private completionShown = false;
   private mysteryWinShown = false;
   private victoryEndScreen: HTMLDivElement | null = null;
+  /** Resolved `url("…")` for the paper grain overlay (or SVG fallback). */
+  private paperGrainCssUrl = PAPER_FIBER_SVG;
 
   constructor() {
     super();
@@ -77,6 +108,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       return;
     }
     await ensureOvergrownAveriaFont();
+    await this.resolvePaperGrainUrl();
 
     const root = document.createElement('div');
     root.setAttribute('aria-label', 'Delivery progress');
@@ -127,6 +159,167 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     this.refreshCount();
   }
 
+  private async resolvePaperGrainUrl(): Promise<void> {
+    try {
+      const resolved = await ENGINE.resolveAssetPathsInText(`url("${PAPER_GRAIN_PATH}")`);
+      if (resolved.includes('url(') && !resolved.includes(PAPER_GRAIN_PATH)) {
+        this.paperGrainCssUrl = resolved;
+      }
+    } catch {
+      this.paperGrainCssUrl = PAPER_FIBER_SVG;
+    }
+  }
+
+  /**
+   * Two-sheet paper: flat cream front, dark back sheet offset right + down.
+   * Returns the front face — append titles/body there.
+   */
+  private createPaperStack(options?: {
+    width?: string;
+    large?: boolean;
+    padding?: string;
+  }): { stack: HTMLDivElement; panel: HTMLDivElement } {
+    const large = options?.large === true;
+    const stack = document.createElement('div');
+    stack.style.cssText = [
+      'position:relative',
+      `width:${options?.width ?? 'min(540px,90vw)'}`,
+      'pointer-events:auto',
+    ].join(';');
+
+    const back = document.createElement('div');
+    back.setAttribute('data-paper-back', '');
+    back.setAttribute('aria-hidden', 'true');
+    back.style.cssText = [
+      'position:absolute',
+      'inset:0',
+      `background:${PAPER_BACK}`,
+      'border:none',
+      'border-radius:2px',
+      'box-shadow:6px 10px 26px rgba(40,36,30,0.16)',
+      'z-index:0',
+    ].join(';');
+
+    const panel = document.createElement('div');
+    panel.style.cssText = [
+      'position:relative',
+      'z-index:1',
+      `padding:${options?.padding ?? '30px 34px 32px'}`,
+      `background:${PAPER_CREAM}`,
+      'border:none',
+      'border-radius:2px',
+      'outline:none',
+      'box-shadow:none',
+      'transform:none',
+    ].join(';');
+    this.applyPaperFrontSurface(panel, { large });
+
+    stack.appendChild(back);
+    stack.appendChild(panel);
+    requestAnimationFrame(() => this.syncPaperBackToFront(stack, panel, back));
+    return { stack, panel };
+  }
+
+  private syncPaperBackToFront(
+    stack: HTMLDivElement,
+    panel: HTMLDivElement,
+    back: HTMLDivElement,
+  ): void {
+    const width = panel.offsetWidth;
+    const height = panel.offsetHeight;
+    if (width <= 0 || height <= 0) {
+      return;
+    }
+    // Lock the front width — block layout would otherwise stretch it to fill the
+    // wider stack and hide the right-side back-sheet peek.
+    panel.style.width = `${width}px`;
+    panel.style.boxSizing = 'border-box';
+    stack.style.width = `${width + PAPER_BACK_OFFSET_X_PX}px`;
+    stack.style.paddingBottom = `${PAPER_BACK_OFFSET_Y_PX}px`;
+    stack.style.overflow = 'visible';
+    back.style.boxSizing = 'border-box';
+    back.style.width = `${width}px`;
+    back.style.height = `${height}px`;
+    back.style.inset = 'auto';
+    back.style.left = `${PAPER_BACK_OFFSET_X_PX}px`;
+    back.style.top = `${PAPER_BACK_OFFSET_Y_PX}px`;
+  }
+
+  /** Cream front only — grain, no outline stroke. */
+  private applyPaperFrontSurface(el: HTMLElement, options?: { large?: boolean }): void {
+    const large = options?.large === true;
+    el.style.overflow = 'hidden';
+    el.style.background = PAPER_CREAM;
+    el.style.border = 'none';
+    el.style.outline = 'none';
+
+    let grain = el.querySelector('[data-paper-grain]') as HTMLDivElement | null;
+    if (!grain) {
+      grain = document.createElement('div');
+      grain.setAttribute('data-paper-grain', '');
+      grain.setAttribute('aria-hidden', 'true');
+      el.insertBefore(grain, el.firstChild);
+    }
+    grain.style.cssText = [
+      'position:absolute',
+      'inset:0',
+      'pointer-events:none',
+      'z-index:0',
+      `background-image:${this.paperGrainCssUrl}`,
+      `background-size:${large ? '240px 240px' : '180px 180px'}`,
+      'background-repeat:repeat',
+      'opacity:0.14',
+      'mix-blend-mode:multiply',
+    ].join(';');
+  }
+
+  /** Keep titles/body/buttons above the absolute grain layer. */
+  private finalizePaperContent(el: HTMLElement): void {
+    const grain = el.querySelector('[data-paper-grain]');
+    Array.from(el.children).forEach((child) => {
+      if (child === grain) {
+        return;
+      }
+      const node = child as HTMLElement;
+      if (!node.style.position || node.style.position === 'static') {
+        node.style.position = 'relative';
+      }
+      node.style.zIndex = '1';
+    });
+    const stack = el.parentElement;
+    const back = stack?.querySelector('[data-paper-back]') as HTMLDivElement | null;
+    if (stack && back) {
+      requestAnimationFrame(() => this.syncPaperBackToFront(stack as HTMLDivElement, el as HTMLDivElement, back));
+    }
+  }
+
+  private createPaperCloseButton(): HTMLButtonElement {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Close');
+    btn.textContent = '×';
+    btn.style.cssText = [
+      'position:absolute',
+      'top:12px',
+      'right:12px',
+      'width:28px',
+      'height:28px',
+      'margin:0',
+      'padding:0',
+      'border:none',
+      'border-radius:2px',
+      `background:${PAPER_CREAM}`,
+      `color:${PAPER_TEXT}`,
+      'font:700 18px/1 "Overgrown Averia","Segoe UI",sans-serif',
+      'cursor:pointer',
+      'z-index:2',
+      // Flat face with a small dark sheet peek (same language as the main stack).
+      `box-shadow:${PAPER_BACK_OFFSET_X_PX / 2}px ${PAPER_BACK_OFFSET_Y_PX / 2}px 0 ${PAPER_BACK}`,
+      'transform:none',
+    ].join(';');
+    return btn;
+  }
+
   private createHudButton(label: string): HTMLButtonElement {
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -158,12 +351,13 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     }
     playSound(this.getWorld(), GameSound.UiOpen, 0.6);
     this.closeModals();
+    const broken = this.getFlow()?.getBrokenOrdinanceCount() ?? 0;
     const modal = this.createModalShell(INFO_TITLE);
     const body = document.createElement('p');
-    body.textContent = INFO_BODY;
+    body.textContent = broken > 0 ? INFO_BODY_AFTER : INFO_BODY_EARLY;
     body.style.cssText = [
       'margin:18px 0 0',
-      'color:#6b6560',
+      `color:${PAPER_TEXT}`,
       'font:700 20px/1.55 "Overgrown Averia","Segoe UI",sans-serif',
       'white-space:pre-wrap',
     ].join(';');
@@ -171,11 +365,12 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     signature.textContent = INFO_SIGNATURE;
     signature.style.cssText = [
       'margin:1.7em 0 0',
-      'color:#6b6560',
+      `color:${PAPER_TEXT}`,
       'font:700 20px/1.55 "Overgrown Averia","Segoe UI",sans-serif',
     ].join(';');
     modal.panel.appendChild(body);
     modal.panel.appendChild(signature);
+    this.finalizePaperContent(modal.panel);
     this.attachModal(modal.root);
     this.infoModal = modal.root;
   }
@@ -190,7 +385,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     const body = document.createElement('div');
     body.style.cssText = [
       'margin:18px 0 0',
-      'color:#6b6560',
+      `color:${PAPER_TEXT}`,
       'font:700 20px/1.55 "Overgrown Averia","Segoe UI",sans-serif',
       'max-height:min(52vh,420px)',
       'overflow:auto',
@@ -198,6 +393,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     modal.panel.appendChild(body);
     this.listBody = body;
     this.populateOrdinanceList();
+    this.finalizePaperContent(modal.panel);
     this.attachModal(modal.root);
     this.listModal = modal.root;
   }
@@ -241,7 +437,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       body.textContent = bodyText;
       body.style.cssText = [
         'margin:18px 0 0',
-        'color:#6b6560',
+        `color:${PAPER_TEXT}`,
         'font:700 20px/1.55 "Overgrown Averia","Segoe UI",sans-serif',
       ].join(';');
       modal.panel.appendChild(body);
@@ -271,6 +467,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     actions.appendChild(continueBtn);
     actions.appendChild(victoryBtn);
     modal.panel.appendChild(actions);
+    this.finalizePaperContent(modal.panel);
     this.attachModal(modal.root);
     this.choiceModal = modal.root;
   }
@@ -282,22 +479,31 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     btn.style.cssText = [
       'margin:0',
       'padding:12px 18px',
-      'border:1px solid #c8c2b8',
-      'border-radius:10px',
-      primary ? 'background:#6b6560' : 'background:transparent',
-      primary ? 'color:#f4f1ea' : 'color:#6b6560',
+      'border:none',
+      'border-radius:2px',
+      primary ? `background:${PAPER_BACK}` : `background:${PAPER_CREAM}`,
+      primary ? `color:${PAPER_CREAM}` : `color:${PAPER_TEXT}`,
       'font:700 18px/1.2 "Overgrown Averia","Segoe UI",sans-serif',
       'cursor:pointer',
       'pointer-events:auto',
+      primary
+        ? 'box-shadow:none'
+        : `box-shadow:${PAPER_BACK_OFFSET_X_PX / 2}px ${PAPER_BACK_OFFSET_Y_PX / 2}px 0 ${PAPER_BACK};transform:none`,
     ].join(';');
     return btn;
   }
 
   private onContinuePlaying(): void {
+    const flow = this.getFlow();
+    const mysteryContinue = flow?.isMysteryDeliveryWinReady() ?? false;
     this.choiceModal?.remove();
     this.choiceModal = null;
     this.mysteryWinShown = false;
-    this.getFlow()?.dismissCompletionOverlay();
+    if (mysteryContinue) {
+      flow?.continueMysteryIntoNextDay();
+      return;
+    }
+    flow?.dismissCompletionOverlay();
   }
 
   private onVictory(): void {
@@ -317,6 +523,10 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     if (!container) {
       return;
     }
+    const createdCount = Math.max(
+      this.getFlow()?.getBrokenOrdinanceCount() ?? 0,
+      DELIVERY_WAY_GOAL,
+    );
     const end = document.createElement('div');
     end.setAttribute('aria-label', 'Victory');
     end.style.cssText = [
@@ -326,20 +536,66 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       'display:flex',
       'align-items:center',
       'justify-content:center',
-      'background:#f4f1ea',
+      `background:${HUD_SCRIM}`,
       'pointer-events:auto',
       'font-family:"Overgrown Averia","Segoe UI Rounded","Segoe UI",sans-serif',
     ].join(';');
-    const message = document.createElement('p');
-    message.textContent = VICTORY_THANKS;
-    message.style.cssText = [
-      'margin:0',
-      'color:#6b6560',
-      'font:700 32px/1.3 "Overgrown Averia","Segoe UI",sans-serif',
-      'text-align:center',
-      'padding:24px',
+
+    const { stack, panel: card } = this.createPaperStack({
+      width: 'min(520px,90vw)',
+      large: true,
+      padding: '36px 40px 40px',
+    });
+
+    const title = document.createElement('h2');
+    title.textContent = VICTORY_LETTER_TITLE;
+    title.style.cssText = [
+      'margin:0 0 20px',
+      `color:${PAPER_TEXT}`,
+      'font:700 28px/1.2 "Overgrown Averia","Segoe UI",sans-serif',
     ].join(';');
-    end.appendChild(message);
+
+    const body = document.createElement('p');
+    body.textContent = VICTORY_LETTER_BODY;
+    body.style.cssText = [
+      'margin:0',
+      `color:${PAPER_TEXT}`,
+      'font:700 22px/1.55 "Overgrown Averia","Segoe UI",sans-serif',
+      'white-space:pre-wrap',
+    ].join(';');
+
+    const from = document.createElement('p');
+    from.textContent = VICTORY_LETTER_FROM;
+    from.style.cssText = [
+      'margin:22px 0 0',
+      `color:${PAPER_TEXT}`,
+      'font:700 20px/1.4 "Overgrown Averia","Segoe UI",sans-serif',
+    ].join(';');
+
+    const punchline = document.createElement('p');
+    punchline.textContent =
+      `${VICTORY_PUNCHLINE_PREFIX}${createdCount}${VICTORY_PUNCHLINE_SUFFIX}`;
+    punchline.style.cssText = [
+      'margin:36px 0 0',
+      `color:${PAPER_TEXT}`,
+      'font:700 22px/1.4 "Overgrown Averia","Segoe UI",sans-serif',
+    ].join(';');
+
+    const thanks = document.createElement('p');
+    thanks.textContent = VICTORY_THANKS;
+    thanks.style.cssText = [
+      'margin:10px 0 0',
+      `color:${PAPER_TEXT}`,
+      'font:700 20px/1.4 "Overgrown Averia","Segoe UI",sans-serif',
+    ].join(';');
+
+    card.appendChild(title);
+    card.appendChild(body);
+    card.appendChild(from);
+    card.appendChild(punchline);
+    card.appendChild(thanks);
+    this.finalizePaperContent(card);
+    end.appendChild(stack);
     container.appendChild(end);
     this.victoryEndScreen = end;
   }
@@ -360,7 +616,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       'display:flex',
       'align-items:center',
       'justify-content:center',
-      'background:rgba(255,253,248,0.7)',
+      `background:${HUD_SCRIM}`,
       'pointer-events:auto',
       'font-family:"Overgrown Averia","Segoe UI Rounded","Segoe UI",sans-serif',
     ].join(';');
@@ -368,47 +624,21 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       root.addEventListener('click', () => this.closeModals());
     }
 
-    const panel = document.createElement('div');
-    panel.style.cssText = [
-      'position:relative',
-      'width:min(540px,90vw)',
-      'padding:30px 34px 32px',
-      'border-radius:14px',
-      'background:#f4f1ea',
-      'box-shadow:0 10px 28px rgba(0,0,0,0.18)',
-      'pointer-events:auto',
-    ].join(';');
+    const { stack, panel } = this.createPaperStack();
     panel.addEventListener('click', (event) => event.stopPropagation());
+    stack.addEventListener('click', (event) => event.stopPropagation());
 
     const heading = document.createElement('h2');
     heading.textContent = title;
     heading.style.cssText = [
       dismissible ? 'margin:0 36px 0 0' : 'margin:0',
-      'color:#6b6560',
+      `color:${PAPER_TEXT}`,
       'font:700 32px/1.2 "Overgrown Averia","Segoe UI",sans-serif',
     ].join(';');
     panel.appendChild(heading);
 
     if (dismissible) {
-      const close = document.createElement('button');
-      close.type = 'button';
-      close.setAttribute('aria-label', 'Close');
-      close.textContent = '×';
-      close.style.cssText = [
-        'position:absolute',
-        'top:12px',
-        'right:12px',
-        'width:28px',
-        'height:28px',
-        'margin:0',
-        'padding:0',
-        'border:1px solid #c8c2b8',
-        'border-radius:6px',
-        'background:transparent',
-        'color:#8a847c',
-        'font:700 18px/1 "Overgrown Averia","Segoe UI",sans-serif',
-        'cursor:pointer',
-      ].join(';');
+      const close = this.createPaperCloseButton();
       close.addEventListener('click', (event) => {
         event.stopPropagation();
         playSound(this.getWorld(), GameSound.UiClose, 0.6);
@@ -417,7 +647,8 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       panel.appendChild(close);
     }
 
-    root.appendChild(panel);
+    root.appendChild(stack);
+    this.finalizePaperContent(panel);
     return { root, panel };
   }
 
@@ -458,7 +689,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       && flow?.isMysteryDeliveryWinReady()
     ) {
       this.mysteryWinShown = true;
-      this.openChoiceModal(MYSTERY_MESSAGE, '');
+      this.openChoiceModal(MYSTERY_TITLE, MYSTERY_BODY);
       return;
     }
 

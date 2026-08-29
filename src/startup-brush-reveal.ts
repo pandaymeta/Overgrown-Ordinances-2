@@ -1,7 +1,8 @@
 /**
- * Cream splash reveal (startup + next-day):
+ * Cream splash reveal (startup only):
  * Plays the authored transition as a spritesheet atlas (green keyed → cream).
  * Frame 0 is full cream cover; later frames open to the scene.
+ * Next-day / soft-loop day resets use a solid black CSS fade — not this splash.
  */
 
 import * as ENGINE from '@gnsx/genesys.js';
@@ -46,7 +47,7 @@ function finishReveal(): void {
 }
 
 /**
- * Replays the cream splash reveal (or starts it). Used for day transitions.
+ * Plays the cream splash (startup path). Not used for next-day / day reset.
  * Resolves when the cream cover has fully opened.
  */
 export async function playBrushReveal(
@@ -92,7 +93,7 @@ function sourceSize(source: CanvasImageSource): { width: number; height: number 
   return { width: FRAME_WIDTH * ATLAS_COLS, height: FRAME_HEIGHT * 6 };
 }
 
-/** Startup / day reveal: cream splash atlas matching transition.mp4. */
+/** Startup cream splash atlas matching transition.mp4. */
 @ENGINE.GameClass()
 export class StartupBrushRevealSystem extends ENGINE.SceneNode {
   private overlay: HTMLDivElement | null = null;
@@ -430,6 +431,11 @@ export class StartupBrushRevealSystem extends ENGINE.SceneNode {
     this.running = false;
     this.resolvePlayWaiters();
     if (completeReveal) {
+      // Drop startup cream from the container — play / day resets stay black.
+      const container = this.getWorld()?.gameContainer;
+      if (container) {
+        container.style.background = '#000000';
+      }
       finishReveal();
     }
   }

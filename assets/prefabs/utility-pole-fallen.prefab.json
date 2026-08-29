@@ -1,7 +1,7 @@
 {
   "$root": {
     "$bc": "ENGINE.Prefab",
-    "$uuid": "ecd0f68e57d682b9",
+    "$uuid": "cae62346cb342483",
     "rootNode": {
       "$bc": "ENGINE.SceneNode",
       "children": [
@@ -111,7 +111,7 @@
           "name": "Utility Pole Fallen Mesh",
           "nodeId": 48233,
           "physicsOptions": {
-            "collisionMeshType": "convexHull",
+            "collisionMeshType": "trimesh",
             "density": 1200,
             "motionType": "dynamic"
           },

@@ -65,16 +65,26 @@ import { GameSound, playOrdinanceStamp, playSound, startGoldenHourAudio } from '
 import { HoverSilhouette } from './hover-silhouette.js';
 import { ThirdPersonPlayer } from './player.js';
 import { ensureOvergrownAveriaFont } from './overgrown-averia-font.js';
+import { applyDirectionalShadowBudget } from './environment-art-direction.js';
+import {
+  beginSpawnPhysicsGrace,
+  INTRO_PHYSICS_HOLD_TICKS,
+  isRapierSimulationPaused,
+  releaseSpawnPhysicsGrace,
+  SPAWN_PHYSICS_HOLD_TICKS,
+} from './rapier-simulation-budget.js';
 import { ShophouseCameraOcclusionSystem } from './shophouse-camera-occlusion.js';
-import { playBrushReveal, waitForStartupBrushReveal } from './startup-brush-reveal.js';
-import { setStreetLampGroundLightsEnabled } from './street-lamp-ground-lights.js';
+import { applyOrdinanceSignSharpnessWhenRevealed, diagnoseVisibleMeshesMissingPosition, hideMissingPositionMeshesInWorld } from './ordinance-sign-sharpness.js';
+import { waitForStartupBrushReveal } from './startup-brush-reveal.js';
 import { TutorialKeysGuide } from './tutorial-keys-guide.js';
 
 /** Default spring-arm distance for gameplay and opening shot. */
 const DEFAULT_CAMERA_DISTANCE = 20;
+const AUTHORED_AXE_NAME = /^Axe$/i;
 /** Close-up cinematic distance in front of mailbox / ordinance models. */
 const MODEL_FOCUS_DISTANCE = 2.2;
-const SPEECH_DURATION_SEC = 3;
+/** Read hold after the typewriter finishes (intro + morning bubbles). */
+const SPEECH_READ_HOLD_SEC = 3.5;
 const ORDINANCE_FOCUS_SEC = 2;
 /** Hold after envelope finishes before fading to cream. */
 const DELIVERY_POST_INSERT_SEC = 0.55;
@@ -85,10 +95,48 @@ const CINEMATIC_BLEND_SEC = 1.15;
 /** Smooth blend from ordinance cinematic back to the player cam. */
 const CINEMATIC_RETURN_SEC = 2.8;
 const FADE_SEC = 0.85;
+const DAY_RESET_FADE_SEC = 0.4;
 const NEXT_DAY_LABEL_SEC = 2;
 const NEXT_DAY_TEXT = 'The Next Day...';
+/** Cream ink on the black day-transition overlay (label text only). */
+const NEXT_DAY_TEXT_CSS = '#f4f1ea';
+/** Day / next-day covers stay black — cream is startup-only. */
+const FADE_OVERLAY_CSS = '#000000';
+/** Behind the canvas after startup (never cream during play). */
+const PLAY_CONTAINER_BG_CSS = '#000000';
+/**
+ * GPU diagnosis: false keeps cutscene fade timing / HoldBlack staging identical
+ * but forces the CSS black cover fully transparent so you can see the scene.
+ * Set back to true after testing.
+ */
+const CUTSCENE_BLACK_FADE_VISIBLE = true;
+
+function cutsceneFadeOpacity(requested: number): number {
+  if (!CUTSCENE_BLACK_FADE_VISIBLE) {
+    return 0;
+  }
+  return Math.max(0, Math.min(1, requested));
+}
+/** Keep the black overlay fully opaque briefly before fading in. */
+const FADE_COVER_PRESENT_SEC = 0.12;
+/** Max time to drain scrap destroys under black before parking leftovers. */
+const FADE_COVER_SCRAP_MAX_WAIT_SEC = 5;
+/** Brief beat after "The Next Day..." finishes typing before we dismiss it. */
+const NEXT_DAY_LABEL_HOLD_SEC = 0.4;
 const TYPEWRITER_CHAR_INTERVAL_SEC = 0.055;
-const NEXT_DAY_PROMPT_DURATION_SEC = 3;
+/** Day-0 want — no ordinance spoiler. */
+const INTRO_SPEECH_TEXT = 'Just get this to the box.\nHow hard can it be?';
+/** Morning after the first ordinance sign is posted. */
+const MORNING_SPEECH_FIRST_SIGN =
+  'They closed the road overnight.\nFine. I\'ll find another way.';
+/** Second next-day — same morning the axe ring starts pulsing. */
+const MORNING_SPEECH_AXE =
+  'That axe near home might\nopen another path.';
+/** Third next-day. */
+const MORNING_SPEECH_THIRD_SIGN =
+  'They\'re posting signs faster\nthan I can walk.';
+/** Recurring morning line from the fourth next-day onward. */
+const MORNING_SPEECH_AGAIN = 'How do I deliver\nthis letter?';
 /** Goal shown on the left HUD counter (delivery / ordinance discovery ways). */
 export const DELIVERY_WAY_GOAL = 12;
 /** Solid road cue after first reveal or breaking active Maintenance / Jaywalking ordinances. */
@@ -639,24 +687,37 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private speechEl: HTMLDivElement | null = null;
   private fadeEl: HTMLDivElement | null = null;
   private nextDayEl: HTMLDivElement | null = null;
-  /** True once the next-day splash reveal has finished opening. */
-  private daySplashRevealDone = false;
-  private daySplashRevealStarted = false;
   /**
-   * Soft-loop / day-reset only: after ordinance focus, use cream wipe instead of
-   * camera zoom-out. Not used for delivery next-day transitions.
+   * Soft-loop / day-reset only: after ordinance focus, use a quick black fade
+   * instead of camera zoom-out. Not used for delivery next-day transitions.
    */
-  private creamReturnAfterOrdinanceFocus = false;
+  private blackReturnAfterOrdinanceFocus = false;
   /** Countdown after mailbox-latch before playing mail-deliver. */
   private mailDeliverSoundDelayRemaining = -1;
-  /** ZoomOutToPlay uses cream wipe (day-reset) vs cinematic blend (other returns). */
-  private zoomOutUsesCreamReveal = false;
+  /** ZoomOutToPlay uses black fade (day-reset) vs cinematic blend (other returns). */
+  private zoomOutUsesBlackFade = false;
   /** The player pressed movement while the focus camera was returning. */
   private cinematicReturnInterrupted = false;
-  /** Day-reset: finished fading the cream overlay to full opacity. */
-  private dayResetCreamFadedIn = false;
-  private dayResetCreamRevealStarted = false;
-  private dayResetCreamRevealDone = false;
+  /** Day-reset black fade: out then in. */
+  private dayResetFadePhase: 'toBlack' | 'coverPresent' | 'fromBlack' | null = null;
+  private dayResetFadeElapsed = 0;
+  /** FadeFromBlack: canvas is showing under a still-opaque overlay. */
+  private fadeUncoverArmed = false;
+  private fadeCoverPresentElapsed = 0;
+  private fadeUncoverElapsed = 0;
+  /** While uncover waits on deferred scrap destroy under the CSS black cover. */
+  private fadeCoverScrapWaitElapsed = 0;
+  /** After typewriter completes, keep the day card readable briefly. */
+  private nextDayLabelHoldElapsed = -1;
+  /**
+   * Re-clamp sun CSM for the first seconds of play. Scene deserialize / isSunLight
+   * can reset csmMaxFar→1000 and auto-raise shadowFar→2000 after our first apply.
+   */
+  private shadowBudgetReinforceRemaining = 180;
+  /** Defer movement unfreeze until post-release physics hold ticks drain. */
+  private movementUnfreezeAfterPhysicsHold = false;
+  /** Avoid re-arming physics hold every frame (was freezing Rapier for entire phases). */
+  private physicsGracePhase: FlowPhase | null = null;
   private trailGroup: THREE.Group | null = null;
   private readonly trailArrows: THREE.Mesh[] = [];
   private trailArrowTexture: THREE.Texture | null = null;
@@ -684,10 +745,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private modelMeshCacheTick = -1;
   private readonly mailboxPulseTint = new THREE.Color();
   private readonly mailboxPulseSoft = new THREE.Color(0xff7777);
-  private introSpeechText = 'How do I deliver this letter?';
   private speechTypingText = '';
   private speechTypingElapsed = 0;
   private speechAutoHideRemaining = 0;
+  /** Armed when the bubble opens; countdown starts once typing finishes. */
+  private speechPendingReadHoldSec = 0;
   /** Re-plant the pawn for a few frames while physics colliders finish waking. */
   private introSettleFramesRemaining = 0;
   private nextDayTypingElapsed = 0;
@@ -697,6 +759,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private showPromptAfterNextDayTransition = false;
   /** After the next-day speech bubble auto-hides, pulse the ground tutorial keys. */
   private pendingTutorialKeysAfterSpeech = false;
+  /** After tutorial keys finish, pulse the axe ring (if never picked up). */
+  private pendingAxeRingPulseAfterKeys = false;
   private outlineReady = false;
   private outlinePassEnabled = false;
   private mailboxHovered = false;
@@ -886,6 +950,19 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!super.beginPlay()) {
       return false;
     }
+    if (!CUTSCENE_BLACK_FADE_VISIBLE) {
+      console.warn(
+        '[MailDeliveryFlow] Cutscene black fade is transparent (CUTSCENE_BLACK_FADE_VISIBLE=false).',
+      );
+    }
+    const world = this.getWorld();
+    if (world) {
+      applyDirectionalShadowBudget(world);
+      this.shadowBudgetReinforceRemaining = 180;
+      world.getNodes(ShophouseCameraOcclusionSystem).forEach((system) => {
+        system.setPaused(true);
+      });
+    }
     void this.startFlow();
     return true;
   }
@@ -927,8 +1004,30 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     super.tickPrePhysics(deltaTime);
     this.lastPrePhysicsDeltaTime = Math.max(deltaTime, 1e-5);
     this.prePhysicsTickId += 1;
+    if (this.shadowBudgetReinforceRemaining > 0) {
+      applyDirectionalShadowBudget(this.getWorld());
+      this.shadowBudgetReinforceRemaining -= 1;
+    }
     if (this.phase === FlowPhase.Boot) {
       return;
+    }
+    if (this.shouldPausePhysicsForTransition()) {
+      if (this.physicsGracePhase !== this.phase) {
+        this.physicsGracePhase = this.phase;
+        beginSpawnPhysicsGrace(
+          SPAWN_PHYSICS_HOLD_TICKS,
+          this.shouldFullyPausePhysicsForTransition(),
+        );
+      }
+    } else {
+      this.physicsGracePhase = null;
+    }
+
+    if (this.movementUnfreezeAfterPhysicsHold && !isRapierSimulationPaused()) {
+      this.player?.settleOnGround();
+      this.player?.syncPhysicsBodyToPawn();
+      this.player?.setMovementFrozen(false);
+      this.movementUnfreezeAfterPhysicsHold = false;
     }
 
     const world = this.getWorld();
@@ -938,7 +1037,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (world && !this.speechEl) {
       this.ensureUi(world);
       if (this.phase === FlowPhase.IntroSpeech) {
-        this.showSpeechBubble(this.introSpeechText);
+        this.showSpeechBubble(INTRO_SPEECH_TEXT, SPEECH_READ_HOLD_SEC);
       }
     }
 
@@ -1136,14 +1235,6 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       case FlowPhase.IntroSpeech:
         this.player?.setMovementFrozen(true);
         this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
-        if (this.phaseElapsed >= SPEECH_DURATION_SEC) {
-          this.hideSpeechBubble();
-          this.playTutorialKeysHint();
-          this.setMailboxHighlight(true);
-          this.setTrailVisible(true);
-          this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
-          this.enterPlayableDay(false);
-        }
         break;
       case FlowPhase.ZoomOutReveal: {
         // Opening no longer uses a wide establishing shot; keep this phase as a
@@ -1203,17 +1294,16 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
             this.fadeAfterOrdinanceFocus = false;
             this.setFade(0);
             this.setPhase(FlowPhase.FadeToBlack);
-          } else if (this.creamReturnAfterOrdinanceFocus) {
-            // Soft-loop day reset: cream wipe (no cinematic zoom-out jitter).
-            this.creamReturnAfterOrdinanceFocus = false;
-            this.zoomOutUsesCreamReveal = true;
-            this.dayResetCreamRevealDone = false;
+          } else if (this.blackReturnAfterOrdinanceFocus) {
+            this.blackReturnAfterOrdinanceFocus = false;
+            this.zoomOutUsesBlackFade = true;
+            this.dayResetFadePhase = 'toBlack';
+            this.dayResetFadeElapsed = 0;
             this.stopModelFrontCinematic();
             this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
-            void this.beginDayResetCreamReturn();
             this.setPhase(FlowPhase.ZoomOutToPlay);
           } else {
-            this.zoomOutUsesCreamReveal = false;
+            this.zoomOutUsesBlackFade = false;
             this.beginCinematicReturnToPlayer();
             this.setPhase(FlowPhase.ZoomOutToPlay);
           }
@@ -1236,31 +1326,26 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         this.player?.setMovementFrozen(true);
         this.player?.forceIdlePose();
         this.setFade(1);
+        this.applyTransitionCoverBackground(true);
+        this.setRendererPresenting(true);
         this.tickDayTransitionStaging();
         if (this.isDayTransitionHoldComplete()) {
+          if (!this.isNextDayLabelDismissible(_deltaTime)) {
+            break;
+          }
           this.showNextDayLabel(false);
           this.pendingOrdinance = null;
           this.player?.forceIdlePose();
           this.player?.setAllowDeferredDestroys(false);
-          this.daySplashRevealDone = false;
-          this.daySplashRevealStarted = false;
           this.setPhase(FlowPhase.FadeFromBlack);
         }
         break;
       case FlowPhase.FadeFromBlack: {
         this.player?.setMovementFrozen(true);
         this.player?.forceIdlePose();
+        this.player?.setAllowDeferredDestroys(false);
         this.showNextDayLabel(false);
-        // Keep the ordinary cream fade only until the brush overlay has painted
-        // its own cover.  Re-applying setFade(1) on later ticks would leave an
-        // opaque cream layer underneath the transparent brush strokes.
-        if (!this.daySplashRevealStarted) {
-          this.setFade(1);
-          this.daySplashRevealStarted = true;
-          void this.beginDaySplashReveal();
-        }
-        if (this.daySplashRevealDone) {
-          this.setFade(0);
+        if (this.tickCoveredCanvasReveal(_deltaTime, FADE_SEC)) {
           this.player?.forceIdlePose();
           this.continueAfterDayReveal();
         }
@@ -1271,14 +1356,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         this.finishNextDayIntoPlayable();
         break;
       case FlowPhase.ZoomOutToPlay:
-        if (this.zoomOutUsesCreamReveal) {
-          this.player?.setMovementFrozen(true);
-          this.player?.forceIdlePose();
-          if (this.dayResetCreamRevealDone) {
-            this.zoomOutUsesCreamReveal = false;
-            this.finishNextDayIntoPlayable(true);
-            this.beginPendingRoadHighlight();
-          }
+        if (this.zoomOutUsesBlackFade) {
+          this.tickDayResetBlackFade(_deltaTime);
           break;
         }
         if (this.player?.hasMovementInput()) {
@@ -1313,10 +1392,31 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.resetDayTransitionStaging();
       this.beginGpuSafeTransition();
       this.hideEnvelopeForGpu();
-      setStreetLampGroundLightsEnabled(this.getWorld(), false);
     }
     this.phase = phase;
     this.phaseElapsed = 0;
+    this.diagnoseMissingPositionMeshes(phase);
+  }
+
+  /** Correlate THREE.AttributeNode warnings with scene objects during cinematics. */
+  private diagnoseMissingPositionMeshes(phase: FlowPhase): void {
+    switch (phase) {
+      case FlowPhase.DeliveryFocus:
+      case FlowPhase.FadeToBlack:
+      case FlowPhase.HoldBlack:
+      case FlowPhase.FadeFromBlack:
+      case FlowPhase.OrdinanceFocus:
+      case FlowPhase.ZoomOutToPlay:
+        break;
+      default:
+        return;
+    }
+    const world = this.getWorld();
+    if (!world) {
+      return;
+    }
+    hideMissingPositionMeshesInWorld(world, phase);
+    diagnoseVisibleMeshesMissingPosition(world, phase);
   }
 
   private beginIntroSpeech(): void {
@@ -1325,7 +1425,25 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.player?.setCinematicCameraLock(true);
     this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
     this.setPhase(FlowPhase.IntroSpeech);
-    this.showSpeechBubble(this.introSpeechText);
+    this.showSpeechBubble(INTRO_SPEECH_TEXT, SPEECH_READ_HOLD_SEC);
+  }
+
+  /** Escalating morning thoughts — one bubble per next-day. */
+  private getMorningSpeechText(): string {
+    const signs = this.brokenOrdinanceOrder.length;
+    if (signs <= 0) {
+      return INTRO_SPEECH_TEXT;
+    }
+    if (signs === 1) {
+      return MORNING_SPEECH_FIRST_SIGN;
+    }
+    if (signs === 2) {
+      return MORNING_SPEECH_AXE;
+    }
+    if (signs === 3) {
+      return MORNING_SPEECH_THIRD_SIGN;
+    }
+    return MORNING_SPEECH_AGAIN;
   }
 
   /** Freeze + teleport home + plant on asphalt before the opening shot. */
@@ -1335,7 +1453,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     this.player.setMovementFrozen(true);
     this.player.teleportToPlayerStartAndSettle();
-    this.introSettleFramesRemaining = Math.max(this.introSettleFramesRemaining, 12);
+    this.introSettleFramesRemaining = Math.max(this.introSettleFramesRemaining, 24);
+    beginSpawnPhysicsGrace(INTRO_PHYSICS_HOLD_TICKS, false);
   }
 
   private enterPlayableDay(resetPathUsage: boolean, preserveCurrentCamera = false): void {
@@ -1392,11 +1511,14 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.setTrailVisible(true);
     this.player?.setMailEnvelopeCarried(true);
     this.player?.setMailDeliveryClickHandler(() => this.tryDeliverByClick());
+    this.player?.settleOnGround();
+    this.player?.syncPhysicsBodyToPawn();
     this.player?.forceIdlePose();
-    this.player?.setMovementFrozen(false);
     this.player?.setCinematicCameraLock(false);
+    releaseSpawnPhysicsGrace(SPAWN_PHYSICS_HOLD_TICKS);
+    this.movementUnfreezeAfterPhysicsHold = true;
     this.endGpuSafeTransition();
-    // Physics settle after GPU throttle lifts — not under black/brush.
+    // Physics settle after GPU throttle lifts — not under black fade.
     this.baselineReinforceRemaining = Math.max(this.baselineReinforceRemaining, 10);
     if (!preserveCurrentCamera) {
       this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
@@ -2011,6 +2133,26 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (paused) {
       this.player?.forceIdlePose();
     }
+  }
+
+  /**
+   * "No sign for that" → Continue Playing advances into the next-day transition
+   * (no new ordinance board; morning speech still plays).
+   */
+  public continueMysteryIntoNextDay(): void {
+    this.mysteryDeliveryWinPending = false;
+    this.mysteryDeliveryWinReady = false;
+    this.setCompletionInteractionPaused(true);
+    this.stopModelFrontCinematic();
+    this.hideEnvelopeForGpu();
+    this.player?.setMailEnvelopeCarried(false);
+    this.setTrailVisible(false);
+    this.setMailboxHighlight(false);
+    this.setMailboxHoverOutline(false);
+    this.showPromptAfterNextDayTransition = true;
+    this.pendingOrdinance = null;
+    this.setFade(0);
+    this.setPhase(FlowPhase.FadeToBlack);
   }
 
   /**
@@ -2715,12 +2857,14 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       active.getWorldQuaternion(this.cinematicStartQuat);
     }
 
-    this.player?.prepareForDayReset();
+    this.player?.releaseHeldItemsForDayReset();
+    this.player?.parkScrapForDayReset();
+    this.player?.finishDayResetRest();
     this.restoreDayBaseline();
     this.baselineReinforceRemaining = 10;
     this.player?.teleportToPlayerStartAndSettle();
-    // Soft-loop day reset: cream wipe back to play (not the dizzy cinematic zoom-out).
-    this.creamReturnAfterOrdinanceFocus = true;
+    // Soft-loop day reset: black fade back to play (not the dizzy cinematic zoom-out).
+    this.blackReturnAfterOrdinanceFocus = true;
     // Keep orbit camera where it was for this frame; cinematic owns the view next.
     this.beginOrdinanceFocus({
       fadeToNextDayAfter: false,
@@ -6266,6 +6410,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       child.visible = visible;
     });
 
+    if (visible && node instanceof ENGINE.ModelMeshNode) {
+      applyOrdinanceSignSharpnessWhenRevealed(node);
+    }
+
     // Host-mounted ordinance boards — nested physics crashes Rapier. Keep visual-only.
     if (
       DONT_CUT_THIS_POLE_ANY_NAME.test(node.name ?? '')
@@ -6800,8 +6948,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       el.style.cssText = [
         'position:absolute',
         'inset:0',
-        // Match the loading/reveal palette so day changes begin on cream.
-        'background:#f4f1ea',
+        // Day transitions use a solid black cover (no cream brush splash).
+        `background:${CUTSCENE_BLACK_FADE_VISIBLE ? FADE_OVERLAY_CSS : 'transparent'}`,
         'opacity:0',
         'pointer-events:none',
         'z-index:2100',
@@ -6819,8 +6967,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         'left:50%',
         'top:50%',
         'transform:translate(-50%, -50%)',
-        // Match the dark ink colour used by the HUD information icon.
-        'color:#4a463f',
+        // Cream on black so the day card stays readable.
+        `color:${NEXT_DAY_TEXT_CSS}`,
         'font:700 42px/1.2 "Overgrown Averia","Segoe UI Rounded","Segoe UI",sans-serif',
         'letter-spacing:0.01em',
         'pointer-events:none',
@@ -6837,43 +6985,137 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     return true;
   }
 
-  private async beginDaySplashReveal(): Promise<void> {
-    const world = this.getWorld();
-    // Stop MeshNode.destroy while the brush + 3D scene share the GPU.
-    this.player?.setAllowDeferredDestroys(false);
-    try {
-      await playBrushReveal(world, {
-        holdMs: 200,
-        revealMs: 1600,
-        // Drop the CSS cream as soon as the brush atlas paints its own cover,
-        // otherwise the opaque fade hides the splash transition.
-        onCoverReady: () => this.setFade(0),
-      });
-    } catch (error) {
-      console.warn('[MailDeliveryFlow] Day splash reveal failed; continuing.', error);
-      this.setFade(0);
+  /**
+   * Soft-loop / next-day fade back in: keep the overlay fully black, then fade
+   * it. The WebGPU canvas stays presenting — hiding it is what turns a lost
+   * device into a white screen.
+   */
+  private tickCoveredCanvasReveal(deltaTime: number, fadeSec: number): boolean {
+    this.setFade(1);
+    this.applyTransitionCoverBackground(true);
+    this.setRendererPresenting(true);
+
+    if (this.player?.hasPendingScrapDestroys()) {
+      this.player.setAllowDeferredDestroys(true);
+      if (this.fadeCoverScrapWaitElapsed < FADE_COVER_SCRAP_MAX_WAIT_SEC) {
+        this.fadeCoverScrapWaitElapsed += deltaTime;
+        this.fadeUncoverArmed = false;
+        this.fadeCoverPresentElapsed = 0;
+        return false;
+      }
+      this.player.parkPendingScrapDestroys();
+      this.fadeCoverScrapWaitElapsed = 0;
+    } else {
+      this.fadeCoverScrapWaitElapsed = 0;
     }
-    this.daySplashRevealDone = true;
+
+    if (!this.fadeUncoverArmed) {
+      this.fadeCoverPresentElapsed += deltaTime;
+      if (this.fadeCoverPresentElapsed < FADE_COVER_PRESENT_SEC) {
+        return false;
+      }
+      this.fadeUncoverArmed = true;
+      this.fadeUncoverElapsed = 0;
+      return false;
+    }
+    this.fadeUncoverElapsed += deltaTime;
+    const t = Math.min(1, this.fadeUncoverElapsed / fadeSec);
+    this.setFade(1 - t);
+    return t >= 1;
   }
 
   /**
-   * Day-reset soft-loop: after cream fade-in + 20m cam snap, open with the same
-   * splash atlas used for "The Next Day...".
+   * Soft-loop day reset: fade to black, snap gameplay cam, fade back to the scene.
    */
-  private async beginDayResetCreamReturn(): Promise<void> {
-    const world = this.getWorld();
-    this.player?.setAllowDeferredDestroys(false);
-    try {
-      await playBrushReveal(world, {
-        holdMs: 200,
-        revealMs: 1600,
-        onCoverReady: () => this.setFade(0),
-      });
-    } catch (error) {
-      console.warn('[MailDeliveryFlow] Day-reset cream return failed; continuing.', error);
-      this.setFade(0);
+  private tickDayResetBlackFade(deltaTime: number): void {
+    this.player?.setMovementFrozen(true);
+    this.player?.forceIdlePose();
+    this.dayResetFadeElapsed += deltaTime;
+    this.setRendererPresenting(true);
+
+    if (this.dayResetFadePhase === 'toBlack') {
+      const t = Math.min(1, this.dayResetFadeElapsed / DAY_RESET_FADE_SEC);
+      this.setFade(t);
+      if (t < 1) {
+        return;
+      }
+      this.setFade(1);
+      this.stopModelFrontCinematic();
+      this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+      this.dayResetFadePhase = 'coverPresent';
+      this.dayResetFadeElapsed = 0;
+      this.fadeUncoverArmed = false;
+      this.fadeCoverPresentElapsed = 0;
+      return;
     }
-    this.dayResetCreamRevealDone = true;
+
+    if (this.dayResetFadePhase === 'coverPresent' || this.dayResetFadePhase === 'fromBlack') {
+      if (this.dayResetFadePhase === 'coverPresent') {
+        this.dayResetFadePhase = 'fromBlack';
+        this.dayResetFadeElapsed = 0;
+      }
+      if (!this.tickCoveredCanvasReveal(deltaTime, DAY_RESET_FADE_SEC)) {
+        return;
+      }
+      this.setFade(0);
+      this.dayResetFadePhase = null;
+      this.zoomOutUsesBlackFade = false;
+      this.fadeUncoverArmed = false;
+      this.finishNextDayIntoPlayable(true);
+      this.beginPendingRoadHighlight();
+    }
+  }
+
+  private setRendererPresenting(_presenting: boolean): void {
+    const canvas = this.getWorld()?.getRenderer()?.domElement;
+    if (!canvas) {
+      return;
+    }
+    canvas.style.visibility = 'visible';
+    if (!canvas.style.position || canvas.style.position === 'static') {
+      canvas.style.position = 'relative';
+    }
+    canvas.style.zIndex = '1';
+  }
+
+  /** Keep the play container black — cream belongs only to the startup splash. */
+  private applyTransitionCoverBackground(covered: boolean): void {
+    const container = this.getWorld()?.gameContainer;
+    if (!container) {
+      return;
+    }
+    if (!CUTSCENE_BLACK_FADE_VISIBLE) {
+      container.style.background = 'transparent';
+    } else {
+      container.style.background = covered ? FADE_OVERLAY_CSS : PLAY_CONTAINER_BG_CSS;
+    }
+    if (!covered) {
+      return;
+    }
+    container.style.isolation = 'isolate';
+    if (this.fadeEl) {
+      this.fadeEl.style.zIndex = '2100';
+    }
+    if (this.nextDayEl && this.nextDayEl.style.display !== 'none') {
+      this.nextDayEl.style.zIndex = '2200';
+      container.appendChild(this.nextDayEl);
+    }
+  }
+
+  /** True once the day card has finished typing and a short read hold. */
+  private isNextDayLabelDismissible(deltaTime: number): boolean {
+    if (!this.nextDayEl || this.nextDayEl.style.display === 'none') {
+      return true;
+    }
+    if (this.nextDayTypingActive) {
+      this.nextDayLabelHoldElapsed = -1;
+      return false;
+    }
+    if (this.nextDayLabelHoldElapsed < 0) {
+      this.nextDayLabelHoldElapsed = 0;
+    }
+    this.nextDayLabelHoldElapsed += deltaTime;
+    return this.nextDayLabelHoldElapsed >= NEXT_DAY_LABEL_HOLD_SEC;
   }
 
   /** Resume the GitHub-style post-day fade once the new ordinance is visible. */
@@ -6932,7 +7174,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
    * HUD element.  The timer is optional because the opening prompt remains up
    * for the existing intro phase, while later-day prompts dismiss themselves.
    */
-  private showSpeechBubble(text: string, autoHideSeconds = 0): void {
+  private showSpeechBubble(text: string, readHoldSeconds = 0): void {
     const world = this.getWorld();
     if (!this.speechEl && world) {
       this.ensureUi(world);
@@ -6948,12 +7190,43 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     this.speechTypingText = text;
     this.speechTypingElapsed = 0;
-    this.speechAutoHideRemaining = autoHideSeconds;
+    this.speechAutoHideRemaining = 0;
+    this.speechPendingReadHoldSec = readHoldSeconds;
     this.speechEl.style.display = 'block';
     this.speechEl.style.left = '50%';
     this.speechEl.style.top = '18%';
     this.player?.setMailEnvelopeHighlightPulsing(true);
     this.updateSpeechBubblePosition();
+    if (text.length === 0) {
+      this.armSpeechReadHoldIfPending();
+    }
+  }
+
+  /** Start the post-typewriter read hold once the full line is visible. */
+  private armSpeechReadHoldIfPending(): void {
+    if (this.speechPendingReadHoldSec <= 0 || this.speechAutoHideRemaining > 0) {
+      return;
+    }
+    this.speechAutoHideRemaining = this.speechPendingReadHoldSec;
+    this.speechPendingReadHoldSec = 0;
+  }
+
+  private handleSpeechBubbleAutoDismiss(): void {
+    if (this.phase === FlowPhase.IntroSpeech) {
+      this.playTutorialKeysHint();
+      this.setMailboxHighlight(true);
+      this.setTrailVisible(true);
+      this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+      this.enterPlayableDay(false);
+      return;
+    }
+    const showTutorialKeys = this.pendingTutorialKeysAfterSpeech;
+    if (showTutorialKeys) {
+      this.pendingTutorialKeysAfterSpeech = false;
+      this.playTutorialKeysHint();
+    } else {
+      this.playPendingAxeRingAfterKeys();
+    }
   }
 
   private hideSpeechBubble(): void {
@@ -6963,6 +7236,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.speechTypingText = '';
     this.speechTypingElapsed = 0;
     this.speechAutoHideRemaining = 0;
+    this.speechPendingReadHoldSec = 0;
     this.player?.setMailEnvelopeHighlightPulsing(false);
   }
 
@@ -6984,18 +7258,15 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       }
       if (characterCount >= this.speechTypingText.length) {
         this.speechTypingText = '';
+        this.armSpeechReadHoldIfPending();
       }
     }
 
     if (speechEl && speechEl.style.display !== 'none' && this.speechAutoHideRemaining > 0) {
       this.speechAutoHideRemaining = Math.max(0, this.speechAutoHideRemaining - deltaTime);
       if (this.speechAutoHideRemaining === 0) {
-        const showTutorialKeys = this.pendingTutorialKeysAfterSpeech;
-        this.pendingTutorialKeysAfterSpeech = false;
         this.hideSpeechBubble();
-        if (showTutorialKeys) {
-          this.playTutorialKeysHint();
-        }
+        this.handleSpeechBubbleAutoDismiss();
       }
     }
 
@@ -7072,7 +7343,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
   private setFade(opacity: number): void {
     if (this.fadeEl) {
-      this.fadeEl.style.opacity = String(Math.max(0, Math.min(1, opacity)));
+      this.fadeEl.style.opacity = String(cutsceneFadeOpacity(opacity));
     }
   }
 
@@ -7086,11 +7357,13 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.nextDayTypingElapsed = 0;
       this.nextDayTypingActive = true;
       this.nextDayTypedCount = 0;
+      this.nextDayLabelHoldElapsed = -1;
       playSound(this.getWorld(), GameSound.NextDaySting, 0.7);
     } else {
       this.nextDayTypingElapsed = 0;
       this.nextDayTypingActive = false;
       this.nextDayTypedCount = 0;
+      this.nextDayLabelHoldElapsed = -1;
     }
   }
 
@@ -7101,13 +7374,42 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
     this.showPromptAfterNextDayTransition = false;
-    this.pendingTutorialKeysAfterSpeech = true;
-    this.showSpeechBubble(this.introSpeechText, NEXT_DAY_PROMPT_DURATION_SEC);
+    this.pendingTutorialKeysAfterSpeech = false;
+    const axeRing = this.getWorld()?.getNodes(AxePickupRingSystem)[0] ?? null;
+    const signs = this.brokenOrdinanceOrder.length;
+    // Axe line + ring pulse are the second next-day only, and only if unused.
+    this.pendingAxeRingPulseAfterKeys =
+      signs === 2
+      && !(axeRing?.hasEverPickedUp() ?? false);
+    this.showSpeechBubble(this.getMorningSpeechText(), SPEECH_READ_HOLD_SEC);
   }
 
   private playTutorialKeysHint(): void {
     const guide = this.getWorld()?.getNodes(TutorialKeysGuide)[0];
-    guide?.playHint();
+    if (!guide) {
+      this.playPendingAxeRingAfterKeys();
+      return;
+    }
+    let finished = false;
+    const afterKeys = (): void => {
+      if (finished) {
+        return;
+      }
+      finished = true;
+      this.playPendingAxeRingAfterKeys();
+    };
+    guide.playHint(afterKeys);
+    // Backup if the guide callback never fires (materials hang, etc.).
+    globalThis.setTimeout(afterKeys, 8000);
+  }
+
+  private playPendingAxeRingAfterKeys(): void {
+    if (!this.pendingAxeRingPulseAfterKeys) {
+      return;
+    }
+    this.pendingAxeRingPulseAfterKeys = false;
+    const ring = this.getWorld()?.getNodes(AxePickupRingSystem)[0];
+    ring?.playHint();
   }
 
   private teardownUi(): void {
@@ -7135,6 +7437,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.hideEnvelopeForGpu();
     this.stopModelFrontCinematic();
     this.player?.releaseHeldItemsForDayReset();
+    this.restoreAuthoredAxeToBaseline();
     this.player?.prepareScrapForCinematic();
     this.player?.setMovementFrozen(true);
     this.player?.teleportToPlayerStartAndSettle();
@@ -7166,12 +7469,27 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       || this.phase === FlowPhase.HoldBlack
       || this.phase === FlowPhase.FadeFromBlack
       || this.phase === FlowPhase.OrdinanceFocus
-      || this.phase === FlowPhase.ZoomOutToPlay;
+      || (this.phase === FlowPhase.ZoomOutToPlay && this.zoomOutUsesBlackFade);
+  }
+
+  /** Keep Rapier off during spawn intro and black-screen day transitions. */
+  private shouldPausePhysicsForTransition(): boolean {
+    return this.phase === FlowPhase.IntroSpeech
+      || this.phase === FlowPhase.FadeToBlack
+      || this.phase === FlowPhase.HoldBlack
+      || this.phase === FlowPhase.FadeFromBlack
+      || (this.phase === FlowPhase.ZoomOutToPlay && this.zoomOutUsesBlackFade);
+  }
+
+  /** Full Rapier pause — black-screen transitions only (not intro speech). */
+  private shouldFullyPausePhysicsForTransition(): boolean {
+    return this.phase !== FlowPhase.IntroSpeech;
   }
 
   /**
    * Cut GPU-heavy background systems before mailbox cinematic / fade:
    * shophouse translucency, hydrant stream uploads, axe hover, scrap draw.
+   * Lamp ground spots stay on — they are world-rooted and must not be toggled.
    */
   private beginGpuSafeTransition(): void {
     if (this.gpuSafeTransitionActive) {
@@ -7182,7 +7500,6 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     world?.getNodes(ShophouseCameraOcclusionSystem).forEach((system) => {
       system.setPaused(true);
     });
-    setStreetLampGroundLightsEnabled(world, false);
     this.player?.prepareScrapForCinematic();
     this.player?.setGpuThrottled(true);
     this.player?.setAllowDeferredDestroys(false);
@@ -7190,11 +7507,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   }
 
   private restoreGpuSafeLights(): void {
-    // Never re-enable lights while scrap/hydrant MeshNode.destroy is still draining.
-    if (this.player?.hasPendingScrapDestroys()) {
-      return;
-    }
-    setStreetLampGroundLightsEnabled(this.getWorld(), true);
+    // Lamp ground spots are not toggled during transitions.
   }
 
   private endGpuSafeTransition(): void {
@@ -7487,12 +7800,53 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
   private completeDayBaselineRestore(): void {
     this.catMailCourier.resetToHome();
+    this.restoreAuthoredAxeToBaseline();
     this.reapplyOrdinanceVisibility();
     // Ordinance GLBs retain their authored materials after a day reset.  Do not
     // replace or reconfigure their maps here: Studio's editor and Play loader
     // must use the same glTF material and UV data.
     // Defer physics reinforce until playable — hammering teleports under black
     // + brush overlap loses WebGPU.
+  }
+
+  /** Keep the authored axe at its session baseline through day resets. */
+  private restoreAuthoredAxeToBaseline(): void {
+    const world = this.getWorld();
+    if (!world) {
+      return;
+    }
+    const axe = world.getNodes(ENGINE.ModelMeshNode).find(
+      (node) => AUTHORED_AXE_NAME.test(node.name ?? ''),
+    );
+    if (!axe) {
+      return;
+    }
+    if (!axe.parent) {
+      world.add(axe);
+    }
+    axe.visible = true;
+    axe.traverse((child) => {
+      child.visible = true;
+    });
+    const snap = this.daySnapshots.find((entry) => entry.node === axe);
+    if (!snap) {
+      return;
+    }
+    axe.position.copy(snap.localPosition);
+    axe.quaternion.copy(snap.localQuaternion);
+    axe.scale.copy(snap.scale);
+    axe.updateMatrixWorld(true);
+    if (!(axe instanceof ENGINE.PrimitiveNode)) {
+      return;
+    }
+    if (snap.physicsOptions) {
+      axe.replacePhysicsOptions({
+        ...snap.physicsOptions,
+        enabled: snap.physicsOptions.enabled !== false,
+      });
+    } else {
+      axe.overridePhysicsOptions({ enabled: false });
+    }
   }
 
   private applyAllSnapshotPoses(options?: {
@@ -7514,6 +7868,12 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   ): void {
     const node = snap.node;
     if (!node.parent) {
+      return;
+    }
+    if (
+      node instanceof ENGINE.PrimitiveNode
+      && this.player?.isHoldingTool(node)
+    ) {
       return;
     }
 

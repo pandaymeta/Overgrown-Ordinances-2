@@ -177,9 +177,8 @@
     "children": [
       {
         "$bc": "ENGINE.DirectionalLightNode",
-        "castShadow": true,
-        "children": {
-          "0": {
+        "children": [
+          {
             "$bc": "THREE.Object3D",
             "position": {
               "$bc": "v3",
@@ -191,7 +190,7 @@
             },
             "uuid": "9353c93a-0b4f-4670-9354-314b76481b5d"
           },
-          "1": {
+          {
             "$bc": "THREE.Object3D",
             "position": {
               "$bc": "v3",
@@ -203,7 +202,7 @@
             },
             "uuid": "428ea2b7-244e-49f6-98f4-150e8beaada8"
           },
-          "2": {
+          {
             "$bc": "THREE.Object3D",
             "position": {
               "$bc": "v3",
@@ -215,7 +214,7 @@
             },
             "uuid": "553f4019-350e-44be-85d3-e0f830bfa414"
           },
-          "3": {
+          {
             "$bc": "THREE.Object3D",
             "position": {
               "$bc": "v3",
@@ -227,12 +226,62 @@
             },
             "uuid": "671a5e3f-d4ff-4fb3-a22a-65df53348607"
           },
-          "4": {
-            "$ref": 1
+          {
+            "$bc": "THREE.Object3D",
+            "position": {
+              "$bc": "v3",
+              "_": [
+                33.162854,
+                -8.295363,
+                -90.090907
+              ]
+            },
+            "uuid": "67c3139b-000b-4c89-8a57-0c4a2aed8f40"
           },
-          "$length": 13
-        },
+          {
+            "$bc": "THREE.Object3D",
+            "position": {
+              "$bc": "v3",
+              "_": [
+                31.525217,
+                -54.13678,
+                -18.58661
+              ]
+            },
+            "uuid": "c73b9cdc-01e0-4a96-9a02-131d5d81e48b"
+          },
+          {
+            "$bc": "THREE.Object3D",
+            "position": {
+              "$bc": "v3",
+              "_": [
+                29.608462,
+                -114.890778,
+                55.32548
+              ]
+            },
+            "uuid": "a62895d8-d67b-4411-b439-68cdb8c521e7"
+          },
+          {
+            "$bc": "THREE.Object3D",
+            "position": {
+              "$bc": "v3",
+              "_": [
+                22.473141,
+                -318.555156,
+                152.748565
+              ]
+            },
+            "uuid": "89bae6cd-43a7-45b9-9897-0ef3a689e19a"
+          },
+          {
+            "$ref": 1
+          }
+        ],
+        "csmCascadeCount": 2,
         "csmFade": true,
+        "csmLightMargin": 40,
+        "csmMaxFar": 100,
         "isSunLight": true,
         "light": {
           "$ref": 1
@@ -261,11 +310,10 @@
         "shadowCameraRight": 40,
         "shadowCameraTop": 40,
         "shadowFar": 2000,
-        "shadowMapSize": 4096,
+        "shadowMapSize": 1024,
         "shadowNear": 0.5,
         "shadowNormalBias": 0.04,
         "shadowRadius": 6,
-        "useCsmShadows": true,
         "userData": {
           "objectFlags": 6
         },
@@ -443,7 +491,7 @@
         },
         "name": "Ground 03",
         "navigationGeometryRole": "none",
-        "nodeId": 27034,
+        "nodeId": 39443,
         "physicsOptions": {
           "collisionMeshType": "trimesh",
           "enabled": false
@@ -1929,7 +1977,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/mailbox-8e36e8.glb",
         "name": "Mailbox 8 E 36 E 8",
         "nodeId": 10087,
@@ -1999,7 +2046,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-section-68c3c4.glb",
         "name": "Guardrail Section 68 C 3 C 05",
         "nodeId": 21575,
@@ -2029,7 +2075,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-section-68c3c4.glb",
         "name": "Guardrail Section 68 C 3 C 07",
         "nodeId": 19204,
@@ -2059,7 +2104,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-section-68c3c4.glb",
         "name": "Guardrail Section 68 C 3 C 11",
         "nodeId": 83,
@@ -2097,7 +2141,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-section-68c3c4.glb",
         "name": "Guardrail Section 68 C 3 C 12",
         "nodeId": 18930,
@@ -2135,7 +2178,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-section-68c3c4.glb",
         "name": "Guardrail Section 68 C 3 C 13",
         "nodeId": 55186,
@@ -2173,7 +2215,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-section-68c3c4.glb",
         "name": "Guardrail Section 68 C 3 C 08",
         "nodeId": 51500,
@@ -2203,7 +2244,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-section-68c3c4.glb",
         "name": "Guardrail Section 68 C 3 C 09",
         "nodeId": 59415,
@@ -2233,7 +2273,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-section-68c3c4.glb",
         "name": "Guardrail Section 68 C 3 C 06",
         "nodeId": 1004,
@@ -2263,7 +2302,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-section-68c3c4.glb",
         "name": "Guardrail Section 68 C 3 C 10",
         "nodeId": 24769,
@@ -2293,7 +2331,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-section-68c3c4.glb",
         "name": "Guardrail Section 68 C 3 C 14",
         "nodeId": 34618,
@@ -2712,6 +2749,50 @@
         "uuid": "a57167dd4efd122e"
       },
       {
+        "$bc": "ENGINE.SpotLightNode",
+        "children": [
+          {
+            "$ref": 3
+          }
+        ],
+        "light": {
+          "$ref": 3
+        },
+        "name": "Lamp Ground Spot",
+        "nodeId": 57434,
+        "position": {
+          "$bc": "v3",
+          "_": [
+            5.748816,
+            6.025,
+            0.3
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            1.570796,
+            0,
+            1.570796
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1.5,
+            1.5,
+            1.5
+          ]
+        },
+        "shadowFar": 20,
+        "shadowMapSize": 1024,
+        "shadowNear": 0.2,
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "94d9390748e39195"
+      },
+      {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
         "children": [
@@ -2751,7 +2832,7 @@
             "name": "Trees Cutting 02",
             "nodeId": 24763,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -2887,7 +2968,7 @@
             "name": "Trees Cutting",
             "nodeId": 20655,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -3097,7 +3178,7 @@
             "name": "Street Lights Destroy 05",
             "nodeId": 60288,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -3159,7 +3240,7 @@
             "name": "Street Lights Destroy 06",
             "nodeId": 23826,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -3212,7 +3293,7 @@
             "name": "Street Lights Climb 05",
             "nodeId": 45649,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -3274,7 +3355,7 @@
             "name": "Street Lights Climb 06",
             "nodeId": 45045,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -3307,11 +3388,11 @@
             "$bc": "ENGINE.SpotLightNode",
             "children": [
               {
-                "$ref": 3
+                "$ref": 4
               }
             ],
             "light": {
-              "$ref": 3
+              "$ref": 4
             },
             "name": "Lamp Ground Spot",
             "nodeId": 12255,
@@ -3364,6 +3445,50 @@
           "objectFlags": 4
         },
         "uuid": "4c6caf16c6c3d236"
+      },
+      {
+        "$bc": "ENGINE.SpotLightNode",
+        "children": [
+          {
+            "$ref": 5
+          }
+        ],
+        "light": {
+          "$ref": 5
+        },
+        "name": "Lamp Ground Spot 02",
+        "nodeId": 12255,
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -22.7,
+            6.725,
+            -7.1
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            1.570796,
+            0,
+            0
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1.5,
+            1.5,
+            1.5
+          ]
+        },
+        "shadowFar": 20,
+        "shadowMapSize": 1024,
+        "shadowNear": 0.2,
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "f39ae99d3d13ec18"
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
@@ -3439,7 +3564,7 @@
             "name": "Street Lights Destroy 07",
             "nodeId": 60288,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -3501,7 +3626,7 @@
             "name": "Street Lights Destroy 08",
             "nodeId": 23826,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -3554,7 +3679,7 @@
             "name": "Street Lights Climb 07",
             "nodeId": 45649,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -3616,7 +3741,7 @@
             "name": "Street Lights Climb 08",
             "nodeId": 45045,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -3644,39 +3769,6 @@
               ]
             },
             "uuid": "d54060a7bd2f3a0e"
-          },
-          {
-            "$bc": "ENGINE.SpotLightNode",
-            "children": [
-              {
-                "$ref": 4
-              }
-            ],
-            "light": {
-              "$ref": 4
-            },
-            "name": "Lamp Ground Spot 02",
-            "nodeId": 12255,
-            "position": {
-              "$bc": "v3",
-              "_": [
-                0,
-                4.55,
-                0.6
-              ]
-            },
-            "rotation": {
-              "$bc": "e",
-              "_": [
-                1.570796,
-                0,
-                0
-              ]
-            },
-            "shadowFar": 20,
-            "shadowMapSize": 1024,
-            "shadowNear": 0.2,
-            "uuid": "f39ae99d3d13ec18"
           }
         ],
         "modelUrl": "@project/assets/PolyforkAssets/street-lamp-29f365.glb",
@@ -3773,7 +3865,7 @@
             "name": "Street Lights Destroy",
             "nodeId": 41081,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -3827,7 +3919,7 @@
             "name": "Street Lights Destroy 02",
             "nodeId": 65416,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -3888,7 +3980,7 @@
             "name": "Street Lights Climb",
             "nodeId": 55986,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -3949,7 +4041,7 @@
             "name": "Street Lights Climb 02",
             "nodeId": 47126,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -3978,39 +4070,6 @@
               ]
             },
             "uuid": "87263f02315bdbb9"
-          },
-          {
-            "$bc": "ENGINE.SpotLightNode",
-            "children": [
-              {
-                "$ref": 5
-              }
-            ],
-            "light": {
-              "$ref": 5
-            },
-            "name": "Lamp Ground Spot",
-            "nodeId": 57434,
-            "position": {
-              "$bc": "v3",
-              "_": [
-                0,
-                4.55,
-                0.567456
-              ]
-            },
-            "rotation": {
-              "$bc": "e",
-              "_": [
-                1.570796,
-                0,
-                0
-              ]
-            },
-            "shadowFar": 20,
-            "shadowMapSize": 1024,
-            "shadowNear": 0.2,
-            "uuid": "94d9390748e39195"
           }
         ],
         "modelUrl": "@project/assets/PolyforkAssets/street-lamp-29f365.glb",
@@ -4048,6 +4107,50 @@
           "objectFlags": 4
         },
         "uuid": "daef69e75905199e"
+      },
+      {
+        "$bc": "ENGINE.SpotLightNode",
+        "children": [
+          {
+            "$ref": 6
+          }
+        ],
+        "light": {
+          "$ref": 6
+        },
+        "name": "Lamp Ground Spot",
+        "nodeId": 8850,
+        "position": {
+          "$bc": "v3",
+          "_": [
+            5.70071,
+            6.025,
+            -20
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            1.570796,
+            0,
+            1.570796
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1.5,
+            1.5,
+            1.5
+          ]
+        },
+        "shadowFar": 20,
+        "shadowMapSize": 1024,
+        "shadowNear": 0.2,
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "5600bd9ae213f290"
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
@@ -4115,7 +4218,7 @@
             "name": "Street Lights Destroy 03",
             "nodeId": 60651,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -4168,7 +4271,7 @@
             "name": "Street Lights Destroy 04",
             "nodeId": 56471,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -4230,7 +4333,7 @@
             "name": "Street Lights Climb 03",
             "nodeId": 37181,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -4291,7 +4394,7 @@
             "name": "Street Lights Climb 04",
             "nodeId": 32030,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -4320,39 +4423,6 @@
               ]
             },
             "uuid": "465659b64f401f52"
-          },
-          {
-            "$bc": "ENGINE.SpotLightNode",
-            "children": [
-              {
-                "$ref": 6
-              }
-            ],
-            "light": {
-              "$ref": 6
-            },
-            "name": "Lamp Ground Spot",
-            "nodeId": 8850,
-            "position": {
-              "$bc": "v3",
-              "_": [
-                0,
-                4.55,
-                0.599527
-              ]
-            },
-            "rotation": {
-              "$bc": "e",
-              "_": [
-                1.570796,
-                0,
-                0
-              ]
-            },
-            "shadowFar": 20,
-            "shadowMapSize": 1024,
-            "shadowNear": 0.2,
-            "uuid": "5600bd9ae213f290"
           }
         ],
         "modelUrl": "@project/assets/PolyforkAssets/street-lamp-29f365.glb",
@@ -4390,6 +4460,50 @@
           "objectFlags": 4
         },
         "uuid": "d4d0d6f7d379a701"
+      },
+      {
+        "$bc": "ENGINE.SpotLightNode",
+        "children": [
+          {
+            "$ref": 7
+          }
+        ],
+        "light": {
+          "$ref": 7
+        },
+        "name": "Lamp Ground Spot",
+        "nodeId": 9232,
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -11.200002,
+            5.225,
+            5.499998
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            1.570796,
+            0,
+            3.141593
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1.5,
+            1.5,
+            1.5
+          ]
+        },
+        "shadowFar": 20,
+        "shadowMapSize": 1024,
+        "shadowNear": 0.2,
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "5f50b8b151bfdb2a"
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
@@ -4457,7 +4571,7 @@
             "name": "Street Lights Destroy 09",
             "nodeId": 62974,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -4511,7 +4625,7 @@
             "name": "Street Lights Destroy 10",
             "nodeId": 2936,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -4572,7 +4686,7 @@
             "name": "Street Lights Climb 09",
             "nodeId": 6662,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -4633,7 +4747,7 @@
             "name": "Street Lights Climb 10",
             "nodeId": 220,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -4662,39 +4776,6 @@
               ]
             },
             "uuid": "450ee1a395ab1292"
-          },
-          {
-            "$bc": "ENGINE.SpotLightNode",
-            "children": [
-              {
-                "$ref": 7
-              }
-            ],
-            "light": {
-              "$ref": 7
-            },
-            "name": "Lamp Ground Spot",
-            "nodeId": 9232,
-            "position": {
-              "$bc": "v3",
-              "_": [
-                0,
-                4.55,
-                0.6
-              ]
-            },
-            "rotation": {
-              "$bc": "e",
-              "_": [
-                1.570796,
-                0,
-                0
-              ]
-            },
-            "shadowFar": 20,
-            "shadowMapSize": 1024,
-            "shadowNear": 0.2,
-            "uuid": "5f50b8b151bfdb2a"
           }
         ],
         "modelUrl": "@project/assets/PolyforkAssets/street-lamp-29f365.glb",
@@ -4925,7 +5006,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "GAME.CarryableCrateNode",
@@ -4973,7 +5053,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "GAME.CarryableCrateNode",
@@ -5021,7 +5100,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/fire-hydrant-b68b17.glb",
         "name": "Fire Hydrant B 68 B 17",
         "nodeId": 45223,
@@ -5052,7 +5130,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/fire-hydrant-b68b17.glb",
         "name": "Fire Hydrant B 68 B 18",
         "nodeId": 54182,
@@ -5114,7 +5191,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-d3bd42.glb",
         "name": "Guardrail D 3 Bd 43",
         "nodeId": 348,
@@ -5144,7 +5220,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-d3bd42.glb",
         "name": "Guardrail D 3 Bd 44",
         "nodeId": 14526,
@@ -5174,7 +5249,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-d3bd42.glb",
         "name": "Guardrail D 3 Bd 45",
         "nodeId": 12776,
@@ -5204,7 +5278,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-d3bd42.glb",
         "name": "Guardrail D 3 Bd 46",
         "nodeId": 64686,
@@ -5234,7 +5307,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "GAME.CarryableCrateNode",
@@ -5283,7 +5355,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "GAME.CarryableCrateNode",
@@ -5332,7 +5403,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "GAME.CarryableCrateNode",
@@ -5381,7 +5451,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/vending-machine-471c29.glb",
         "name": "Vending Machine 471 C 29",
         "nodeId": 6722,
@@ -5417,7 +5486,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "GAME.CarryableCrateNode",
@@ -5458,7 +5526,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/bush-8bb596.glb",
         "name": "Bush 8 Bb 597",
         "nodeId": 31522,
@@ -5498,7 +5565,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/bush-8bb596.glb",
         "name": "Bush 8 Bb 599",
         "nodeId": 37871,
@@ -5538,7 +5604,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/bush-8bb596.glb",
         "name": "Bush 8 Bb 601",
         "nodeId": 3741,
@@ -5578,7 +5643,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/bush-8bb596.glb",
         "name": "Bush 8 Bb 602",
         "nodeId": 31128,
@@ -5649,7 +5713,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/trail-map-kiosk-be8618.glb",
         "name": "Trail Map Kiosk Be 8618",
         "nodeId": 54698,
@@ -6120,7 +6183,7 @@
             "name": "Pole Cut 02",
             "nodeId": 36724,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -6184,7 +6247,7 @@
             "name": "High Voltage",
             "nodeId": 13191,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -6248,7 +6311,7 @@
             "name": "High Voltage 02",
             "nodeId": 22637,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -6353,7 +6416,7 @@
             "name": "Pole Cut",
             "nodeId": 997,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -6417,7 +6480,7 @@
             "name": "High Voltage 03",
             "nodeId": 7383,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -6481,7 +6544,7 @@
             "name": "High Voltage 04",
             "nodeId": 30325,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -6586,7 +6649,7 @@
             "name": "Pole Cut 03",
             "nodeId": 11638,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -6650,7 +6713,7 @@
             "name": "High Voltage 05",
             "nodeId": 9428,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -6714,7 +6777,7 @@
             "name": "High Voltage 06",
             "nodeId": 34254,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -6819,7 +6882,7 @@
             "name": "Pole Cut 04",
             "nodeId": 36894,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -6883,7 +6946,7 @@
             "name": "High Voltage 07",
             "nodeId": 59787,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -6939,7 +7002,7 @@
             "name": "High Voltage 08",
             "nodeId": 40670,
             "physicsOptions": {
-              "enabled": false,
+              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -7184,9 +7247,10 @@
         "hiddenInGame": true,
         "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_07.glb",
         "name": "Sm Sb Env Cloud 07",
-        "nodeId": 10424,
+        "nodeId": 10324,
         "physicsOptions": {
-          "collisionProfile": "NoCollision"
+          "collisionProfile": "NoCollision",
+          "enabled": false
         },
         "position": {
           "$bc": "v3",
@@ -7225,7 +7289,8 @@
         "name": "Sm Sb Env Cloud 11",
         "nodeId": 31581,
         "physicsOptions": {
-          "collisionProfile": "NoCollision"
+          "collisionProfile": "NoCollision",
+          "enabled": false
         },
         "position": {
           "$bc": "v3",
@@ -7264,7 +7329,8 @@
         "name": "Sm Sb Env Cloud 09",
         "nodeId": 32148,
         "physicsOptions": {
-          "collisionProfile": "NoCollision"
+          "collisionProfile": "NoCollision",
+          "enabled": false
         },
         "position": {
           "$bc": "v3",
@@ -7303,7 +7369,8 @@
         "name": "Sm Sb Env Cloud 06",
         "nodeId": 50911,
         "physicsOptions": {
-          "collisionProfile": "NoCollision"
+          "collisionProfile": "NoCollision",
+          "enabled": false
         },
         "position": {
           "$bc": "v3",
@@ -7334,7 +7401,8 @@
         "name": "Sm Sb Env Cloud 05",
         "nodeId": 21289,
         "physicsOptions": {
-          "collisionProfile": "NoCollision"
+          "collisionProfile": "NoCollision",
+          "enabled": false
         },
         "position": {
           "$bc": "v3",
@@ -7373,7 +7441,8 @@
         "name": "Sm Sb Env Cloud 08",
         "nodeId": 60696,
         "physicsOptions": {
-          "collisionProfile": "NoCollision"
+          "collisionProfile": "NoCollision",
+          "enabled": false
         },
         "position": {
           "$bc": "v3",
@@ -7412,7 +7481,8 @@
         "name": "Sm Sb Env Cloud 10",
         "nodeId": 39350,
         "physicsOptions": {
-          "collisionProfile": "NoCollision"
+          "collisionProfile": "NoCollision",
+          "enabled": false
         },
         "position": {
           "$bc": "v3",
@@ -7451,7 +7521,8 @@
         "name": "Sm Sb Env Cloud 02",
         "nodeId": 18978,
         "physicsOptions": {
-          "collisionProfile": "NoCollision"
+          "collisionProfile": "NoCollision",
+          "enabled": false
         },
         "position": {
           "$bc": "v3",
@@ -7542,9 +7613,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/JayWalking_Clean.glb",
         "name": "JayWalking",
         "nodeId": 48491,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -7592,9 +7660,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/JayWalking_Clean.glb",
         "name": "JayWalking 02",
         "nodeId": 6126,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -7643,9 +7708,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Bench_CleanBoard.glb",
         "name": "Bench",
         "nodeId": 2595,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -7694,9 +7756,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Bench_CleanBoard.glb",
         "name": "Bench 03",
         "nodeId": 12479,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -7753,9 +7812,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Bench_CleanBoard.glb",
         "name": "Bench 02",
         "nodeId": 7075,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -7804,9 +7860,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Bench_CleanBoard.glb",
         "name": "Bench 04",
         "nodeId": 14797,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -7855,9 +7908,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/Birds_Clean.glb",
         "name": "Birds",
         "nodeId": 7257,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -7914,9 +7964,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/Birds_Clean.glb",
         "name": "Birds 02",
         "nodeId": 42650,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -7973,9 +8020,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/Bushes_Clean.glb",
         "name": "Bushes",
         "nodeId": 41560,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -8024,9 +8068,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/Crates_Clean.glb",
         "name": "Crates",
         "nodeId": 63107,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -8083,9 +8124,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/Crates_Clean.glb",
         "name": "Crates 02",
         "nodeId": 35666,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -8134,9 +8172,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/Crates_Clean.glb",
         "name": "Crates 03",
         "nodeId": 54326,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -8185,9 +8220,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/Crates_Clean.glb",
         "name": "Crates 04",
         "nodeId": 23197,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -8276,9 +8308,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/Cats_Clean.glb",
         "name": "Cats",
         "nodeId": 41860,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -8319,9 +8348,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/CatFeed_Clean.glb",
         "name": "Cat Feed",
         "nodeId": 59844,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -8411,9 +8437,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/Logs_Clean.glb",
         "name": "Logs",
         "nodeId": 46160,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -8462,9 +8485,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/Logs_Clean.glb",
         "name": "Logs 02",
         "nodeId": 61297,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -8513,9 +8533,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/Logs_Clean.glb",
         "name": "Logs 04",
         "nodeId": 54295,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -8564,9 +8581,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/Logs_Clean.glb",
         "name": "Logs 03",
         "nodeId": 1024,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -8623,9 +8637,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/Kiosk_Clean.glb",
         "name": "Kiosk",
         "nodeId": 49760,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -8674,9 +8685,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/FireHydrant_Clean.glb",
         "name": "Fire Hydrant 02",
         "nodeId": 46203,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -8723,9 +8731,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/FireHydrant_Clean.glb",
         "name": "Rocks Ordinance Board",
         "nodeId": 2185,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -8772,9 +8777,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/FireHydrant_Clean.glb",
         "name": "Rocks Ordinance Board 03",
         "nodeId": 36968,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -8821,9 +8823,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/FireHydrant_Clean.glb",
         "name": "Rocks Ordinance Board 04",
         "nodeId": 37815,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -8870,9 +8869,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/FireHydrant_Clean.glb",
         "name": "Rocks Ordinance Board 02",
         "nodeId": 49297,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -8929,9 +8925,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/FireHydrant_Clean.glb",
         "name": "Fire Hydrant",
         "nodeId": 5361,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -8981,9 +8974,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/Metals_Clean.glb",
         "name": "Metals",
         "nodeId": 35464,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -9032,9 +9022,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/Metals_Clean.glb",
         "name": "Metals 02",
         "nodeId": 42806,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -9083,9 +9070,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/Metals_Clean.glb",
         "name": "Metals 04",
         "nodeId": 31426,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -9134,9 +9118,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/Metals_Clean.glb",
         "name": "Metals 03",
         "nodeId": 48035,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -9193,9 +9174,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/ShopSign_Clean.glb",
         "name": "Shop Sign",
         "nodeId": 52540,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -9244,9 +9222,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/Signs_Clean.glb",
         "name": "Signs",
         "nodeId": 31810,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -9295,9 +9270,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/TreesClimbing_Clean.glb",
         "name": "Trees Climbing",
         "nodeId": 9927,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -9346,9 +9318,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/TreesClimbing_Clean.glb",
         "name": "Trees Climbing 02",
         "nodeId": 1109,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -9405,9 +9374,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/WoodPlanks_Clean.glb",
         "name": "Wood Planks",
         "nodeId": 13419,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -9456,9 +9422,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/WoodPlanks_Clean.glb",
         "name": "Wood Planks 02",
         "nodeId": 16583,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -9507,9 +9470,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/WoodPlanks_Clean.glb",
         "name": "Wood Planks 04",
         "nodeId": 27465,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -9558,9 +9518,6 @@
         "modelUrl": "@project/assets/OrdinanceCards/Clean/WoodPlanks_Clean.glb",
         "name": "Wood Planks 03",
         "nodeId": 3904,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -9616,10 +9573,6 @@
         "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/DoNotStep_Board_v2.glb",
         "name": "Do Not Step City Tram",
         "nodeId": 14641,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "enabled": false
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -9667,10 +9620,6 @@
         "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/DoNotStep_Board_v2.glb",
         "name": "Do Not Step Car",
         "nodeId": 55096,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "enabled": false
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -10166,7 +10115,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/Tiles/asphalt-road-tile-straight-edges.glb",
         "name": "RightSideRoad Asphalt Road Tile Straight Both 02",
         "nodeId": 25279,
@@ -11274,6 +11222,576 @@
         },
         "userData": {},
         "uuid": "74b8124f-9100-4795-8c2c-8a0078d18a1f"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "5317d542-d3b9-4f00-a0f8-ce12adb8cd00"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "884db65d-0cb0-4648-822e-4ca4ec5ccb63"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "65c90ae8-1441-473b-ba6a-2f070f23fe3e"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "6f024b44-c678-49e7-9c30-045be349fad1"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "abba28f8-d16b-4d1a-bf09-1078dfc54d65"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "88c9c633-8db0-4fa7-b779-763e6a3059ce"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "c460728e-c3e3-4167-acef-f83345ebb7ea"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "e2fed6ca-8115-447b-a08d-ff3db400aa81"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "b24de5eb-9682-4dcc-895e-b4a6aba1b39f"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "21a6ea29-00f7-4d09-9a3c-8c828bbc75d9"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "e756417b-a169-485a-9ef4-eb68346140d8"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "d9a23288-1055-407c-9005-b389e68f6074"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "596d8b9d-592e-4200-bc81-37b05bb2315c"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "6dd8b16d-e2e6-4112-bb8d-654c0620eeaa"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "671b360f-9ac2-4ff3-9951-2e91bc1d577b"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "b58d3b85-5510-4689-8730-885fbc22f6e8"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "3d352888-960c-4fde-a0d5-7af9f260d7d3"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "e8d651c9-27bb-48d4-a2e3-7d0381cdeea2"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "fa7d975b-e7be-4219-b4d3-eabc96675337"
       }
     ],
     "editorData": {
@@ -12278,6 +12796,22 @@
           },
           {
             "id": "95dfdd37a9c14326",
+            "nodeType": "actor"
+          },
+          {
+            "id": "94d9390748e39195",
+            "nodeType": "actor"
+          },
+          {
+            "id": "f39ae99d3d13ec18",
+            "nodeType": "actor"
+          },
+          {
+            "id": "5600bd9ae213f290",
+            "nodeType": "actor"
+          },
+          {
+            "id": "5f50b8b151bfdb2a",
             "nodeType": "actor"
           }
         ],
