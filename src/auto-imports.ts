@@ -17,7 +17,6 @@ import './hover-silhouette.js';
 import './hydrant-water-stream.js';
 import './intro-physics-gate.js';
 import './mail-delivery-flow.js';
-import './ordinance-monument.js';
 import './ordinance-sign-sharpness.js';
 import './overgrown-averia-font.js';
 import './player.js';

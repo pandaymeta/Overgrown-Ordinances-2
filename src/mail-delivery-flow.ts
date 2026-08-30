@@ -74,7 +74,6 @@ import {
 } from './rapier-simulation-budget.js';
 import { ShophouseCameraOcclusionSystem } from './shophouse-camera-occlusion.js';
 import { applyOrdinanceSignSharpnessWhenRevealed, diagnoseVisibleMeshesMissingPosition, hideMissingPositionMeshesInWorld } from './ordinance-sign-sharpness.js';
-import { matchesOrdinanceFamily } from './ordinance-monument.js';
 import { waitForStartupBrushReveal } from './startup-brush-reveal.js';
 import { markIntroPhysicsPrimed } from './intro-physics-gate.js';
 import { TutorialKeysGuide } from './tutorial-keys-guide.js';
@@ -82,8 +81,10 @@ import { TutorialKeysGuide } from './tutorial-keys-guide.js';
 /** Default spring-arm distance for gameplay and opening shot. */
 const DEFAULT_CAMERA_DISTANCE = 20;
 const AUTHORED_AXE_NAME = /^Axe$/i;
-/** Close-up cinematic distance in front of mailbox / ordinance models. */
+/** Close-up cinematic distance in front of the mailbox. */
 const MODEL_FOCUS_DISTANCE = 2.2;
+/** Ordinance close-up at authored scale 1; larger boards multiply this. */
+const ORDINANCE_FOCUS_DISTANCE_AT_SCALE_1 = 2.5;
 /** Read hold after the typewriter finishes (intro + morning bubbles). */
 const SPEECH_READ_HOLD_SEC = 3.5;
 const ORDINANCE_FOCUS_SEC = 2;
@@ -1649,11 +1650,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.player?.setMovementFrozen(true);
     this.player?.setCinematicCameraLock(true);
     const target = options.target ?? this.maintenance;
-    this.startModelFrontCinematic(
+    this.startOrdinanceFrontCinematic(
       target,
-      MODEL_FOCUS_DISTANCE,
       false,
-      0,
       options.blendFromCapturedStart === true,
     );
     this.setPhase(FlowPhase.OrdinanceFocus);
@@ -2330,180 +2329,103 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
     if (this.focusOrdinanceOnWake) {
-      this.startModelFrontCinematic(this.maintenance, MODEL_FOCUS_DISTANCE, true);
+      this.startOrdinanceFrontCinematic(this.maintenance, true);
       return;
     }
     if (this.focusJaywalkingOnWake) {
-      this.startModelFrontCinematic(this.jaywalking, MODEL_FOCUS_DISTANCE, true);
+      this.startOrdinanceFrontCinematic(this.jaywalking, true);
       return;
     }
     if (this.focusDoNotStepCarOnWake) {
-      this.startModelFrontCinematic(this.doNotStepCar, MODEL_FOCUS_DISTANCE, true);
+      this.startOrdinanceFrontCinematic(this.doNotStepCar, true);
       return;
     }
     if (this.focusDoNotStepTramOnWake) {
-      this.startModelFrontCinematic(this.doNotStepCityTram, MODEL_FOCUS_DISTANCE, true);
+      this.startOrdinanceFrontCinematic(this.doNotStepCityTram, true);
       return;
     }
     if (this.focusStreetLightsClimbOnWake) {
-      this.startModelFrontCinematic(
-        this.findNearestStreetLightsClimb(),
-        MODEL_FOCUS_DISTANCE,
-        true,
-      );
+      this.startOrdinanceFrontCinematic(this.findNearestStreetLightsClimb(), true);
       return;
     }
     if (this.focusDontDestroyTheStreetLightsOnWake) {
-      this.startModelFrontCinematic(
-        this.findNearestStreetLightsDestroy(),
-        MODEL_FOCUS_DISTANCE,
-        true,
-      );
+      this.startOrdinanceFrontCinematic(this.findNearestStreetLightsDestroy(), true);
       return;
     }
     if (this.focusDontFeedTheCatOnWake) {
-      this.startModelFrontCinematic(
-        this.findNearestDontFeedTheCat(),
-        MODEL_FOCUS_DISTANCE,
-        true,
-      );
+      this.startOrdinanceFrontCinematic(this.findNearestDontFeedTheCat(), true);
       return;
     }
     if (this.focusNoCatsOnStreetsOnWake) {
-      this.startModelFrontCinematic(
-        this.findNearestNoCatsOnStreets(),
-        MODEL_FOCUS_DISTANCE,
-        true,
-      );
+      this.startOrdinanceFrontCinematic(this.findNearestNoCatsOnStreets(), true);
       return;
     }
     if (this.focusNoCratesOnRoadsOnWake) {
-      this.startModelFrontCinematic(
-        this.findNearestNoCratesOnRoads(),
-        MODEL_FOCUS_DISTANCE,
-        true,
-      );
+      this.startOrdinanceFrontCinematic(this.findNearestNoCratesOnRoads(), true);
       return;
     }
     if (this.focusNoRocksOnRoadsOnWake) {
       // Same board-face framing as Jaywalking (not the pole/prop AABB midpoint).
-      this.startModelFrontCinematic(
+      this.startOrdinanceFrontCinematic(
         this.noRocksOnRoads ?? this.findNearestNoRocksOnRoads(),
-        MODEL_FOCUS_DISTANCE,
         true,
       );
       return;
     }
     if (this.focusNoBenchOnRoadsOnWake) {
-      this.startModelFrontCinematic(
-        this.findNearestNoBenchOnRoads(),
-        MODEL_FOCUS_DISTANCE,
-        true,
-      );
+      this.startOrdinanceFrontCinematic(this.findNearestNoBenchOnRoads(), true);
       return;
     }
     if (this.focusNoLogsOnRoadsOnWake) {
-      this.startModelFrontCinematic(
-        this.findNearestNoLogsOnRoads(),
-        MODEL_FOCUS_DISTANCE,
-        true,
-      );
+      this.startOrdinanceFrontCinematic(this.findNearestNoLogsOnRoads(), true);
       return;
     }
     if (this.focusNoWoodPlanksOnRoadsOnWake) {
-      this.startModelFrontCinematic(
-        this.findNearestNoWoodPlanksOnRoads(),
-        MODEL_FOCUS_DISTANCE,
-        true,
-      );
+      this.startOrdinanceFrontCinematic(this.findNearestNoWoodPlanksOnRoads(), true);
       return;
     }
     if (this.focusDontRemoveTheConesOnWake) {
-      this.startModelFrontCinematic(
-        this.findNearestDontRemoveTheCones(),
-        MODEL_FOCUS_DISTANCE,
-        true,
-      );
+      this.startOrdinanceFrontCinematic(this.findNearestDontRemoveTheCones(), true);
       return;
     }
     if (this.focusNoScrapMetalsOnRoadsOnWake) {
-      this.startModelFrontCinematic(
-        this.findNearestNoScrapMetalsOnRoads(),
-        MODEL_FOCUS_DISTANCE,
-        true,
-      );
+      this.startOrdinanceFrontCinematic(this.findNearestNoScrapMetalsOnRoads(), true);
       return;
     }
     if (this.focusDontRemoveThisBushOnWake) {
-      this.startModelFrontCinematic(
-        this.findNearestDontRemoveThisBush(),
-        MODEL_FOCUS_DISTANCE,
-        true,
-      );
+      this.startOrdinanceFrontCinematic(this.findNearestDontRemoveThisBush(), true);
       return;
     }
     if (this.focusDontRemoveThisKioskOnWake) {
-      this.startModelFrontCinematic(
-        this.findNearestDontRemoveThisKiosk(),
-        MODEL_FOCUS_DISTANCE,
-        true,
-      );
+      this.startOrdinanceFrontCinematic(this.findNearestDontRemoveThisKiosk(), true);
       return;
     }
     if (this.focusDontCutThisPoleOnWake) {
-      this.startModelFrontCinematic(
-        this.findNearestDontCutThisPole(),
-        MODEL_FOCUS_DISTANCE,
-        true,
-      );
+      this.startOrdinanceFrontCinematic(this.findNearestDontCutThisPole(), true);
       return;
     }
     if (this.focusDoNotDestroyThisSignOnWake) {
-      this.startModelFrontCinematic(
-        this.findNearestDoNotDestroyThisSign(),
-        MODEL_FOCUS_DISTANCE,
-        true,
-      );
+      this.startOrdinanceFrontCinematic(this.findNearestDoNotDestroyThisSign(), true);
       return;
     }
     if (this.focusDontHitTheFireHydrantOnWake) {
-      this.startModelFrontCinematic(
-        this.findNearestDontHitTheFireHydrant(),
-        MODEL_FOCUS_DISTANCE,
-        true,
-      );
+      this.startOrdinanceFrontCinematic(this.findNearestDontHitTheFireHydrant(), true);
       return;
     }
     if (this.focusHighVoltageOnWake) {
-      this.startModelFrontCinematic(
-        this.findNearestHighVoltage(),
-        MODEL_FOCUS_DISTANCE,
-        true,
-      );
+      this.startOrdinanceFrontCinematic(this.findNearestHighVoltage(), true);
       return;
     }
     if (this.focusNoCuttingOfTreesOnWake) {
-      this.startModelFrontCinematic(
-        this.findNearestNoCuttingOfTrees(),
-        MODEL_FOCUS_DISTANCE,
-        true,
-      );
+      this.startOrdinanceFrontCinematic(this.findNearestNoCuttingOfTrees(), true);
       return;
     }
     if (this.focusNoClimbingOnTheTreeOnWake) {
-      this.startModelFrontCinematic(
-        this.findNearestNoClimbingOnTheTree(),
-        MODEL_FOCUS_DISTANCE,
-        true,
-      );
+      this.startOrdinanceFrontCinematic(this.findNearestNoClimbingOnTheTree(), true);
       return;
     }
     if (this.focusDoNotRemoveTheSignsOnWake) {
-      this.startModelFrontCinematic(
-        this.findNearestDoNotRemoveTheSigns(),
-        MODEL_FOCUS_DISTANCE,
-        true,
-      );
+      this.startOrdinanceFrontCinematic(this.findNearestDoNotRemoveTheSigns(), true);
     }
   }
 
@@ -2514,7 +2436,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(cone, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(MAINTENANCE_ANY_NAME, record.node.name ?? '')) {
+      if (MAINTENANCE_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2523,7 +2445,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private revealJaywalkingOrdinance(): void {
     this.setOrdinanceVisible(this.jaywalking, true);
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(JAYWALKING_ANY_NAME, record.node.name ?? '')) {
+      if (JAYWALKING_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2532,7 +2454,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private revealDoNotStepCarOrdinance(): void {
     this.setOrdinanceVisible(this.doNotStepCar, true);
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(DO_NOT_STEP_CAR_ANY_NAME, record.node.name ?? '')) {
+      if (DO_NOT_STEP_CAR_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2541,7 +2463,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private revealDoNotStepCityTramOrdinance(): void {
     this.setOrdinanceVisible(this.doNotStepCityTram, true);
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(DO_NOT_STEP_CITY_TRAM_ANY_NAME, record.node.name ?? '')) {
+      if (DO_NOT_STEP_CITY_TRAM_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2555,7 +2477,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(STREET_LIGHTS_CLIMB_ANY_NAME, record.node.name ?? '')) {
+      if (STREET_LIGHTS_CLIMB_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2569,7 +2491,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(STREET_LIGHTS_DESTROY_ANY_NAME, record.node.name ?? '')) {
+      if (STREET_LIGHTS_DESTROY_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2583,7 +2505,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(DONT_FEED_THE_CAT_ANY_NAME, record.node.name ?? '')) {
+      if (DONT_FEED_THE_CAT_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2597,7 +2519,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(NO_CATS_ON_STREETS_ANY_NAME, record.node.name ?? '')) {
+      if (NO_CATS_ON_STREETS_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2611,7 +2533,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(NO_CRATES_ON_ROADS_ANY_NAME, record.node.name ?? '')) {
+      if (NO_CRATES_ON_ROADS_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2625,7 +2547,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(NO_ROCKS_ON_ROADS_ANY_NAME, record.node.name ?? '')) {
+      if (NO_ROCKS_ON_ROADS_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2639,7 +2561,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(NO_BENCH_ON_ROADS_ANY_NAME, record.node.name ?? '')) {
+      if (NO_BENCH_ON_ROADS_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2653,7 +2575,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(NO_LOGS_ON_ROADS_ANY_NAME, record.node.name ?? '')) {
+      if (NO_LOGS_ON_ROADS_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2667,7 +2589,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(NO_WOOD_PLANKS_ON_ROADS_ANY_NAME, record.node.name ?? '')) {
+      if (NO_WOOD_PLANKS_ON_ROADS_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2681,7 +2603,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(DONT_REMOVE_THE_CONES_ANY_NAME, record.node.name ?? '')) {
+      if (DONT_REMOVE_THE_CONES_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2695,7 +2617,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(NO_SCRAP_METALS_ON_ROADS_ANY_NAME, record.node.name ?? '')) {
+      if (NO_SCRAP_METALS_ON_ROADS_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2709,7 +2631,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(DONT_REMOVE_THIS_BUSH_ANY_NAME, record.node.name ?? '')) {
+      if (DONT_REMOVE_THIS_BUSH_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2723,7 +2645,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(DONT_REMOVE_THIS_KIOSK_ANY_NAME, record.node.name ?? '')) {
+      if (DONT_REMOVE_THIS_KIOSK_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2737,7 +2659,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(DONT_CUT_THIS_POLE_ANY_NAME, record.node.name ?? '')) {
+      if (DONT_CUT_THIS_POLE_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2751,7 +2673,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(DO_NOT_DESTROY_THIS_SIGN_ANY_NAME, record.node.name ?? '')) {
+      if (DO_NOT_DESTROY_THIS_SIGN_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2765,7 +2687,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(DONT_HIT_THE_FIRE_HYDRANT_ANY_NAME, record.node.name ?? '')) {
+      if (DONT_HIT_THE_FIRE_HYDRANT_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2779,7 +2701,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(HIGH_VOLTAGE_ANY_NAME, record.node.name ?? '')) {
+      if (HIGH_VOLTAGE_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2793,7 +2715,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(NO_CUTTING_OF_TREES_ANY_NAME, record.node.name ?? '')) {
+      if (NO_CUTTING_OF_TREES_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2807,7 +2729,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(NO_CLIMBING_ON_THE_TREE_ANY_NAME, record.node.name ?? '')) {
+      if (NO_CLIMBING_ON_THE_TREE_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2821,7 +2743,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (matchesOrdinanceFamily(DO_NOT_REMOVE_THE_SIGNS_ANY_NAME, record.node.name ?? '')) {
+      if (DO_NOT_REMOVE_THE_SIGNS_ANY_NAME.test(record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -8699,6 +8621,37 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     return this.viewTargetCam;
   }
 
+  /** Ordinance shot distance: 2.5m at scale 1, scaled by the board's largest axis. */
+  private getOrdinanceFocusDistance(target: ENGINE.SceneNode | null): number {
+    const base = ORDINANCE_FOCUS_DISTANCE_AT_SCALE_1;
+    if (!target) {
+      return base;
+    }
+    const multiplier = Math.max(
+      Math.abs(target.scale.x),
+      Math.abs(target.scale.y),
+      Math.abs(target.scale.z),
+    );
+    if (!Number.isFinite(multiplier) || multiplier <= 0) {
+      return base;
+    }
+    return Math.max(0.1, base * multiplier);
+  }
+
+  private startOrdinanceFrontCinematic(
+    target: ENGINE.SceneNode | null,
+    immediate = false,
+    useCapturedStart = false,
+  ): void {
+    this.startModelFrontCinematic(
+      target,
+      this.getOrdinanceFocusDistance(target),
+      immediate,
+      0,
+      useCapturedStart,
+    );
+  }
+
   /**
    * Cutscene camera: blend from the active cam into a shot in front of the model.
    * Pass `immediate` to snap (used under black so fade-in is already framed).
@@ -8750,7 +8703,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       }
     }
 
-    // Exact focus distance from look-at (default 2.2m). Keep pitch at 0 for ordinances.
+    // Exact focus distance from look-at. Keep pitch at 0 for ordinances.
     const focusDistance = Math.max(0.1, distance);
     const elev = THREE.MathUtils.degToRad(THREE.MathUtils.clamp(pitchFromFloorDeg, 0, 85));
     const horizontal = focusDistance * Math.cos(elev);
@@ -8760,7 +8713,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       .addScaledVector(this.tmpForward, horizontal)
       .addScaledVector(this.upAxis, height);
 
-    // Always pin Euclidean distance so look-at / elev drift cannot leave 2.2m.
+    // Always pin Euclidean distance so look-at / elev drift cannot leave the shot.
     this.tmpDir.copy(this.cinematicEndPos).sub(this.cinematicLookAt);
     if (this.tmpDir.lengthSq() < 1e-8) {
       this.tmpDir.copy(this.tmpForward);
@@ -8801,7 +8754,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   }
 
   /**
-   * Prefer the textured sign face center so focus distance stays a true 2.2m
+   * Prefer the textured sign face center so focus distance stays true
    * from the board (not the pole/prop AABB midpoint).
    */
   private resolveOrdinanceCinematicLookAt(target: ENGINE.SceneNode, out: THREE.Vector3): void {
