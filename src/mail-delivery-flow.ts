@@ -8621,17 +8621,34 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     return this.viewTargetCam;
   }
 
-  /** Ordinance shot distance: 2.5m at scale 1, scaled by the board's largest axis. */
+  /** Ordinance shot distance: 2.5m at scale 1, using world scale (parents + card children). */
   private getOrdinanceFocusDistance(target: ENGINE.SceneNode | null): number {
     const base = ORDINANCE_FOCUS_DISTANCE_AT_SCALE_1;
     if (!target) {
       return base;
     }
-    const multiplier = Math.max(
-      Math.abs(target.scale.x),
-      Math.abs(target.scale.y),
-      Math.abs(target.scale.z),
-    );
+    target.updateMatrixWorld(true);
+    let multiplier = 0;
+    const consider = (node: THREE.Object3D): void => {
+      node.getWorldScale(this.tmpDir);
+      const axis = Math.max(
+        Math.abs(this.tmpDir.x),
+        Math.abs(this.tmpDir.y),
+        Math.abs(this.tmpDir.z),
+      );
+      if (Number.isFinite(axis) && axis > multiplier) {
+        multiplier = axis;
+      }
+    };
+    consider(target);
+    target.traverse((child) => {
+      if (child === target) {
+        return;
+      }
+      if (child instanceof ENGINE.ModelMeshNode || child instanceof ENGINE.PrimitiveNode) {
+        consider(child);
+      }
+    });
     if (!Number.isFinite(multiplier) || multiplier <= 0) {
       return base;
     }

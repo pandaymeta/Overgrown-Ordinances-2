@@ -33,7 +33,7 @@ const INTRO_FACE_MESH_YAW = Math.PI;
 const INITIAL_CAMERA_DISTANCE = 3;
 const MIN_CAMERA_DISTANCE = 2;
 /** Maximum scroll-zoom spring-arm distance during gameplay (meters). */
-const MAX_CAMERA_DISTANCE = 35;
+const MAX_CAMERA_DISTANCE = 30;
 
 const AXE_ATTACK_CLIP = 'Attack 01';
 const AXE_ATTACK_PLAY_RATE = 2;

@@ -130,50 +130,8 @@
       }
     },
     {
-      "$bc": "THREE.SpotLight",
-      "$id": 8,
-      "$value": {
-        "_": [
-          {
-            "$bc": "c",
-            "_": [
-              1,
-              0.64448,
-              0.351533
-            ]
-          },
-          52,
-          14,
-          0.44,
-          0.4,
-          1.55
-        ]
-      }
-    },
-    {
-      "$bc": "THREE.SpotLight",
-      "$id": 9,
-      "$value": {
-        "_": [
-          {
-            "$bc": "c",
-            "_": [
-              1,
-              0.64448,
-              0.351533
-            ]
-          },
-          52,
-          14,
-          0.44,
-          0.4,
-          1.55
-        ]
-      }
-    },
-    {
       "$bc": "THREE.HemisphereLight",
-      "$id": 10,
+      "$id": 8,
       "$value": {
         "_": [
           {
@@ -198,7 +156,7 @@
     },
     {
       "$bc": "THREE.AmbientLight",
-      "$id": 11,
+      "$id": 9,
       "$value": {
         "_": [
           {
@@ -4195,94 +4153,6 @@
         "uuid": "5600bd9ae213f290"
       },
       {
-        "$bc": "ENGINE.SpotLightNode",
-        "children": [
-          {
-            "$ref": 7
-          }
-        ],
-        "light": {
-          "$ref": 7
-        },
-        "name": "Lamp Ground Spot 03",
-        "nodeId": 58541,
-        "position": {
-          "$bc": "v3",
-          "_": [
-            1.6,
-            0.6,
-            -13.5
-          ]
-        },
-        "rotation": {
-          "$bc": "e",
-          "_": [
-            0.349066,
-            0,
-            1.570796
-          ]
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1.5,
-            1.5,
-            1.5
-          ]
-        },
-        "shadowFar": 20,
-        "shadowMapSize": 1024,
-        "shadowNear": 0.2,
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "1d862bb230eab3bf"
-      },
-      {
-        "$bc": "ENGINE.SpotLightNode",
-        "children": [
-          {
-            "$ref": 8
-          }
-        ],
-        "light": {
-          "$ref": 8
-        },
-        "name": "Lamp Ground Spot 04",
-        "nodeId": 55988,
-        "position": {
-          "$bc": "v3",
-          "_": [
-            3.4,
-            0.6,
-            -13.5
-          ]
-        },
-        "rotation": {
-          "$bc": "e",
-          "_": [
-            0.349066,
-            0,
-            1.570796
-          ]
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1.5,
-            1.5,
-            1.5
-          ]
-        },
-        "shadowFar": 20,
-        "shadowMapSize": 1024,
-        "shadowNear": 0.2,
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "9b284f775e66ac1a"
-      },
-      {
         "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
         "children": [
@@ -4595,11 +4465,11 @@
         "$bc": "ENGINE.SpotLightNode",
         "children": [
           {
-            "$ref": 9
+            "$ref": 7
           }
         ],
         "light": {
-          "$ref": 9
+          "$ref": 7
         },
         "name": "Lamp Ground Spot",
         "nodeId": 9232,
@@ -7897,7 +7767,7 @@
         "position": {
           "$bc": "v3",
           "_": [
-            -4.7,
+            -6.8,
             -0.8,
             -0.7
           ]
@@ -8385,7 +8255,7 @@
         "position": {
           "$bc": "v3",
           "_": [
-            -22.05,
+            -21.4,
             -0.8,
             -0.7
           ]
@@ -8441,7 +8311,7 @@
         "position": {
           "$bc": "v3",
           "_": [
-            2.4,
+            15,
             -0.8,
             7.3
           ]
@@ -8837,7 +8707,7 @@
         "position": {
           "$bc": "v3",
           "_": [
-            -7.95,
+            -3.8,
             -0.8,
             -0.7
           ]
@@ -8885,7 +8755,7 @@
         "position": {
           "$bc": "v3",
           "_": [
-            12.7,
+            12.6,
             -0.8,
             7.3
           ]
@@ -9201,7 +9071,7 @@
         "position": {
           "$bc": "v3",
           "_": [
-            10.7,
+            2,
             -0.8,
             7.3
           ]
@@ -9344,7 +9214,7 @@
         "position": {
           "$bc": "v3",
           "_": [
-            -10.5,
+            -13.1,
             -0.8,
             -0.7
           ]
@@ -9400,7 +9270,7 @@
         "position": {
           "$bc": "v3",
           "_": [
-            7.5,
+            6,
             -0.8,
             7.3
           ]
@@ -9880,7 +9750,7 @@
         "position": {
           "$bc": "v3",
           "_": [
-            -15.95,
+            -10.5,
             -0.8,
             -0.7
           ]
@@ -9976,7 +9846,7 @@
         "position": {
           "$bc": "v3",
           "_": [
-            4.8,
+            8.5,
             -0.8,
             7.3
           ]
@@ -10642,11 +10512,11 @@
         "$bc": "ENGINE.HemisphereLightNode",
         "children": [
           {
-            "$ref": 10
+            "$ref": 8
           }
         ],
         "light": {
-          "$ref": 10
+          "$ref": 8
         },
         "name": "Anime Sky Fill",
         "nodeId": 20880,
@@ -10659,11 +10529,11 @@
         "$bc": "ENGINE.AmbientLightNode",
         "children": [
           {
-            "$ref": 11
+            "$ref": 9
           }
         ],
         "light": {
-          "$ref": 11
+          "$ref": 9
         },
         "name": "Anime Ambient Fill",
         "nodeId": 47640,
@@ -11298,9 +11168,9 @@
       {
         "$bc": "ENGINE.FogNode",
         "fogColor": "#d7e4f0",
-        "fogDensity": 0.008,
-        "fogFar": 70,
-        "fogNear": 12,
+        "fogDensity": 0.012,
+        "fogFar": 100,
+        "fogNear": 15,
         "name": "Afternoon Haze",
         "nodeId": 44092,
         "userData": {
@@ -13438,15 +13308,7 @@
             "nodeType": "actor"
           },
           {
-            "id": "1d862bb230eab3bf",
-            "nodeType": "actor"
-          },
-          {
             "id": "2dcd6d3fbd07d7b2",
-            "nodeType": "actor"
-          },
-          {
-            "id": "9b284f775e66ac1a",
             "nodeType": "actor"
           }
         ],
