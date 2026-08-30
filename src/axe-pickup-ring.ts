@@ -147,10 +147,10 @@ export class AxePickupRingSystem extends ENGINE.SceneNode {
   }
 
   /**
-   * Tutorial-keys-style opacity pulse for {@link PULSE_HINT_DURATION_SEC},
-   * or until the axe is picked up.
+   * Tutorial-keys-style opacity pulse while {@link openEnded}, or for
+   * {@link PULSE_HINT_DURATION_SEC} when the bubble dismisses.
    */
-  public playHint(): void {
+  public playHint(openEnded = false): void {
     if (this.everPickedUp || !this.ring) {
       return;
     }
@@ -162,8 +162,19 @@ export class AxePickupRingSystem extends ENGINE.SceneNode {
     this.ring.visible = true;
     this.ring.scale.setScalar(1);
     this.pulseElapsed = 0;
-    this.pulseRemaining = PULSE_HINT_DURATION_SEC;
+    this.pulseRemaining = openEnded ? Number.POSITIVE_INFINITY : PULSE_HINT_DURATION_SEC;
     this.setRingOpacity(PULSE_OPACITY_MIN);
+  }
+
+  /** Keep pulsing for this many seconds after the morning speech bubble closes. */
+  public endHintPulseAfter(seconds: number): void {
+    if (this.everPickedUp || !this.ring) {
+      return;
+    }
+    this.pulseRemaining = Math.max(0, seconds);
+    if (this.pulseRemaining > 0) {
+      this.ring.visible = true;
+    }
   }
 
   /** Show the ring again at the axe after a next-day reset (axe is put back). */

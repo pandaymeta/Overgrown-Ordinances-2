@@ -19,6 +19,10 @@ const MESH_YAW_OFFSET = 0;
 const LOCKED_CAMERA_PITCH_DEGREES = -45;
 /** Flat intro shot (no downward angle). */
 const INTRO_FRONT_CAMERA_PITCH_DEGREES = 0;
+/** Dismantled metal scrap carry height (was 0.8 on prefab markers). */
+const METAL_SCRAP_CARRY_HEIGHT = 1.2;
+/** Trail map kiosk wood parts use the same elevated carry as metal scrap. */
+const KIOSK_WOOD_CARRY_HEIGHT = 1.2;
 /**
  * Mesh yaw that turns the avatar toward the camera.
  * Spring arm stays behind (local +Z); default mesh faces -Z, so π shows the face.
@@ -28,8 +32,8 @@ const INTRO_FACE_MESH_YAW = Math.PI;
 /** Camera spring-arm distances in meters. */
 const INITIAL_CAMERA_DISTANCE = 3;
 const MIN_CAMERA_DISTANCE = 2;
-/** Allows the wide isometric intro establishing shot; gameplay still defaults nearer. */
-const MAX_CAMERA_DISTANCE = 55;
+/** Maximum scroll-zoom spring-arm distance during gameplay (meters). */
+const MAX_CAMERA_DISTANCE = 35;
 
 const AXE_ATTACK_CLIP = 'Attack 01';
 const AXE_ATTACK_PLAY_RATE = 2;
@@ -679,12 +683,10 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
       this.movementNode.addForwardInput(0);
       this.movementNode.addRightInput(0);
       this.movementNode.setVelocities(0, 0, 0);
-      this.movementNode.setGrounded(true);
     } else if (this.movementNode instanceof ENGINE.CharacterMovementNode) {
       this.movementNode.addForwardInput(0);
       this.movementNode.addRightInput(0);
       this.movementNode.setVelocities(0, 0, 0);
-      this.movementNode.setGrounded(true);
     }
     this.applyMovementFreeze();
     if (!this.animationNode?.isReady()) {
@@ -830,12 +832,14 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
   }
 
   /** Teleport home, plant on the floor, then idle — safe before cinematic freezes. */
-  public teleportToPlayerStartAndSettle(): boolean {
+  public teleportToPlayerStartAndSettle(options?: { armSpawnPhysicsGrace?: boolean }): boolean {
     if (!this.teleportToPlayerStart()) {
       return false;
     }
     this.settleOnGround();
-    beginSpawnPhysicsGrace();
+    if (options?.armSpawnPhysicsGrace !== false) {
+      beginSpawnPhysicsGrace();
+    }
     return true;
   }
 
@@ -1547,6 +1551,15 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
   }
 
   private getCarriedObjectCarryHeight(): number {
+    const crate = this.carriedCrate;
+    if (crate) {
+      if (this.classifyThrownLandSound(crate) === 'metal') {
+        return METAL_SCRAP_CARRY_HEIGHT;
+      }
+      if (this.isKioskWoodCarryable(crate)) {
+        return KIOSK_WOOD_CARRY_HEIGHT;
+      }
+    }
     const marker = this.carriedCrate?.getNodesByPredicate(
       (node) => 'carryHeightOverride' in node,
       1,
@@ -1696,6 +1709,13 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
       return 'wood';
     }
     return null;
+  }
+
+  private isKioskWoodCarryable(crate: ENGINE.PrimitiveNode): boolean {
+    const name = crate.name ?? '';
+    const modelUrl = crate instanceof ENGINE.ModelMeshNode ? (crate.modelUrl ?? '') : '';
+    return /^Kiosk Wood(?:\s+\d+)?$/i.test(name)
+      || /(?:^|\/)Wood[12](?:-centered)?\.glb$/i.test(modelUrl);
   }
 
   private isThrownSmallRock(crate: ENGINE.PrimitiveNode): boolean {

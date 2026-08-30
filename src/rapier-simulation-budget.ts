@@ -13,8 +13,6 @@ const MAX_PHYSICS_STEP_SEC = 1 / 60;
 const HITCH_DISCARD_SEC = MAX_PHYSICS_STEP_SEC * 1.25;
 /** Default hold after teleport / respawn / day reset. */
 export const SPAWN_PHYSICS_HOLD_TICKS = 24;
-/** Hold while cream splash + intro speech run (physics stays off). */
-export const INTRO_PHYSICS_HOLD_TICKS = 90;
 
 let simulationPaused = false;
 let holdTicksRemaining = 0;
@@ -41,8 +39,8 @@ export function holdRapierSimulation(ticks: number): void {
  * Spawn / respawn / next-day: optionally pause Rapier and queue a post-release
  * hold so the first real steps never catch up a GPU hitch frame.
  *
- * Use `pauseSimulation: false` during long intro speech so settle-on-ground can
- * keep the character controller body aligned while movement stays frozen.
+ * Use `pauseSimulation: false` when releasing early under a loading cover so the
+ * capsule can settle while movement stays frozen.
  */
 export function beginSpawnPhysicsGrace(
   holdTicks = SPAWN_PHYSICS_HOLD_TICKS,

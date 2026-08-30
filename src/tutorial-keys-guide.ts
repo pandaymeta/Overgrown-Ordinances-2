@@ -23,6 +23,11 @@ const PULSE_DURATION_SEC = PULSE_COUNT / PULSE_HZ;
 /** Begin fully transparent, then breathe up to opaque and back again. */
 const PULSE_OPACITY_MIN = 0;
 const PULSE_OPACITY_MAX = 1;
+/** Lane marking paint on AsphaltRoadTile — warm cream, not pure white. */
+const ROAD_MARKING_PAINT_RGB = { r: 0xf2, g: 0xef, b: 0xe7 };
+/** Match AsphaltRoadTile `finish()` — lit vertex paint, not emissive UI. */
+const ROAD_PAINT_ROUGHNESS = 0.85;
+const ROAD_PAINT_METALNESS = 0;
 
 type IconSpec = {
   name: string;
@@ -104,7 +109,8 @@ const ICON_SPEC_BY_NAME = new Map(ICON_SPECS.map((spec) => [spec.name, spec]));
 @ENGINE.GameClass()
 export class TutorialKeysGuide extends ENGINE.SceneNode {
   private readonly iconMeshes: ENGINE.MeshNode[] = [];
-  private readonly materials: THREE.MeshBasicMaterial[] = [];
+  private readonly materials: THREE.MeshStandardMaterial[] = [];
+  private readonly bakedTextures: THREE.Texture[] = [];
   private pulseRemaining = 0;
   private pulseElapsed = 0;
   private onHintFinished: (() => void) | null = null;
@@ -237,15 +243,76 @@ export class TutorialKeysGuide extends ENGINE.SceneNode {
     this.iconMeshes.push(child);
   }
 
-  private createPlaceholderMaterial(): THREE.MeshBasicMaterial {
-    return new THREE.MeshBasicMaterial({
+  private createPlaceholderMaterial(): THREE.MeshStandardMaterial {
+    return this.createRoadPaintMaterial();
+  }
+
+  /** Lit road-marking material — same response as asphalt lane paint geometry. */
+  private createRoadPaintMaterial(map?: THREE.Texture): THREE.MeshStandardMaterial {
+    return new THREE.MeshStandardMaterial({
+      map,
       color: 0xffffff,
       transparent: true,
-      opacity: 0,
+      opacity: map ? 1 : 0,
       depthWrite: false,
-      toneMapped: false,
+      depthTest: true,
+      roughness: ROAD_PAINT_ROUGHNESS,
+      metalness: ROAD_PAINT_METALNESS,
+      flatShading: true,
       side: THREE.DoubleSide,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
     });
+  }
+
+  /**
+   * Kenney keys are white-on-black PNGs. Bake cream lane-paint colour + alpha so
+   * normal blending and scene lighting match AsphaltRoadTile markings.
+   */
+  private bakeRoadPaintIconTexture(source: THREE.Texture): THREE.CanvasTexture | null {
+    if (typeof document === 'undefined') {
+      return null;
+    }
+    const image = source.image as CanvasImageSource & { width?: number; height?: number };
+    const width = image.width ?? 0;
+    const height = image.height ?? 0;
+    if (!width || !height) {
+      return null;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d');
+    if (!context) {
+      return null;
+    }
+
+    context.drawImage(image, 0, 0, width, height);
+    const imageData = context.getImageData(0, 0, width, height);
+    const data = imageData.data;
+    const { r, g, b } = ROAD_MARKING_PAINT_RGB;
+    for (let i = 0; i < data.length; i += 4) {
+      const lum = Math.max(data[i], data[i + 1], data[i + 2]);
+      if (lum < 8) {
+        data[i + 3] = 0;
+        continue;
+      }
+      data[i] = r;
+      data[i + 1] = g;
+      data[i + 2] = b;
+      data[i + 3] = lum;
+    }
+    context.putImageData(imageData, 0, 0);
+
+    const baked = new THREE.CanvasTexture(canvas);
+    baked.colorSpace = THREE.SRGBColorSpace;
+    baked.magFilter = THREE.LinearFilter;
+    baked.minFilter = THREE.LinearMipmapLinearFilter;
+    baked.generateMipmaps = true;
+    baked.needsUpdate = true;
+    return baked;
   }
 
   private ensureMaterials(): Promise<void> {
@@ -264,6 +331,7 @@ export class TutorialKeysGuide extends ENGINE.SceneNode {
       material.dispose();
     }
     this.materials.length = 0;
+    this.disposeBakedTextures();
     this.materialsReady = false;
 
     for (const mesh of this.iconMeshes) {
@@ -280,21 +348,15 @@ export class TutorialKeysGuide extends ENGINE.SceneNode {
         }
         loaded.colorSpace = THREE.SRGBColorSpace;
         loaded.needsUpdate = true;
-        // Additive + unlit: black glyph bg adds nothing; white strokes stay bright.
-        const material = new THREE.MeshBasicMaterial({
-          map: loaded,
-          color: 0xffffff,
-          transparent: true,
-          opacity: 1,
-          blending: THREE.AdditiveBlending,
-          depthWrite: false,
-          depthTest: true,
-          toneMapped: false,
-          side: THREE.DoubleSide,
-        });
+        const baked = this.bakeRoadPaintIconTexture(loaded);
+        if (!baked) {
+          continue;
+        }
+        this.bakedTextures.push(baked);
+        const material = this.createRoadPaintMaterial(baked);
         mesh.material = material;
         const applied = mesh.material;
-        if (applied instanceof THREE.MeshBasicMaterial) {
+        if (applied instanceof THREE.MeshStandardMaterial) {
           this.materials.push(applied);
         } else {
           this.materials.push(material);
@@ -314,7 +376,15 @@ export class TutorialKeysGuide extends ENGINE.SceneNode {
       material.dispose();
     }
     this.materials.length = 0;
+    this.disposeBakedTextures();
     this.materialsReady = false;
+  }
+
+  private disposeBakedTextures(): void {
+    for (const texture of this.bakedTextures) {
+      texture.dispose();
+    }
+    this.bakedTextures.length = 0;
   }
 
   private setIconsVisible(visible: boolean): void {

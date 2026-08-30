@@ -68,14 +68,15 @@ import { ensureOvergrownAveriaFont } from './overgrown-averia-font.js';
 import { applyDirectionalShadowBudget } from './environment-art-direction.js';
 import {
   beginSpawnPhysicsGrace,
-  INTRO_PHYSICS_HOLD_TICKS,
   isRapierSimulationPaused,
   releaseSpawnPhysicsGrace,
   SPAWN_PHYSICS_HOLD_TICKS,
 } from './rapier-simulation-budget.js';
 import { ShophouseCameraOcclusionSystem } from './shophouse-camera-occlusion.js';
 import { applyOrdinanceSignSharpnessWhenRevealed, diagnoseVisibleMeshesMissingPosition, hideMissingPositionMeshesInWorld } from './ordinance-sign-sharpness.js';
+import { matchesOrdinanceFamily } from './ordinance-monument.js';
 import { waitForStartupBrushReveal } from './startup-brush-reveal.js';
+import { markIntroPhysicsPrimed } from './intro-physics-gate.js';
 import { TutorialKeysGuide } from './tutorial-keys-guide.js';
 
 /** Default spring-arm distance for gameplay and opening shot. */
@@ -93,6 +94,7 @@ const CINEMATIC_BLEND_SEC = 1.15;
 /** Smooth blend from ordinance cinematic back to the player cam. */
 const CINEMATIC_RETURN_SEC = 2.8;
 const FADE_SEC = 0.85;
+/** Soft-loop day reset — snappier than delivery next-day fades. */
 const DAY_RESET_FADE_SEC = 0.4;
 const NEXT_DAY_LABEL_SEC = 2;
 const NEXT_DAY_TEXT = 'The Next Day...';
@@ -220,6 +222,7 @@ const TRAM_TRIGGER_NAME = /^TramTrigger$/i;
 const TRAM_ROOF_TRIGGER_NAME = /^TramRoofTrigger$/i;
 const MAILBOX_NAME = /Mailbox/i;
 const MAINTENANCE_NAME = /^Maintenance$/i;
+const MAINTENANCE_ANY_NAME = /^Maintenance(?:\s+\d+)?$/i;
 const JAYWALKING_NAME = /^JayWalking$/i;
 const JAYWALKING_ANY_NAME = /^JayWalking/i;
 const DO_NOT_STEP_CAR_NAME = /^Do Not Step Car$/i;
@@ -405,6 +408,12 @@ type DeliveryRouteCandidate =
   | 'highVoltage'
   | 'doNotStepTram'
   | 'doNotStepCar';
+
+type RoadLitterOrdinance =
+  | 'noCratesOnRoads'
+  | 'noBenchOnRoads'
+  | 'noLogsOnRoads'
+  | 'noWoodPlanksOnRoads';
 
 type MailDeliveryVia = 'mailboxClick' | 'catUnfed' | 'catPeach';
 
@@ -696,6 +705,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
    * only becomes pendingOrdinance if nothing else claimed the day.
    */
   private rocksOnRoadViolationSeen = false;
+  /** Road litter seen this delivery day (prop or platform use). */
+  private cratesOnRoadViolationSeen = false;
+  private logsOnRoadViolationSeen = false;
+  private woodPlanksOnRoadViolationSeen = false;
+  private benchOnRoadViolationSeen = false;
   /** World position of the park bench that last violated a road/track. */
   private readonly noBenchFocusAnchor = new THREE.Vector3();
   private hasNoBenchFocusAnchor = false;
@@ -753,6 +767,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private shadowBudgetReinforceRemaining = 180;
   /** Defer movement unfreeze until post-release physics hold ticks drain. */
   private movementUnfreezeAfterPhysicsHold = false;
+  /** Rapier stepped during the loading cover so intro speech does not re-wake physics. */
+  private introPhysicsPrimed = false;
   /** Avoid re-arming physics hold every frame (was freezing Rapier for entire phases). */
   private physicsGracePhase: FlowPhase | null = null;
   private trailGroup: THREE.Group | null = null;
@@ -796,8 +812,6 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private showPromptAfterNextDayTransition = false;
   /** After the next-day speech bubble auto-hides, pulse the ground tutorial keys. */
   private pendingTutorialKeysAfterSpeech = false;
-  /** After tutorial keys finish, pulse the axe ring (if never picked up). */
-  private pendingAxeRingPulseAfterKeys = false;
   private outlineReady = false;
   private outlinePassEnabled = false;
   private mailboxHovered = false;
@@ -888,6 +902,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   /** Player quip after mailbox latch; blocks fade until read hold ends. */
   private deliveryReactionText = '';
   private deliveryReactionSpeechShown = false;
+  /** Delivery caption position is fixed once so typewriter growth does not jitter. */
+  private deliverySpeechBubblePositionLocked = false;
   /** Immutable session baseline (authored transforms) — never overwritten after first capture. */
   private readonly daySnapshots: DayTransformSnapshot[] = [];
   private readonly dayBaselineIds = new Set<string>();
@@ -949,6 +965,14 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   /** Standing on kanji / pole crossarms: allow feet slightly above the AABB top. */
   /** Standing on Kiosk Wood (trail map parts) as a platform. */
   private readonly kioskWoodPlatformTopYPad = 0.4;
+  /** Standing on a park bench seat while using it as a road platform. */
+  private readonly parkBenchPlatformTopYPad = 0.45;
+  /** Standing on a cargo crate used as a road platform. */
+  private readonly cargoCratePlatformTopYPad = 0.4;
+  /** Standing on a fallen log used as a road platform. */
+  private readonly carryableLogPlatformTopYPad = 0.4;
+  /** Standing on kiosk wood / crate planks used as a road platform. */
+  private readonly woodPlanksPlatformTopYPad = 0.4;
   private readonly elevatedPlatformTopYPad = 0.35;
   /** Upper fraction of a standing utility pole treated as wire/crossarm walkable. */
   private readonly utilityPoleWireHeightFrac = 0.55;
@@ -998,9 +1022,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (world) {
       applyDirectionalShadowBudget(world);
       this.shadowBudgetReinforceRemaining = 180;
-      world.getNodes(ShophouseCameraOcclusionSystem).forEach((system) => {
-        system.setPaused(true);
-      });
+      this.setCameraOcclusionPaused(true);
     }
     void this.startFlow();
     return true;
@@ -1065,6 +1087,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (this.movementUnfreezeAfterPhysicsHold && !isRapierSimulationPaused()) {
       this.player?.settleOnGround();
       this.player?.syncPhysicsBodyToPawn();
+      this.player?.forceIdlePose();
       this.player?.setMovementFrozen(false);
       this.movementUnfreezeAfterPhysicsHold = false;
     }
@@ -1099,13 +1122,18 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.pollKioskWoodPlatformUse();
       this.pollWireWalkFeetContact();
       this.pollCargoCrateOnRoadContact();
+      this.pollCargoCratePlatformRoadBypass();
       this.pollSmallRockOnRoadContact();
       this.pollParkBenchOnRoadContact();
+      this.pollParkBenchPlatformRoadBypass();
       this.pollLogOnRoadContact();
+      this.pollLogPlatformRoadBypass();
       this.pollWoodPlanksPropOnRoadContact();
+      this.pollWoodPlanksPlatformRoadBypass();
       this.pollScrapMetalOnRoadContact();
       this.pollBushWearOnRoadContact();
       this.pollConePlatformRoadBypass();
+      this.pollTrafficConeStepContact();
       this.pollFallenPolePlatformRoadBypass();
       this.pollFallenOrdinanceSignPlatformRoadBypass();
       this.pollStreetLampScrapPlatformRoadBypass();
@@ -1132,7 +1160,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.updateMailboxPulse();
     this.updateRoadHighlightPulse(deltaTime);
     if (this.introSettleFramesRemaining > 0) {
-      this.player?.settleOnGround();
+      if (isRapierSimulationPaused()) {
+        this.player?.settleOnGround();
+      }
       this.introSettleFramesRemaining -= 1;
     }
     this.tickPhase(deltaTime);
@@ -1174,6 +1204,15 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     const controller = await world.gameMode?.waitForLocalPlayerController();
     this.player = await this.waitForPlayer(world, controller ?? null);
     this.player?.setMailEnvelopeCarried(true);
+
+    if (this.player) {
+      this.player.setMovementFrozen(true);
+      this.player.teleportToPlayerStartAndSettle();
+      this.player.setCinematicCameraLock(true);
+      this.player.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    }
+    await this.primeIntroPhysicsDuringLoading();
+
     this.mailbox = this.findModelByName(MAILBOX_NAME);
     this.refreshMailboxCache();
     this.maintenance = this.findModelByName(MAINTENANCE_NAME);
@@ -1233,11 +1272,6 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.player.setTrailMapKioskDismantledHandler(() => this.onTrailMapKioskDismantled());
       this.player.setOrdinanceBoardDismantledHandler(() => this.onOrdinanceBoardDismantled());
       this.player.setStreetLampDismantledHandler(() => this.onStreetLampDismantled());
-      this.player.setMovementFrozen(true);
-      this.player.teleportToPlayerStartAndSettle();
-      this.introSettleFramesRemaining = 12;
-      this.player.setCinematicCameraLock(true);
-      this.player.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
     }
 
     // Keep the tutorial UI quiet while the opening mask reveals the world.
@@ -1326,8 +1360,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
             this.zoomOutUsesBlackFade = true;
             this.dayResetFadePhase = 'toBlack';
             this.dayResetFadeElapsed = 0;
-            this.stopModelFrontCinematic();
-            this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+            this.fadeUncoverArmed = false;
+            this.fadeUncoverElapsed = 0;
+            this.fadeCoverPresentElapsed = 0;
+            this.fadeCoverScrapWaitElapsed = 0;
+            this.setFade(0);
             this.setPhase(FlowPhase.ZoomOutToPlay);
           } else {
             this.zoomOutUsesBlackFade = false;
@@ -1473,15 +1510,48 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     return MORNING_SPEECH_AGAIN;
   }
 
-  /** Freeze + teleport home + plant on asphalt before the opening shot. */
+  /** Keep movement frozen; skip re-teleport once loading physics priming finished. */
   private plantPlayerForIntro(): void {
     if (!this.player) {
       return;
     }
     this.player.setMovementFrozen(true);
-    this.player.teleportToPlayerStartAndSettle();
-    this.introSettleFramesRemaining = Math.max(this.introSettleFramesRemaining, 24);
-    beginSpawnPhysicsGrace(INTRO_PHYSICS_HOLD_TICKS, false);
+    if (this.introPhysicsPrimed) {
+      this.player.forceIdlePose();
+      return;
+    }
+    this.player.teleportToPlayerStartAndSettle({ armSpawnPhysicsGrace: false });
+    this.introSettleFramesRemaining = Math.max(this.introSettleFramesRemaining, 8);
+  }
+
+  /**
+   * Step Rapier under the loading / splash cover so the capsule is grounded before
+   * the intro bubble ends. Movement stays frozen; hitch discard still applies.
+   */
+  private async primeIntroPhysicsDuringLoading(): Promise<void> {
+    if (!this.player || this.introPhysicsPrimed) {
+      return;
+    }
+    this.player.setMovementFrozen(true);
+    releaseSpawnPhysicsGrace(SPAWN_PHYSICS_HOLD_TICKS);
+    const frameBudget = SPAWN_PHYSICS_HOLD_TICKS * 3 + 24;
+    for (let frame = 0; frame < frameBudget; frame += 1) {
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve());
+      });
+      if (!isRapierSimulationPaused()) {
+        this.player.syncPhysicsBodyToPawn();
+        if (frame % 6 === 0) {
+          this.player.settleOnGround();
+        }
+      }
+    }
+    this.player.settleOnGround();
+    this.player.syncPhysicsBodyToPawn();
+    this.player.forceIdlePose();
+    this.introPhysicsPrimed = true;
+    this.introSettleFramesRemaining = Math.max(this.introSettleFramesRemaining, 12);
+    markIntroPhysicsPrimed();
   }
 
   private enterPlayableDay(resetPathUsage: boolean, preserveCurrentCamera = false): void {
@@ -1498,7 +1568,14 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.noCratesOnRoadsLoopTriggered = false;
       this.noRocksOnRoadsLoopTriggered = false;
       this.rocksOnRoadViolationSeen = false;
-      this.hasNoRocksFocusAnchor = false;
+      this.cratesOnRoadViolationSeen = false;
+      this.logsOnRoadViolationSeen = false;
+      this.woodPlanksOnRoadViolationSeen = false;
+      this.benchOnRoadViolationSeen = false;
+      this.hasNoCratesFocusAnchor = false;
+      this.hasNoBenchFocusAnchor = false;
+      this.hasNoLogsFocusAnchor = false;
+      this.hasNoWoodPlanksFocusAnchor = false;
       this.noBenchOnRoadsLoopTriggered = false;
       this.noLogsOnRoadsLoopTriggered = false;
       this.noWoodPlanksOnRoadsLoopTriggered = false;
@@ -1538,13 +1615,16 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.setTrailVisible(true);
     this.player?.setMailEnvelopeCarried(true);
     this.player?.setMailDeliveryClickHandler(() => this.tryDeliverByClick());
-    this.player?.settleOnGround();
-    this.player?.syncPhysicsBodyToPawn();
-    this.player?.forceIdlePose();
     this.player?.setCinematicCameraLock(false);
-    releaseSpawnPhysicsGrace(SPAWN_PHYSICS_HOLD_TICKS);
-    this.movementUnfreezeAfterPhysicsHold = true;
+    if (this.introPhysicsPrimed && !resetPathUsage) {
+      // First morning after loading: physics already settled under the splash cover.
+      this.player?.setMovementFrozen(false);
+    } else {
+      releaseSpawnPhysicsGrace(SPAWN_PHYSICS_HOLD_TICKS);
+      this.movementUnfreezeAfterPhysicsHold = true;
+    }
     this.endGpuSafeTransition();
+    this.setCameraOcclusionPaused(false);
     // Physics settle after GPU throttle lifts — not under black fade.
     this.baselineReinforceRemaining = Math.max(this.baselineReinforceRemaining, 10);
     if (!preserveCurrentCamera) {
@@ -1792,6 +1872,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     // Rocks never stays as a provisional claim once anything else is in play.
     if (this.pendingOrdinance === 'noRocksOnRoads') {
       this.pendingOrdinance = null;
+    }
+
+    if (this.promoteSeenRoadLitterOrdinanceAtDelivery()) {
+      return;
     }
 
     if (this.pendingOrdinance) {
@@ -2429,12 +2513,17 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     for (const cone of this.trafficCones) {
       this.setOrdinanceVisible(cone, true);
     }
+    for (const record of this.hiddenOrdinances) {
+      if (matchesOrdinanceFamily(MAINTENANCE_ANY_NAME, record.node.name ?? '')) {
+        this.setOrdinanceVisible(record.node, true);
+      }
+    }
   }
 
   private revealJaywalkingOrdinance(): void {
     this.setOrdinanceVisible(this.jaywalking, true);
     for (const record of this.hiddenOrdinances) {
-      if (JAYWALKING_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(JAYWALKING_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2443,7 +2532,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private revealDoNotStepCarOrdinance(): void {
     this.setOrdinanceVisible(this.doNotStepCar, true);
     for (const record of this.hiddenOrdinances) {
-      if (DO_NOT_STEP_CAR_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(DO_NOT_STEP_CAR_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2452,7 +2541,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private revealDoNotStepCityTramOrdinance(): void {
     this.setOrdinanceVisible(this.doNotStepCityTram, true);
     for (const record of this.hiddenOrdinances) {
-      if (DO_NOT_STEP_CITY_TRAM_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(DO_NOT_STEP_CITY_TRAM_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2466,7 +2555,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (STREET_LIGHTS_CLIMB_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(STREET_LIGHTS_CLIMB_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2480,7 +2569,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (STREET_LIGHTS_DESTROY_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(STREET_LIGHTS_DESTROY_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2494,7 +2583,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (DONT_FEED_THE_CAT_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(DONT_FEED_THE_CAT_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2508,7 +2597,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (NO_CATS_ON_STREETS_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(NO_CATS_ON_STREETS_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2522,7 +2611,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (NO_CRATES_ON_ROADS_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(NO_CRATES_ON_ROADS_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2536,7 +2625,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (NO_ROCKS_ON_ROADS_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(NO_ROCKS_ON_ROADS_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2550,7 +2639,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (NO_BENCH_ON_ROADS_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(NO_BENCH_ON_ROADS_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2564,7 +2653,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (NO_LOGS_ON_ROADS_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(NO_LOGS_ON_ROADS_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2578,7 +2667,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (NO_WOOD_PLANKS_ON_ROADS_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(NO_WOOD_PLANKS_ON_ROADS_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2592,7 +2681,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (DONT_REMOVE_THE_CONES_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(DONT_REMOVE_THE_CONES_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2606,7 +2695,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (NO_SCRAP_METALS_ON_ROADS_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(NO_SCRAP_METALS_ON_ROADS_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2620,7 +2709,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (DONT_REMOVE_THIS_BUSH_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(DONT_REMOVE_THIS_BUSH_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2634,7 +2723,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (DONT_REMOVE_THIS_KIOSK_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(DONT_REMOVE_THIS_KIOSK_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2648,7 +2737,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (DONT_CUT_THIS_POLE_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(DONT_CUT_THIS_POLE_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2662,7 +2751,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (DO_NOT_DESTROY_THIS_SIGN_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(DO_NOT_DESTROY_THIS_SIGN_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2676,7 +2765,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (DONT_HIT_THE_FIRE_HYDRANT_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(DONT_HIT_THE_FIRE_HYDRANT_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2690,7 +2779,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (HIGH_VOLTAGE_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(HIGH_VOLTAGE_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2704,7 +2793,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (NO_CUTTING_OF_TREES_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(NO_CUTTING_OF_TREES_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2718,7 +2807,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (NO_CLIMBING_ON_THE_TREE_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(NO_CLIMBING_ON_THE_TREE_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2732,7 +2821,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.setOrdinanceVisible(node, true);
     }
     for (const record of this.hiddenOrdinances) {
-      if (DO_NOT_REMOVE_THE_SIGNS_ANY_NAME.test(record.node.name ?? '')) {
+      if (matchesOrdinanceFamily(DO_NOT_REMOVE_THE_SIGNS_ANY_NAME, record.node.name ?? '')) {
         this.setOrdinanceVisible(record.node, true);
       }
     }
@@ -2921,7 +3010,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.setMailboxHighlight(false);
     this.setTrailVisible(false);
 
-    // Capture the live gameplay camera before teleport/reset so we don't snap.
+    // Capture the live gameplay camera before the soft-loop reset so we don't snap.
     const active = this.getWorld()?.getActiveCamera();
     if (active) {
       active.updateMatrixWorld(true);
@@ -2929,13 +3018,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       active.getWorldQuaternion(this.cinematicStartQuat);
     }
 
-    this.player?.releaseHeldItemsForDayReset();
-    this.player?.parkScrapForDayReset();
-    this.player?.finishDayResetRest();
-    this.restoreDayBaseline();
-    this.baselineReinforceRemaining = 10;
-    this.player?.teleportToPlayerStartAndSettle();
-    // Soft-loop day reset: black fade back to play (not the dizzy cinematic zoom-out).
+    // Soft-loop day reset: fade to black on the ordinance, then reset under cover.
     this.blackReturnAfterOrdinanceFocus = true;
     // Keep orbit camera where it was for this frame; cinematic owns the view next.
     this.beginOrdinanceFocus({
@@ -3103,9 +3186,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
 
-    if (!this.pendingOrdinance && !this.noCratesOnRoadsOrdinanceActive) {
-      this.pendingOrdinance = 'noCratesOnRoads';
-    }
+    this.claimRoadLitterOrdinanceIfEligible('noCratesOnRoads');
   }
 
   private onSmallRockOnRoadContact(): void {
@@ -3159,9 +3240,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
 
-    if (!this.pendingOrdinance && !this.noBenchOnRoadsOrdinanceActive) {
-      this.pendingOrdinance = 'noBenchOnRoads';
-    }
+    this.claimRoadLitterOrdinanceIfEligible('noBenchOnRoads');
   }
 
   private onLogOnRoadContact(): void {
@@ -3186,9 +3265,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
 
-    if (!this.pendingOrdinance && !this.noLogsOnRoadsOrdinanceActive) {
-      this.pendingOrdinance = 'noLogsOnRoads';
-    }
+    this.claimRoadLitterOrdinanceIfEligible('noLogsOnRoads');
   }
 
   private onKioskWoodOnRoadContact(): void {
@@ -3213,13 +3290,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
 
-    if (!this.pendingOrdinance && !this.noWoodPlanksOnRoadsOrdinanceActive) {
-      this.pendingOrdinance = 'noWoodPlanksOnRoads';
-    }
+    this.claimRoadLitterOrdinanceIfEligible('noWoodPlanksOnRoads');
   }
 
   /**
-   * @param source `platform` = delivery-route candidate; `dismantle` = Family A (5th axe hit).
+   * @param source `platform` = stepped on / used as platform; `dismantle` = 5th axe hit.
    */
   private onDontRemoveTheConesContact(source: 'platform' | 'dismantle'): void {
     if (this.playableGraceRemaining > 0) {
@@ -3247,12 +3322,17 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
 
-    if (source === 'platform') {
-      this.markRouteCandidate('dontRemoveTheCones');
-      return;
-    }
+    this.claimDontRemoveTheConesOrdinance(source === 'dismantle');
+  }
 
-    if (!this.pendingOrdinance) {
+  /** Queue DontRemoveTheCones for the next day (delivery-route + pending slot). */
+  private claimDontRemoveTheConesOrdinance(force = false): void {
+    this.markRouteCandidate('dontRemoveTheCones');
+    if (
+      force
+      || !this.pendingOrdinance
+      || this.pendingOrdinance === 'noRocksOnRoads'
+    ) {
       this.pendingOrdinance = 'dontRemoveTheCones';
     }
   }
@@ -4185,6 +4265,162 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
   }
 
+  private isRoadLitterOrdinanceActive(ordinance: RoadLitterOrdinance): boolean {
+    switch (ordinance) {
+      case 'noCratesOnRoads':
+        return this.noCratesOnRoadsOrdinanceActive;
+      case 'noBenchOnRoads':
+        return this.noBenchOnRoadsOrdinanceActive;
+      case 'noLogsOnRoads':
+        return this.noLogsOnRoadsOrdinanceActive;
+      case 'noWoodPlanksOnRoads':
+        return this.noWoodPlanksOnRoadsOrdinanceActive;
+      default: {
+        const _exhaustive: never = ordinance;
+        return _exhaustive;
+      }
+    }
+  }
+
+  private markRoadLitterViolationSeen(ordinance: RoadLitterOrdinance): void {
+    switch (ordinance) {
+      case 'noCratesOnRoads':
+        this.cratesOnRoadViolationSeen = true;
+        break;
+      case 'noBenchOnRoads':
+        this.benchOnRoadViolationSeen = true;
+        break;
+      case 'noLogsOnRoads':
+        this.logsOnRoadViolationSeen = true;
+        break;
+      case 'noWoodPlanksOnRoads':
+        this.woodPlanksOnRoadViolationSeen = true;
+        break;
+      default: {
+        const _exhaustive: never = ordinance;
+        return _exhaustive;
+      }
+    }
+  }
+
+  private claimRoadLitterOrdinanceIfEligible(ordinance: RoadLitterOrdinance): void {
+    if (this.isRoadLitterOrdinanceActive(ordinance)) {
+      return;
+    }
+    this.markRoadLitterViolationSeen(ordinance);
+    if (!this.pendingOrdinance) {
+      this.pendingOrdinance = ordinance;
+    } else if (this.pendingOrdinance === 'noRocksOnRoads') {
+      this.pendingOrdinance = ordinance;
+    }
+  }
+
+  /** Recover road-litter unlock when delivery runs but only rocks blocked the queue. */
+  private promoteSeenRoadLitterOrdinanceAtDelivery(): boolean {
+    const candidates: Array<[boolean, RoadLitterOrdinance]> = [
+      [this.cratesOnRoadViolationSeen, 'noCratesOnRoads'],
+      [this.logsOnRoadViolationSeen, 'noLogsOnRoads'],
+      [this.woodPlanksOnRoadViolationSeen, 'noWoodPlanksOnRoads'],
+      [this.benchOnRoadViolationSeen, 'noBenchOnRoads'],
+    ];
+    for (const [seen, ordinance] of candidates) {
+      if (seen && !this.isRoadLitterOrdinanceActive(ordinance)) {
+        this.pendingOrdinance = ordinance;
+        this.rocksOnRoadViolationSeen = false;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private isPlayerElevatedOverRestrictedRoad(): boolean {
+    if (!this.player) {
+      return false;
+    }
+    this.ensureRestrictedRoadCaches();
+    this.player.getWorldPosition(this.tmpPlayerPos);
+    this.tmpPlayerPos.y -= this.pawnFeetBelowRoot;
+
+    const overRoad = this.isPointXZOnRoadTiles(this.tmpPlayerPos, this.mainRoadNodes)
+      || this.isPointXZOnRoadTiles(this.tmpPlayerPos, this.leftSideRoadNodes)
+      || this.isPointXZOnRoadTiles(this.tmpPlayerPos, this.rightSideRoadNodes)
+      || this.isPointXZOnRoadTiles(this.tmpPlayerPos, this.tramTrackNodes);
+    if (!overRoad) {
+      return false;
+    }
+
+    return !(
+      this.isPlayerFeetOnRoadTiles(this.mainRoadNodes)
+      || this.isPlayerFeetOnRoadTiles(this.leftSideRoadNodes)
+      || this.isPlayerFeetOnRoadTiles(this.rightSideRoadNodes)
+      || this.isPlayerFeetOnRoadTiles(this.tramTrackNodes)
+    );
+  }
+
+  private findLitterPropPlayerIsStandingOn(
+    matches: (node: ENGINE.ModelMeshNode) => boolean,
+    topYPad: number,
+  ): ENGINE.ModelMeshNode | null {
+    if (!this.player) {
+      return null;
+    }
+
+    const world = this.getWorld();
+    if (!world) {
+      return null;
+    }
+
+    this.player.getWorldPosition(this.tmpPlayerPos);
+    this.tmpPlayerPos.y -= this.pawnFeetBelowRoot;
+
+    for (const node of this.getModelMeshes(world)) {
+      if (!matches(node)) {
+        continue;
+      }
+      if (!node.visible || !node.parent) {
+        continue;
+      }
+      if (this.player.isCarryingObject(node)) {
+        continue;
+      }
+      node.updateMatrixWorld(true);
+      this.tmpBounds.setFromObject(node);
+      if (this.tmpBounds.isEmpty()) {
+        continue;
+      }
+      this.tmpBounds.max.y += topYPad;
+      if (this.tmpBounds.containsPoint(this.tmpPlayerPos)) {
+        return node;
+      }
+    }
+    return null;
+  }
+
+  private pollRoadLitterPlatformBypass(
+    findProp: () => ENGINE.ModelMeshNode | null,
+    onContact: () => void,
+    setFocusAnchor: (prop: ENGINE.ModelMeshNode) => void,
+  ): void {
+    if (this.playableGraceRemaining > 0 || !this.player) {
+      return;
+    }
+    if (
+      this.phase !== FlowPhase.AwaitingDelivery
+      && this.phase !== FlowPhase.ZoomOutReveal
+      && this.phase !== FlowPhase.IntroSpeech
+    ) {
+      return;
+    }
+
+    const prop = findProp();
+    if (!prop || !this.isPlayerElevatedOverRestrictedRoad()) {
+      return;
+    }
+
+    setFocusAnchor(prop);
+    onContact();
+  }
+
   private pollCargoCrateOnRoadContact(): void {
     if (this.playableGraceRemaining > 0) {
       return;
@@ -4220,6 +4456,21 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.onCargoCrateOnRoadContact();
       return;
     }
+  }
+
+  /** Standing on a cargo crate over a road/track without feet on asphalt. */
+  private pollCargoCratePlatformRoadBypass(): void {
+    this.pollRoadLitterPlatformBypass(
+      () => this.findLitterPropPlayerIsStandingOn(
+        (node) => CARGO_CRATE_NAME.test(node.name ?? ''),
+        this.cargoCratePlatformTopYPad,
+      ),
+      () => this.onCargoCrateOnRoadContact(),
+      (crate) => {
+        crate.getWorldPosition(this.noCratesFocusAnchor);
+        this.hasNoCratesFocusAnchor = true;
+      },
+    );
   }
 
   /** Queue the ordinance only after a loose small rock has come to rest on a road/track. */
@@ -4298,6 +4549,24 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
   }
 
+  /**
+   * Standing on a park bench while XZ is over a road/track — the usual delivery
+   * route when a bench is used as a mobile platform (prop-on-road AABB can miss).
+   */
+  private pollParkBenchPlatformRoadBypass(): void {
+    this.pollRoadLitterPlatformBypass(
+      () => this.findLitterPropPlayerIsStandingOn(
+        (node) => PARK_BENCH_NAME.test(node.name ?? ''),
+        this.parkBenchPlatformTopYPad,
+      ),
+      () => this.onParkBenchOnRoadContact(),
+      (bench) => {
+        bench.getWorldPosition(this.noBenchFocusAnchor);
+        this.hasNoBenchFocusAnchor = true;
+      },
+    );
+  }
+
   private pollLogOnRoadContact(): void {
     if (this.playableGraceRemaining > 0) {
       return;
@@ -4335,6 +4604,22 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.onLogOnRoadContact();
       return;
     }
+  }
+
+  /** Standing on a fallen log over a road/track without feet on asphalt. */
+  private pollLogPlatformRoadBypass(): void {
+    this.pollRoadLitterPlatformBypass(
+      () => this.findLitterPropPlayerIsStandingOn(
+        (node) => this.isCarryableLogProp(node),
+        this.carryableLogPlatformTopYPad,
+      ),
+      () => this.onLogOnRoadContact(),
+      (log) => {
+        log.getWorldPosition(this.noLogsFocusAnchor);
+        this.hasNoLogsFocusAnchor = true;
+        this.logsThatTouchedRoad.add(log);
+      },
+    );
   }
 
   private isCarryableLogProp(node: ENGINE.ModelMeshNode): boolean {
@@ -4383,6 +4668,24 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.onKioskWoodOnRoadContact();
       return;
     }
+  }
+
+  /** Standing on kiosk wood / crate planks over a road/track without feet on asphalt. */
+  private pollWoodPlanksPlatformRoadBypass(): void {
+    this.pollRoadLitterPlatformBypass(
+      () => this.findLitterPropPlayerIsStandingOn(
+        (node) => this.isWoodPlanksRoadProp(node),
+        this.woodPlanksPlatformTopYPad,
+      ),
+      () => this.onKioskWoodOnRoadContact(),
+      (prop) => {
+        if (this.isKioskWoodProp(prop)) {
+          this.kioskWoodThatTouchedRoad.add(prop);
+        }
+        prop.getWorldPosition(this.noWoodPlanksFocusAnchor);
+        this.hasNoWoodPlanksFocusAnchor = true;
+      },
+    );
   }
 
   /** Kiosk Wood or Crate Planks Drop — both queue No Wood Planks on Roads. */
@@ -4471,6 +4774,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
   /**
    * Standing on a traffic cone while XZ is over a road, without feet touching asphalt.
+   * (Elevated cone platform — e.g. cone on crate over a lane.)
    */
   private pollConePlatformRoadBypass(): void {
     if (this.playableGraceRemaining > 0 || !this.player) {
@@ -4511,6 +4815,33 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       || this.isPlayerFeetOnRoadTiles(this.rightSideRoadNodes)
       || this.isPlayerFeetOnRoadTiles(this.tramTrackNodes)
     ) {
+      return;
+    }
+
+    this.onDontRemoveTheConesContact('platform');
+  }
+
+  /**
+   * Stepping on a traffic cone at road level (maintenance blockade cones on asphalt).
+   * Does not require feet-off-asphalt — that check blocked cones sitting on the road.
+   */
+  private pollTrafficConeStepContact(): void {
+    if (this.playableGraceRemaining > 0 || !this.player) {
+      return;
+    }
+    if (
+      this.phase !== FlowPhase.AwaitingDelivery
+      && this.phase !== FlowPhase.ZoomOutReveal
+      && this.phase !== FlowPhase.IntroSpeech
+    ) {
+      return;
+    }
+
+    if (this.platformTrafficCones.length === 0) {
+      this.cachePlatformTrafficCones();
+    }
+
+    if (!this.isPlayerStandingOnTrafficCone()) {
       return;
     }
 
@@ -4780,6 +5111,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     this.player.getWorldPosition(this.tmpPlayerPos);
     this.tmpPlayerPos.y -= this.pawnFeetBelowRoot;
+    const feetX = this.tmpPlayerPos.x;
+    const feetY = this.tmpPlayerPos.y;
+    const feetZ = this.tmpPlayerPos.z;
+    const xzPad = 0.32;
 
     for (const cone of this.platformTrafficCones) {
       if (!cone.visible || !cone.parent) {
@@ -4795,8 +5130,17 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       if (this.tmpBounds.isEmpty()) {
         continue;
       }
-      this.tmpBounds.max.y += this.conePlatformTopYPad;
-      if (this.tmpBounds.containsPoint(this.tmpPlayerPos)) {
+      const topY = this.tmpBounds.max.y + this.conePlatformTopYPad;
+      const bottomY = this.tmpBounds.min.y - 0.12;
+      if (feetY > topY || feetY < bottomY) {
+        continue;
+      }
+      if (
+        feetX >= this.tmpBounds.min.x - xzPad
+        && feetX <= this.tmpBounds.max.x + xzPad
+        && feetZ >= this.tmpBounds.min.z - xzPad
+        && feetZ <= this.tmpBounds.max.z + xzPad
+      ) {
         return true;
       }
     }
@@ -7099,7 +7443,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   }
 
   /**
-   * Soft-loop day reset: fade to black, snap gameplay cam, fade back to the scene.
+   * Soft-loop day reset: fade to black on the ordinance cam, reset under cover,
+   * then fade back to gameplay at the player start.
    */
   private tickDayResetBlackFade(deltaTime: number): void {
     this.player?.setMovementFrozen(true);
@@ -7114,12 +7459,15 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         return;
       }
       this.setFade(1);
+      this.applyTransitionCoverBackground(true);
+      this.performSoftLoopHiddenReset();
       this.stopModelFrontCinematic();
-      this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
       this.dayResetFadePhase = 'coverPresent';
       this.dayResetFadeElapsed = 0;
       this.fadeUncoverArmed = false;
+      this.fadeUncoverElapsed = 0;
       this.fadeCoverPresentElapsed = 0;
+      this.fadeCoverScrapWaitElapsed = 0;
       return;
     }
 
@@ -7132,6 +7480,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         return;
       }
       this.setFade(0);
+      this.applyTransitionCoverBackground(false);
       this.dayResetFadePhase = null;
       this.zoomOutUsesBlackFade = false;
       this.fadeUncoverArmed = false;
@@ -7278,7 +7627,14 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (highlightEnvelope) {
       this.player?.setMailEnvelopeHighlightPulsing(true);
     }
-    this.updateSpeechBubblePosition();
+    if (deliveryCaption) {
+      this.deliverySpeechBubblePositionLocked = false;
+      this.speechEl.style.minWidth = '';
+      this.speechEl.style.minHeight = '';
+      this.positionDeliverySpeechBubbleOnce(text);
+    } else {
+      this.updateSpeechBubblePosition();
+    }
     if (text.length === 0) {
       this.armSpeechReadHoldIfPending();
     }
@@ -7338,20 +7694,22 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.enterPlayableDay(false);
       return;
     }
+    this.endAxeRingPulseAfterMorningBubble();
     const showTutorialKeys = this.pendingTutorialKeysAfterSpeech;
     if (showTutorialKeys) {
       this.pendingTutorialKeysAfterSpeech = false;
       this.playTutorialKeysHint();
-    } else {
-      this.playPendingAxeRingAfterKeys();
     }
   }
 
   private hideSpeechBubble(): void {
     if (this.speechEl) {
       this.speechEl.style.display = 'none';
+      this.speechEl.style.minWidth = '';
+      this.speechEl.style.minHeight = '';
       this.applySpeechBubblePresentation(false);
     }
+    this.deliverySpeechBubblePositionLocked = false;
     this.speechTypingText = '';
     this.speechTypingElapsed = 0;
     this.speechAutoHideRemaining = 0;
@@ -7414,6 +7772,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!this.speechEl || this.speechEl.style.display === 'none') {
       return;
     }
+    if (this.phase === FlowPhase.DeliveryFocus && this.deliverySpeechBubblePositionLocked) {
+      return;
+    }
     const world = this.getWorld();
     const container = world?.gameContainer;
     if (!container) {
@@ -7421,32 +7782,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
 
     if (this.phase === FlowPhase.DeliveryFocus) {
-      const camera = world?.getActiveCamera() ?? this.player?.getGameplayCamera() ?? null;
-      if (!camera || !this.player) {
-        this.speechEl.style.left = '72%';
-        this.speechEl.style.top = '30%';
-        return;
+      if (this.deliveryReactionText) {
+        this.positionDeliverySpeechBubbleOnce(this.deliveryReactionText);
       }
-
-      this.resolvePlayerHeadWorld(this.tmpHead);
-      this.tmpProjected.copy(this.tmpHead).project(camera);
-
-      const canvas = container.querySelector('canvas');
-      const containerRect = container.getBoundingClientRect();
-      const canvasRect = canvas?.getBoundingClientRect() ?? containerRect;
-      if (canvasRect.width <= 0 || canvasRect.height <= 0) {
-        return;
-      }
-
-      const x = (this.tmpProjected.x * 0.5 + 0.5) * canvasRect.width
-        + (canvasRect.left - containerRect.left);
-      const y = (-this.tmpProjected.y * 0.5 + 0.5) * canvasRect.height
-        + (canvasRect.top - containerRect.top);
-      if (!Number.isFinite(x) || !Number.isFinite(y)) {
-        return;
-      }
-
-      this.clampSpeechBubbleToScreen(x, y, canvasRect.width, canvasRect.height, 12);
       return;
     }
 
@@ -7477,6 +7815,83 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     this.speechEl.style.left = `${x}px`;
     this.speechEl.style.top = `${Math.max(16, y)}px`;
+  }
+
+  /**
+   * Place the delivery reaction caption once using the final wrapped size so the
+   * typewriter cannot shift it as lines appear.
+   */
+  private positionDeliverySpeechBubbleOnce(fullText: string): void {
+    const el = this.speechEl;
+    if (!el || this.deliverySpeechBubblePositionLocked) {
+      return;
+    }
+
+    const world = this.getWorld();
+    const container = world?.gameContainer;
+    if (!container || !this.player) {
+      return;
+    }
+
+    const camera = world?.getActiveCamera() ?? this.player.getGameplayCamera() ?? null;
+    if (!camera) {
+      el.style.left = '72%';
+      el.style.top = '30%';
+      this.deliverySpeechBubblePositionLocked = true;
+      return;
+    }
+
+    const label = el.querySelector('[data-speech-label]') as HTMLSpanElement | null;
+    if (label) {
+      label.textContent = fullText;
+    } else {
+      el.textContent = fullText;
+    }
+    const bubbleWidth = el.offsetWidth || 280;
+    const bubbleHeight = el.offsetHeight || 96;
+    if (label) {
+      label.textContent = '';
+    } else {
+      el.textContent = '';
+    }
+    el.style.minWidth = `${bubbleWidth}px`;
+    el.style.minHeight = `${bubbleHeight}px`;
+
+    this.resolvePlayerHeadWorld(this.tmpHead);
+    this.tmpProjected.copy(this.tmpHead).project(camera);
+
+    const canvas = container.querySelector('canvas');
+    const containerRect = container.getBoundingClientRect();
+    const canvasRect = canvas?.getBoundingClientRect() ?? containerRect;
+    if (canvasRect.width <= 0 || canvasRect.height <= 0) {
+      return;
+    }
+
+    const anchorX = (this.tmpProjected.x * 0.5 + 0.5) * canvasRect.width
+      + (canvasRect.left - containerRect.left);
+    const anchorY = (-this.tmpProjected.y * 0.5 + 0.5) * canvasRect.height
+      + (canvasRect.top - containerRect.top);
+    if (!Number.isFinite(anchorX) || !Number.isFinite(anchorY)) {
+      return;
+    }
+
+    const marginX = canvasRect.width * 0.2;
+    const marginY = canvasRect.height * 0.2;
+    const gapAboveAnchor = 12;
+    const halfW = bubbleWidth * 0.5;
+    const x = THREE.MathUtils.clamp(
+      anchorX,
+      marginX + halfW,
+      canvasRect.width - marginX - halfW,
+    );
+    const y = THREE.MathUtils.clamp(
+      anchorY - gapAboveAnchor,
+      marginY + bubbleHeight,
+      canvasRect.height - marginY,
+    );
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+    this.deliverySpeechBubblePositionLocked = true;
   }
 
   /**
@@ -7561,41 +7976,39 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     this.showPromptAfterNextDayTransition = false;
     this.pendingTutorialKeysAfterSpeech = false;
-    const axeRing = this.getWorld()?.getNodes(AxePickupRingSystem)[0] ?? null;
-    const signs = this.brokenOrdinanceOrder.length;
-    // Axe line + ring pulse are the second next-day only, and only if unused.
-    this.pendingAxeRingPulseAfterKeys =
-      signs === 2
-      && !(axeRing?.hasEverPickedUp() ?? false);
     this.showSpeechBubble(this.getMorningSpeechText(), SPEECH_READ_HOLD_SEC);
+    this.tryPlayAxeRingMorningHint();
+  }
+
+  /** Second next-day axe line: pulse the pickup ring while the bubble is up. */
+  private tryPlayAxeRingMorningHint(): void {
+    if (this.brokenOrdinanceOrder.length !== 2) {
+      return;
+    }
+    const ring = this.getWorld()?.getNodes(AxePickupRingSystem)[0];
+    if (!ring || ring.hasEverPickedUp()) {
+      return;
+    }
+    ring.playHint(true);
+  }
+
+  private endAxeRingPulseAfterMorningBubble(): void {
+    if (this.brokenOrdinanceOrder.length !== 2) {
+      return;
+    }
+    const ring = this.getWorld()?.getNodes(AxePickupRingSystem)[0];
+    if (!ring || ring.hasEverPickedUp()) {
+      return;
+    }
+    ring.endHintPulseAfter(5);
   }
 
   private playTutorialKeysHint(): void {
     const guide = this.getWorld()?.getNodes(TutorialKeysGuide)[0];
     if (!guide) {
-      this.playPendingAxeRingAfterKeys();
       return;
     }
-    let finished = false;
-    const afterKeys = (): void => {
-      if (finished) {
-        return;
-      }
-      finished = true;
-      this.playPendingAxeRingAfterKeys();
-    };
-    guide.playHint(afterKeys);
-    // Backup if the guide callback never fires (materials hang, etc.).
-    globalThis.setTimeout(afterKeys, 8000);
-  }
-
-  private playPendingAxeRingAfterKeys(): void {
-    if (!this.pendingAxeRingPulseAfterKeys) {
-      return;
-    }
-    this.pendingAxeRingPulseAfterKeys = false;
-    const ring = this.getWorld()?.getNodes(AxePickupRingSystem)[0];
-    ring?.playHint();
+    guide.playHint();
   }
 
   private teardownUi(): void {
@@ -7616,6 +8029,24 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   }
 
   /**
+   * Soft-loop reset while the screen is fully black (after ordinance fade-out).
+   */
+  private performSoftLoopHiddenReset(): void {
+    this.hideEnvelopeForGpu();
+    this.player?.releaseHeldItemsForDayReset();
+    this.player?.parkScrapForDayReset();
+    this.player?.finishDayResetRest();
+    this.restoreDayBaseline();
+    this.baselineReinforceRemaining = 10;
+    this.restoreAuthoredAxeToBaseline();
+    this.player?.prepareScrapForCinematic();
+    this.player?.setMovementFrozen(true);
+    this.player?.teleportToPlayerStartAndSettle({ armSpawnPhysicsGrace: false });
+    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    this.player?.retireScrapForDayReset();
+  }
+
+  /**
    * Instant spawn teleport while the screen is fully black.
    * Scrap teardown / world restore / ordinance reveal happen later via staging.
    */
@@ -7626,7 +8057,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.restoreAuthoredAxeToBaseline();
     this.player?.prepareScrapForCinematic();
     this.player?.setMovementFrozen(true);
-    this.player?.teleportToPlayerStartAndSettle();
+    this.player?.teleportToPlayerStartAndSettle({ armSpawnPhysicsGrace: false });
     this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
   }
 
@@ -7658,18 +8089,17 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       || (this.phase === FlowPhase.ZoomOutToPlay && this.zoomOutUsesBlackFade);
   }
 
-  /** Keep Rapier off during spawn intro and black-screen day transitions. */
+  /** Keep Rapier off during black-screen day transitions only. */
   private shouldPausePhysicsForTransition(): boolean {
-    return this.phase === FlowPhase.IntroSpeech
-      || this.phase === FlowPhase.FadeToBlack
+    return this.phase === FlowPhase.FadeToBlack
       || this.phase === FlowPhase.HoldBlack
       || this.phase === FlowPhase.FadeFromBlack
       || (this.phase === FlowPhase.ZoomOutToPlay && this.zoomOutUsesBlackFade);
   }
 
-  /** Full Rapier pause — black-screen transitions only (not intro speech). */
+  /** Full Rapier pause — all black-screen transition phases. */
   private shouldFullyPausePhysicsForTransition(): boolean {
-    return this.phase !== FlowPhase.IntroSpeech;
+    return this.shouldPausePhysicsForTransition();
   }
 
   /**
@@ -7682,10 +8112,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
     this.gpuSafeTransitionActive = true;
-    const world = this.getWorld();
-    world?.getNodes(ShophouseCameraOcclusionSystem).forEach((system) => {
-      system.setPaused(true);
-    });
+    this.setCameraOcclusionPaused(true);
     this.player?.prepareScrapForCinematic();
     this.player?.setGpuThrottled(true);
     this.player?.setAllowDeferredDestroys(false);
@@ -7703,12 +8130,16 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.gpuSafeTransitionActive = false;
     this.player?.setAllowDeferredDestroys(true);
     this.restoreGpuSafeLights();
-    this.getWorld()?.getNodes(ShophouseCameraOcclusionSystem).forEach((system) => {
-      system.setPaused(false);
-    });
     this.player?.setGpuThrottled(false);
     this.player?.disposeHiddenMailEnvelope();
     this.clearEnvelope();
+    this.setCameraOcclusionPaused(false);
+  }
+
+  private setCameraOcclusionPaused(paused: boolean): void {
+    this.getWorld()?.getNodes(ShophouseCameraOcclusionSystem).forEach((system) => {
+      system.setPaused(paused);
+    });
   }
 
   /**

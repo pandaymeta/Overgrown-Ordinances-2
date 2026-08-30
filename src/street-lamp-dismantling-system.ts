@@ -51,6 +51,10 @@ const ORDINANCE_BOARD_MODEL_PATH = /PolyforkAssets\/Ordinances\/([^/?#]+)\.glb/i
 const ORDINANCE_CARD_V5_MODEL_PATH = /(?:^|\/)([A-Za-z]+)_Card_[^/]+\.glb$/i;
 /** Pole/lamp scrap drops and already-fallen meshes — not axe targets. */
 const ORDINANCE_BOARD_NON_TARGET_NAME = /(?:\s+Drop|\s+Fallen(?:\s+Mesh)?)(?:\s+\d+)?$/i;
+/** Printed card children on blank boards — v5, v 06, Angled, etc. */
+const ORDINANCE_PRINTED_CARD_MODEL = /_Card_/i;
+const ORDINANCE_PRINTED_CARD_NAME = /\s+Card\s+(?:Upright|Angled)\s+v/i;
+const ORDINANCE_PRINTED_CARD_KEY_NAME = /^([A-Za-z]+)\s+Card\s+(?:Upright|Angled)\s+v/i;
 /**
  * Explicit @project literals so Genesys build copies these into `.dist`.
  * Keys match Ordinances/*.glb basenames (case-insensitive lookup at runtime).
@@ -132,6 +136,9 @@ const HIT_FLASH_DURATION = 0.18;
 const PROJECTILE_HIT_COOLDOWN = 0.8;
 const PROJECTILE_MIN_SPEED = 2;
 const PROJECTILE_HEALTH_BAR_TIME = 2.75;
+/** Final axe hit: hide bar soon after scrap spawn, not with the projectile linger. */
+const DISMANTLE_HEALTH_BAR_TIME = 0.5;
+const DISMANTLE_HEALTH_BAR_POST_SPAWN_SEC = 0.32;
 
 function isStreetLampOrdinanceDisplayCard(node: ENGINE.ModelMeshNode): boolean {
   const url = String(node.modelUrl ?? '');
@@ -276,6 +283,8 @@ export class StreetLampDismantlingSystem {
   private readonly aimRaycaster = new THREE.Raycaster();
   private readonly dismantledTargets = new Set<ENGINE.SceneNode>();
   private readonly dismantledPhysics = new Map<ENGINE.SceneNode, ENGINE.NodePhysicsOptions>();
+  /** One fallen prefab per ordinance card type per day (Maintenance, Signs, …). */
+  private readonly spawnedOrdinanceBoardFallenKeys = new Set<string>();
   private readonly spawnedScrapRoots: ENGINE.SceneNode[] = [];
   /** Fallen utility poles stay in scrap tracking for day-reset, but are not pickups. */
   private readonly nonPickupableScrapRoots = new Set<ENGINE.SceneNode>();
@@ -670,6 +679,7 @@ export class StreetLampDismantlingSystem {
     }
     this.dismantledTargets.clear();
     this.dismantledPhysics.clear();
+    this.spawnedOrdinanceBoardFallenKeys.clear();
     this.clearAllTargetHealth();
 
     // Re-assert lamp child visuals stay non-physical after the root collider rebuild.
@@ -772,6 +782,7 @@ export class StreetLampDismantlingSystem {
     this.streetLampScrapWarming = false;
     this.dismantledTargets.clear();
     this.dismantledPhysics.clear();
+    this.spawnedOrdinanceBoardFallenKeys.clear();
     this.nonPickupableScrapRoots.clear();
     this.poseFallHomePoses.clear();
     this.clearAllTargetHealth();
@@ -979,8 +990,8 @@ export class StreetLampDismantlingSystem {
    * complete assembly or the parent board is left standing in the scene.
    */
   private getOrdinanceBoardAssemblyRoot(node: ENGINE.ModelMeshNode): ENGINE.ModelMeshNode {
-    const isPrintedCard = /_Card_/i.test(node.modelUrl ?? '')
-      || /\s+Card\s+Upright\s+v5(?:\s|$)/i.test(node.name ?? '');
+    const isPrintedCard = ORDINANCE_PRINTED_CARD_MODEL.test(node.modelUrl ?? '')
+      || ORDINANCE_PRINTED_CARD_NAME.test(node.name ?? '');
     if (isPrintedCard && node.parent instanceof ENGINE.ModelMeshNode) {
       return node.parent;
     }
@@ -1532,8 +1543,13 @@ export class StreetLampDismantlingSystem {
       return match[1];
     }
     // The name fallback also covers cards whose asset URL is supplied at runtime.
-    const nameMatch = (node.name ?? '').match(/^([A-Za-z]+)\s+Card\s+Upright\s+v5$/i);
+    const nameMatch = (node.name ?? '').match(ORDINANCE_PRINTED_CARD_KEY_NAME);
     return nameMatch?.[1] ?? null;
+  }
+
+  private hasSpawnedOrdinanceBoardFallenToday(node: ENGINE.ModelMeshNode): boolean {
+    const key = this.getOrdinanceBoardKey(node);
+    return key ? this.spawnedOrdinanceBoardFallenKeys.has(key.toLowerCase()) : false;
   }
 
   private resolveOrdinanceBoardFallenPrefab(target: ENGINE.ModelMeshNode): string | null {
@@ -1548,7 +1564,9 @@ export class StreetLampDismantlingSystem {
     );
     this.cherryTreeHealth.set(target, health);
     this.healthDisplayTarget = target;
-    this.healthDisplayTime = PROJECTILE_HEALTH_BAR_TIME;
+    this.healthDisplayTime = health <= 0
+      ? DISMANTLE_HEALTH_BAR_TIME
+      : PROJECTILE_HEALTH_BAR_TIME;
     const hitAt = new THREE.Vector3();
     target.getWorldPosition(hitAt);
     const hitSound = this.getAxeHitSound(target);
@@ -1754,6 +1772,9 @@ export class StreetLampDismantlingSystem {
     target: ENGINE.ModelMeshNode,
   ): boolean {
     if (this.dismantledTargets.has(target) || !target.visible) {
+      return false;
+    }
+    if (this.isOrdinanceBoardTarget(target) && this.hasSpawnedOrdinanceBoardFallenToday(target)) {
       return false;
     }
     if (this.isPoseFallDummy(target.name ?? '')) {
@@ -2204,6 +2225,15 @@ export class StreetLampDismantlingSystem {
       ? this.getOrdinanceBoardAssemblyRoot(target)
       : null;
     const transformTarget = ordinanceAssembly ?? target;
+    if (
+      this.healthDisplayTarget === target
+      || this.healthDisplayTarget === ordinanceAssembly
+    ) {
+      this.healthDisplayTime = Math.min(
+        this.healthDisplayTime,
+        DISMANTLE_HEALTH_BAR_POST_SPAWN_SEC,
+      );
+    }
     this.targetBounds.setFromObject(transformTarget);
     const spawnAtNodePosition = BUSH_8_BB_NAME.test(target.name ?? '')
       || STREET_LAMP_NAME.test(target.name ?? '')
@@ -2237,6 +2267,10 @@ export class StreetLampDismantlingSystem {
     }
 
     if (isOrdinanceBoard) {
+      const boardKey = this.getOrdinanceBoardKey(target);
+      if (boardKey && this.spawnedOrdinanceBoardFallenKeys.has(boardKey.toLowerCase())) {
+        return;
+      }
       const boardPrefab = this.resolveOrdinanceBoardFallenPrefab(target);
       if (!boardPrefab) {
         console.error(
@@ -2244,6 +2278,9 @@ export class StreetLampDismantlingSystem {
           target.modelUrl,
         );
         return;
+      }
+      if (boardKey) {
+        this.spawnedOrdinanceBoardFallenKeys.add(boardKey.toLowerCase());
       }
       this.hideDismantledOrdinanceAssembly(target, ordinanceAssembly ?? target);
       this.setTarget(world, null);

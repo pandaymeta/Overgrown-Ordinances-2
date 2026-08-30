@@ -3,6 +3,7 @@ import * as THREE from 'three';
 
 import { ThirdPersonPlayer } from './player.js';
 import { isMissingPositionMesh } from './ordinance-sign-sharpness.js';
+import { isOrdinanceMonumentNode } from './ordinance-monument.js';
 
 const SHOPHOUSE_NAME = /shophouse/i;
 const STANDALONE_OCCLUDER_NAME = /^(?:Cherry Blossom Tree|City Tram$)/i;
@@ -58,6 +59,9 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
   private readonly standaloneOccluders: ENGINE.ModelMeshNode[] = [];
   private readonly clouds: ENGINE.ModelMeshNode[] = [];
   private readonly cloudAuthoredVisibility = new Map<ENGINE.ModelMeshNode, boolean>();
+  private readonly ordinanceMonuments: ENGINE.ModelMeshNode[] = [];
+  private readonly monumentAuthoredVisibility = new Map<ENGINE.ModelMeshNode, boolean>();
+  private readonly monumentCameraHidden = new Set<ENGINE.ModelMeshNode>();
   private readonly meshCache = new Map<ENGINE.ModelMeshNode, THREE.Mesh[]>();
   private readonly hiddenMaterials = new Map<ENGINE.ModelMeshNode, MaterialSwap[]>();
   private readonly sharedHiddenByOriginal = new WeakMap<THREE.Material, THREE.Material>();
@@ -102,6 +106,15 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
     for (const cloud of this.clouds) {
       this.cloudAuthoredVisibility.set(cloud, cloud.visible);
     }
+    this.ordinanceMonuments.length = 0;
+    this.ordinanceMonuments.push(
+      ...models.filter((node) => isOrdinanceMonumentNode(node)),
+    );
+    this.monumentAuthoredVisibility.clear();
+    this.monumentCameraHidden.clear();
+    for (const monument of this.ordinanceMonuments) {
+      this.monumentAuthoredVisibility.set(monument, monument.visible);
+    }
     for (const shophouse of this.shophouses) {
       const names = SHOPHOUSE_DEPENDENT_NAMES.get(shophouse.name) ?? [];
       this.dependentModels.set(
@@ -119,6 +132,7 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
     }
     this.restoreAll();
     this.restoreClouds();
+    this.restoreMonuments();
     this.player = null;
     this.meshCache.clear();
     return true;
@@ -134,6 +148,11 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
     }
     this.paused = paused;
     this.hasSampledPose = false;
+    if (paused) {
+      this.restoreAll();
+      this.restoreClouds();
+      this.restoreMonuments();
+    }
   }
 
   public override tickPostPhysics(_deltaTime: number): void {
@@ -172,6 +191,7 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
     if (distance <= RAYCAST_CLEARANCE) {
       this.restoreAll();
       this.restoreClouds();
+      this.restoreMonuments();
       return;
     }
 
@@ -208,6 +228,22 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
     for (const cloud of this.clouds) {
       const blocksPlayer = cloud.visible && this.rayHitsModel(cloud);
       cloud.visible = !blocksPlayer;
+    }
+    for (const monument of this.ordinanceMonuments) {
+      const cameraHidden = this.monumentCameraHidden.has(monument);
+      if (!cameraHidden) {
+        this.monumentAuthoredVisibility.set(monument, monument.visible);
+      } else if (monument.visible) {
+        this.monumentAuthoredVisibility.set(monument, true);
+      }
+      const authoredVisible = this.monumentAuthoredVisibility.get(monument) ?? true;
+      if (authoredVisible && this.rayHitsModel(monument)) {
+        monument.visible = false;
+        this.monumentCameraHidden.add(monument);
+      } else {
+        monument.visible = authoredVisible;
+        this.monumentCameraHidden.delete(monument);
+      }
     }
   }
 
@@ -299,6 +335,13 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
   private restoreClouds(): void {
     for (const cloud of this.clouds) {
       cloud.visible = this.cloudAuthoredVisibility.get(cloud) ?? true;
+    }
+  }
+
+  private restoreMonuments(): void {
+    this.monumentCameraHidden.clear();
+    for (const monument of this.ordinanceMonuments) {
+      monument.visible = this.monumentAuthoredVisibility.get(monument) ?? true;
     }
   }
 }

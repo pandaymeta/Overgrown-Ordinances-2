@@ -5,6 +5,7 @@
 import * as ENGINE from '@gnsx/genesys.js';
 
 import { ensureOvergrownAveriaFont } from './overgrown-averia-font.js';
+import { waitForIntroPhysicsPrimed } from './intro-physics-gate.js';
 import { STARTUP_PRELOAD_ASSETS } from './startup-preload-manifest.js';
 import { StartupBrushRevealSystem } from './startup-brush-reveal.js';
 
@@ -304,6 +305,13 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     }
     this.setProgress(1);
 
+    this.setProgressLabel('Settling in...');
+    await waitForIntroPhysicsPrimed();
+    if (generation !== this.sequenceGeneration) {
+      this.teardownUi();
+      return;
+    }
+
     await this.handOffToBrushReveal(world);
     if (generation !== this.sequenceGeneration) {
       this.teardownUi();
@@ -505,6 +513,12 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     const track = this.progressFill?.parentElement;
     if (track) {
       track.setAttribute('aria-valuenow', String(pct));
+    }
+  }
+
+  private setProgressLabel(text: string): void {
+    if (this.progressLabel) {
+      this.progressLabel.textContent = text;
     }
   }
 

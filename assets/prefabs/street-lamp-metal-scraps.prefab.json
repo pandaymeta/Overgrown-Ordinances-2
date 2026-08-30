@@ -11,7 +11,7 @@
           "children": [
             {
               "$bc": "GAME.CarryableCrateNode",
-              "carryHeightOverride": 0.8,
+              "carryHeightOverride": 1.2,
               "children": [],
               "name": "Carryable Crate 09",
               "nodeId": 63775,
