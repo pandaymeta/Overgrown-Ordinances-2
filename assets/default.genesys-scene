@@ -427,6 +427,65 @@
           },
           "name": "GroundMaterial",
           "roughness": 0.95,
+          "uuid": "b22a939dc47c9f34"
+        },
+        "name": "Ground 05",
+        "navigationGeometryRole": "none",
+        "nodeId": 25124,
+        "physicsOptions": {
+          "collisionMeshType": "trimesh",
+          "enabled": false
+        },
+        "position": {
+          "$bc": "v3",
+          "_": [
+            -4,
+            -7.3,
+            -4
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            0.08,
+            37.5,
+            0.08
+          ]
+        },
+        "userData": {
+          "objectFlags": 6
+        },
+        "uuid": "e27e095e3c2beb0b",
+        "uvScaleTilesPerUnit": 0.2
+      },
+      {
+        "$bc": "ENGINE.MeshNode",
+        "children": {
+          "$length": 1
+        },
+        "geometry": {
+          "$bc": "THREE.BoxGeometry",
+          "_": [
+            500,
+            0.1,
+            500
+          ]
+        },
+        "material": {
+          "$bc": "THREE.MeshStandardMaterial",
+          "color": {
+            "$bc": "c",
+            "_": [
+              0.85,
+              0.85,
+              0.85
+            ]
+          },
+          "map": {
+            "$ref": 2
+          },
+          "name": "GroundMaterial",
+          "roughness": 0.95,
           "uuid": "b37fc7887d287067"
         },
         "name": "Ground 02",
@@ -7303,25 +7362,17 @@
         "position": {
           "$bc": "v3",
           "_": [
-            26.1,
-            7.8,
-            2.2
-          ]
-        },
-        "rotation": {
-          "$bc": "e",
-          "_": [
-            3.141593,
-            -1.221731,
-            3.141593
+            -4.05,
+            -9.0515,
+            21.3
           ]
         },
         "scale": {
           "$bc": "v3",
           "_": [
-            2.5,
-            2.5,
-            2.5
+            3.2,
+            1.856,
+            3.2
           ]
         },
         "userData": {
@@ -7343,25 +7394,25 @@
         "position": {
           "$bc": "v3",
           "_": [
-            -6.6,
-            -6.1,
-            -34.8
+            -4.05,
+            -9.0515,
+            -30.05
           ]
         },
         "rotation": {
           "$bc": "e",
           "_": [
-            3.141593,
-            -1.221731,
-            3.141593
+            0,
+            0.78,
+            0
           ]
         },
         "scale": {
           "$bc": "v3",
           "_": [
-            1.5,
-            1.5,
-            1.5
+            3.2,
+            1.856,
+            3.2
           ]
         },
         "userData": {
@@ -7383,25 +7434,25 @@
         "position": {
           "$bc": "v3",
           "_": [
-            -24.4,
-            1.7,
-            25.6
+            25.9,
+            -9.0515,
+            -5.875
           ]
         },
         "rotation": {
           "$bc": "e",
           "_": [
             0,
-            0.872665,
+            1.56,
             0
           ]
         },
         "scale": {
           "$bc": "v3",
           "_": [
-            1.5,
-            1.5,
-            1.5
+            3.2,
+            1.856,
+            3.2
           ]
         },
         "userData": {
@@ -7423,17 +7474,25 @@
         "position": {
           "$bc": "v3",
           "_": [
-            6.8,
-            13.1,
-            21.1
+            -34,
+            -9.0515,
+            -5.875
+          ]
+        },
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            -3.141593,
+            0.801593,
+            -3.141593
           ]
         },
         "scale": {
           "$bc": "v3",
           "_": [
-            2.5,
-            2.5,
-            2.5
+            3.2,
+            1.856,
+            3.2
           ]
         },
         "userData": {
@@ -7455,25 +7514,17 @@
         "position": {
           "$bc": "v3",
           "_": [
-            14.4,
-            6.45,
-            -37.5
+            18.2,
+            -1.1,
+            2.2
           ]
         },
         "rotation": {
           "$bc": "e",
           "_": [
-            0,
-            -0.349066,
-            0
-          ]
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            2.5,
-            2.5,
-            2.5
+            3.141592,
+            -1.549204,
+            3.141592
           ]
         },
         "userData": {
@@ -7495,25 +7546,25 @@
         "position": {
           "$bc": "v3",
           "_": [
-            -6.9,
-            -8.9,
-            28.6
+            -30.425,
+            -9.1475,
+            14.725
           ]
         },
         "rotation": {
           "$bc": "e",
           "_": [
-            0,
-            -0.174533,
-            0
+            -3.141593,
+            -0.758407,
+            -3.141593
           ]
         },
         "scale": {
           "$bc": "v3",
           "_": [
-            1.5,
-            1.5,
-            1.5
+            3.2,
+            1.856,
+            3.2
           ]
         },
         "userData": {
@@ -7535,25 +7586,25 @@
         "position": {
           "$bc": "v3",
           "_": [
-            -34.9,
-            5.4,
-            4.3
+            22.325,
+            -9.1475,
+            -26.475
           ]
         },
         "rotation": {
           "$bc": "e",
           "_": [
-            0,
-            -1.570796,
-            0
+            3.141593,
+            -1.538407,
+            3.141593
           ]
         },
         "scale": {
           "$bc": "v3",
           "_": [
-            2.5,
-            2.5,
-            2.5
+            3.2,
+            1.856,
+            3.2
           ]
         },
         "userData": {
@@ -7575,25 +7626,25 @@
         "position": {
           "$bc": "v3",
           "_": [
-            -28.3,
-            10.1,
-            -26.9
+            -30.425,
+            -9.1475,
+            -26.475
           ]
         },
         "rotation": {
           "$bc": "e",
           "_": [
             0,
-            0.698132,
+            -0.823185,
             0
           ]
         },
         "scale": {
           "$bc": "v3",
           "_": [
-            2.5,
-            2.5,
-            2.5
+            3.2,
+            1.856,
+            3.2
           ]
         },
         "userData": {
@@ -11169,7 +11220,7 @@
         "$bc": "ENGINE.FogNode",
         "fogColor": "#d7e4f0",
         "fogDensity": 0.012,
-        "fogFar": 100,
+        "fogFar": 80,
         "fogNear": 15,
         "name": "Afternoon Haze",
         "nodeId": 44092,
@@ -12277,6 +12328,47 @@
         },
         "userData": {},
         "uuid": "fa7d975b-e7be-4219-b4d3-eabc96675337"
+      },
+      {
+        "$bc": "GAME.IslandRimCloudSystem",
+        "$initOptions": {},
+        "name": "Island Rim Cloud System",
+        "nodeId": 36456,
+        "userData": {
+          "objectFlags": 6
+        },
+        "uuid": "68bac0f489f0113c"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "48c961c8-34ba-4bfb-a1ad-1777c33ca461",
+        "visible": false
       }
     ],
     "editorData": {
@@ -13309,6 +13401,14 @@
           },
           {
             "id": "2dcd6d3fbd07d7b2",
+            "nodeType": "actor"
+          },
+          {
+            "id": "68bac0f489f0113c",
+            "nodeType": "actor"
+          },
+          {
+            "id": "e27e095e3c2beb0b",
             "nodeType": "actor"
           }
         ],

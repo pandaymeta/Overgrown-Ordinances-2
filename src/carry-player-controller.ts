@@ -1,5 +1,7 @@
 import * as ENGINE from '@gnsx/genesys.js';
 
+import { DeliveryProgressHudSystem } from './delivery-progress-hud.js';
+
 interface CarryPawn {
   toggleCarry(): boolean;
   handleCarryPrimaryAction(): boolean;
@@ -24,6 +26,16 @@ export class CarryPlayerController extends ENGINE.DefaultPlayerController {
     if (event.code === 'KeyE' && isCarryPawn(this.pawn)) {
       if (event.repeat) return true;
       if (this.pawn.toggleCarry()) return true;
+    }
+    if (event.code === 'Escape') {
+      if (event.repeat) {
+        return true;
+      }
+      const world = this.pawn instanceof ENGINE.SceneNode ? this.pawn.getWorld() : null;
+      const hud = world?.getNodes(DeliveryProgressHudSystem)[0];
+      if (hud?.handleEscapeKey()) {
+        return true;
+      }
     }
     return super.handleKeyDown(event);
   }

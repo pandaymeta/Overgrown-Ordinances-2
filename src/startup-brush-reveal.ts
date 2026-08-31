@@ -17,6 +17,10 @@ const CREAM_CSS = '#f4f1ea';
 /** Default splash open length when callers omit revealMs. */
 const DEFAULT_REVEAL_MS = 1600;
 const DEFAULT_HOLD_MS = 200;
+/** Brief hold on the last splash frame before fading the overlay out. */
+const END_FRAME_HOLD_MS = 80;
+/** Fade the splash overlay out instead of cutting it off instantly. */
+const END_FADE_MS = 220;
 
 export type BrushRevealOptions = {
   /** Solid cream hold on frame 0 before the splash opens. */
@@ -107,6 +111,9 @@ export class StartupBrushRevealSystem extends ENGINE.SceneNode {
   private onCoverReady: (() => void) | null = null;
   private playWaiters: Array<() => void> = [];
   private sequenceGeneration = 0;
+  private cachedLayoutWidth = 0;
+  private cachedLayoutHeight = 0;
+  private finishingReveal = false;
 
   constructor() {
     super();
@@ -150,6 +157,7 @@ export class StartupBrushRevealSystem extends ENGINE.SceneNode {
     }
     this.sequenceGeneration += 1;
     this.running = false;
+    this.finishingReveal = false;
     this.onCoverReady = null;
     this.removeOverlay(true);
     this.disposeAtlas();
@@ -223,7 +231,7 @@ export class StartupBrushRevealSystem extends ENGINE.SceneNode {
     const lastIndex = FRAME_COUNT - 1;
 
     const tick = (now: number): void => {
-      if (!this.overlay || !this.canvas) {
+      if (!this.overlay || !this.canvas || this.finishingReveal) {
         return;
       }
       const elapsed = now - start;
@@ -234,17 +242,52 @@ export class StartupBrushRevealSystem extends ENGINE.SceneNode {
       }
 
       const raw = Math.min(1, Math.max(0, (elapsed - holdMs) / revealMs));
-      const index = Math.min(lastIndex, Math.floor(raw * (lastIndex + 0.999)));
+      const index = Math.min(lastIndex, Math.round(raw * lastIndex));
       this.paintFrame(index);
 
       if (elapsed >= holdMs + revealMs) {
         this.paintFrame(lastIndex);
-        this.removeOverlay(true);
+        void this.finishRevealSmooth(generation);
         return;
       }
       this.animationFrame = requestAnimationFrame(tick);
     };
     this.animationFrame = requestAnimationFrame(tick);
+  }
+
+  private async finishRevealSmooth(generation: number): Promise<void> {
+    if (generation !== this.sequenceGeneration || !this.overlay || this.finishingReveal) {
+      return;
+    }
+    this.finishingReveal = true;
+    if (this.animationFrame !== null) {
+      cancelAnimationFrame(this.animationFrame);
+      this.animationFrame = null;
+    }
+
+    this.paintFrame(FRAME_COUNT - 1);
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, END_FRAME_HOLD_MS);
+    });
+    if (generation !== this.sequenceGeneration || !this.overlay) {
+      this.finishingReveal = false;
+      return;
+    }
+
+    const overlay = this.overlay;
+    overlay.style.transition = `opacity ${END_FADE_MS}ms ease-out`;
+    void overlay.offsetWidth;
+    overlay.style.opacity = '0';
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, END_FADE_MS + 20);
+    });
+    if (generation !== this.sequenceGeneration) {
+      this.finishingReveal = false;
+      return;
+    }
+
+    this.finishingReveal = false;
+    this.removeOverlay(true);
   }
 
   /**
@@ -316,6 +359,16 @@ export class StartupBrushRevealSystem extends ENGINE.SceneNode {
     const rect = overlay.getBoundingClientRect();
     const cssW = Math.max(1, Math.round(rect.width));
     const cssH = Math.max(1, Math.round(rect.height));
+    if (
+      cssW === this.cachedLayoutWidth
+      && cssH === this.cachedLayoutHeight
+      && canvas.width === cssW
+      && canvas.height === cssH
+    ) {
+      return { width: canvas.width, height: canvas.height };
+    }
+    this.cachedLayoutWidth = cssW;
+    this.cachedLayoutHeight = cssH;
     const dpr = 1;
     const pixelW = Math.max(1, Math.round(cssW * dpr));
     const pixelH = Math.max(1, Math.round(cssH * dpr));
@@ -425,16 +478,18 @@ export class StartupBrushRevealSystem extends ENGINE.SceneNode {
       cancelAnimationFrame(this.animationFrame);
       this.animationFrame = null;
     }
+    this.cachedLayoutWidth = 0;
+    this.cachedLayoutHeight = 0;
+    this.finishingReveal = false;
     this.canvas = null;
     this.overlay?.remove();
     this.overlay = null;
     this.running = false;
     this.resolvePlayWaiters();
     if (completeReveal) {
-      // Drop startup cream from the container — play / day resets stay black.
       const container = this.getWorld()?.gameContainer;
       if (container) {
-        container.style.background = '#000000';
+        container.style.background = '';
       }
       finishReveal();
     }

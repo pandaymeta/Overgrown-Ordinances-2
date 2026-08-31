@@ -12,6 +12,8 @@ import {
 } from './mail-delivery-flow.js';
 import { GameSound, playSound } from './game-audio.js';
 import { ensureOvergrownAveriaFont } from './overgrown-averia-font.js';
+import { ThirdPersonPlayer } from './player.js';
+import { isStartupLoadingFinished } from './startup-loading-screen.js';
 
 const INFO_TITLE = 'Overgrown Rules';
 /** Before the first ordinance — no checklist spoiler. */
@@ -31,13 +33,16 @@ const MYSTERY_BODY =
   'You found a way the town has no ordinance for. Yet.';
 const COMPLETION_CONTINUE = 'Continue Playing';
 const COMPLETION_VICTORY = 'Open the letter';
-const VICTORY_LETTER_TITLE = 'The letter';
 const VICTORY_LETTER_BODY =
-  'Too many signs on these streets.\nSomeone should do something.';
-const VICTORY_LETTER_FROM = '— A concerned resident';
-const VICTORY_PUNCHLINE_PREFIX = 'You created ';
-const VICTORY_PUNCHLINE_SUFFIX = ' more.';
-const VICTORY_THANKS = 'Thanks for playing.';
+  'Dear Mayor,\n\n'
+  + 'Your ordinances have overgrown this town.\n'
+  + 'Please catch whoever is making you post new ordinances.\n\n'
+  + 'Sincerely,\n'
+  + 'A concerned citizen';
+const VICTORY_THANKS_TITLE = 'Thanks for Playing';
+const VICTORY_EXIT = 'Exit';
+const PAUSE_TITLE = 'Game Paused';
+const PAUSE_RESPAWN = 'Respawn';
 
 /** Painterly grit — kept very light so cards stay clean, not muddy. */
 const PAPER_GRAIN_PATH = '@project/assets/textures/style/painterly-brush-detail-v1.png';
@@ -68,7 +73,10 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
   private lastCount = -1;
   private completionShown = false;
   private mysteryWinShown = false;
-  private victoryEndScreen: HTMLDivElement | null = null;
+  private victoryLetterScreen: HTMLDivElement | null = null;
+  private victoryThanksScreen: HTMLDivElement | null = null;
+  private pauseModal: HTMLDivElement | null = null;
+  private playerMovementFrozenBeforePause = false;
   /** Resolved `url("…")` for the paper grain overlay (or SVG fallback). */
   private paperGrainCssUrl = PAPER_FIBER_SVG;
 
@@ -92,6 +100,39 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
   public override tickPostPhysics(_deltaTime: number): void {
     super.tickPostPhysics(_deltaTime);
     this.refreshCount();
+  }
+
+  /** Escape: close overlays first, then toggle the pause menu. */
+  public handleEscapeKey(): boolean {
+    if (this.pauseModal) {
+      this.onPauseContinue();
+      return true;
+    }
+    if (this.victoryLetterScreen) {
+      playSound(this.getWorld(), GameSound.UiClose, 0.6);
+      this.closeVictoryLetterScreen();
+      this.showVictoryThanksScreen();
+      return true;
+    }
+    if (this.victoryThanksScreen) {
+      this.onVictoryContinuePlaying();
+      return true;
+    }
+    if (this.choiceModal) {
+      playSound(this.getWorld(), GameSound.UiClose, 0.6);
+      this.onDismissChoiceModal();
+      return true;
+    }
+    if (this.infoModal || this.listModal) {
+      playSound(this.getWorld(), GameSound.UiClose, 0.6);
+      this.closeModals();
+      return true;
+    }
+    if (!this.canOpenPauseMenu()) {
+      return false;
+    }
+    this.openPauseMenu();
+    return true;
   }
 
   public override endPlay(): boolean {
@@ -346,7 +387,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
   }
 
   private openInfoModal(): void {
-    if (this.choiceModal || this.victoryEndScreen) {
+    if (this.choiceModal || this.pauseModal || this.victoryLetterScreen || this.victoryThanksScreen) {
       return;
     }
     playSound(this.getWorld(), GameSound.UiOpen, 0.6);
@@ -376,7 +417,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
   }
 
   private openListModal(): void {
-    if (this.choiceModal || this.victoryEndScreen) {
+    if (this.choiceModal || this.pauseModal || this.victoryLetterScreen || this.victoryThanksScreen) {
       return;
     }
     playSound(this.getWorld(), GameSound.UiOpen, 0.6);
@@ -425,13 +466,16 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
   }
 
   private openChoiceModal(title: string, bodyText: string): void {
-    if (this.choiceModal || this.victoryEndScreen) {
+    if (this.choiceModal || this.pauseModal || this.victoryLetterScreen || this.victoryThanksScreen) {
       return;
     }
     this.closeModals();
     this.getFlow()?.setCompletionInteractionPaused(true);
 
-    const modal = this.createModalShell(title, { dismissible: false });
+    const modal = this.createModalShell(title, {
+      dismissible: true,
+      onDismiss: () => this.onDismissChoiceModal(),
+    });
     if (bodyText.length > 0) {
       const body = document.createElement('p');
       body.textContent = bodyText;
@@ -493,6 +537,95 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     return btn;
   }
 
+  private onDismissChoiceModal(): void {
+    this.choiceModal?.remove();
+    this.choiceModal = null;
+    this.getFlow()?.dismissCompletionOverlay();
+  }
+
+  private canOpenPauseMenu(): boolean {
+    return isStartupLoadingFinished();
+  }
+
+  private openPauseMenu(): void {
+    if (this.pauseModal) {
+      return;
+    }
+    playSound(this.getWorld(), GameSound.UiOpen, 0.6);
+    this.closeModals();
+    const player = this.getPlayer();
+    this.playerMovementFrozenBeforePause = player?.isMovementFrozen() ?? false;
+    player?.setMovementFrozen(true);
+    player?.forceIdlePose();
+
+    const modal = this.createModalShell(PAUSE_TITLE, { dismissible: false });
+    const actions = document.createElement('div');
+    actions.style.cssText = [
+      'display:flex',
+      'flex-direction:column',
+      'align-items:flex-start',
+      'gap:12px',
+      'margin-top:28px',
+    ].join(';');
+
+    const continueBtn = this.createModalActionButton(COMPLETION_CONTINUE);
+    continueBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      this.onPauseContinue();
+    });
+
+    const respawnBtn = this.createModalActionButton(PAUSE_RESPAWN);
+    respawnBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      this.onPauseRespawn();
+    });
+
+    const exitBtn = this.createModalActionButton(VICTORY_EXIT, true);
+    exitBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      this.onPauseExit();
+    });
+
+    actions.appendChild(continueBtn);
+    actions.appendChild(respawnBtn);
+    actions.appendChild(exitBtn);
+    modal.panel.appendChild(actions);
+    this.finalizePaperContent(modal.panel);
+    this.attachModal(modal.root);
+    this.pauseModal = modal.root;
+  }
+
+  private closePauseMenu(): void {
+    if (!this.pauseModal) {
+      return;
+    }
+    this.pauseModal.remove();
+    this.pauseModal = null;
+    const player = this.getPlayer();
+    if (player) {
+      player.setMovementFrozen(this.playerMovementFrozenBeforePause);
+    }
+  }
+
+  private onPauseContinue(): void {
+    playSound(this.getWorld(), GameSound.UiClose, 0.6);
+    this.closePauseMenu();
+  }
+
+  private onPauseRespawn(): void {
+    playSound(this.getWorld(), GameSound.UiClose, 0.6);
+    this.getFlow()?.respawnPlayerWithoutDayReset();
+    this.pauseModal?.remove();
+    this.pauseModal = null;
+    this.playerMovementFrozenBeforePause = false;
+  }
+
+  private onPauseExit(): void {
+    playSound(this.getWorld(), GameSound.UiClose, 0.6);
+    this.closePauseMenu();
+    this.onVictoryExit();
+  }
+
   private onContinuePlaying(): void {
     const flow = this.getFlow();
     const mysteryContinue = flow?.isMysteryDeliveryWinReady() ?? false;
@@ -516,19 +649,73 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
   }
 
   private showVictoryEndScreen(): void {
-    if (this.victoryEndScreen) {
+    this.showVictoryLetterScreen();
+  }
+
+  private showVictoryLetterScreen(): void {
+    if (this.victoryLetterScreen) {
       return;
     }
     const container = this.getWorld()?.gameContainer;
     if (!container) {
       return;
     }
-    const createdCount = Math.max(
-      this.getFlow()?.getBrokenOrdinanceCount() ?? 0,
-      DELIVERY_WAY_GOAL,
-    );
     const end = document.createElement('div');
-    end.setAttribute('aria-label', 'Victory');
+    end.setAttribute('aria-label', 'Victory letter');
+    end.style.cssText = [
+      'position:absolute',
+      'inset:0',
+      'z-index:9000',
+      'display:flex',
+      'align-items:center',
+      'justify-content:center',
+      `background:${HUD_SCRIM}`,
+      'pointer-events:auto',
+      'font-family:"Overgrown Averia","Segoe UI Rounded","Segoe UI",sans-serif',
+    ].join(';');
+
+    const { stack, panel: card } = this.createPaperStack({
+      width: 'min(520px,90vw)',
+      large: true,
+      padding: '36px 40px 40px',
+    });
+
+    const close = this.createPaperCloseButton();
+    close.addEventListener('click', (event) => {
+      event.stopPropagation();
+      playSound(this.getWorld(), GameSound.UiClose, 0.6);
+      this.closeVictoryLetterScreen();
+      this.showVictoryThanksScreen();
+    });
+    card.appendChild(close);
+
+    const body = document.createElement('p');
+    body.textContent = VICTORY_LETTER_BODY;
+    body.style.cssText = [
+      'margin:0',
+      'padding-right:36px',
+      `color:${PAPER_TEXT}`,
+      'font:700 22px/1.55 "Overgrown Averia","Segoe UI",sans-serif',
+      'white-space:pre-wrap',
+    ].join(';');
+
+    card.appendChild(body);
+    this.finalizePaperContent(card);
+    end.appendChild(stack);
+    container.appendChild(end);
+    this.victoryLetterScreen = end;
+  }
+
+  private showVictoryThanksScreen(): void {
+    if (this.victoryThanksScreen) {
+      return;
+    }
+    const container = this.getWorld()?.gameContainer;
+    if (!container) {
+      return;
+    }
+    const end = document.createElement('div');
+    end.setAttribute('aria-label', 'Victory thanks');
     end.style.cssText = [
       'position:absolute',
       'inset:0',
@@ -548,66 +735,77 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     });
 
     const title = document.createElement('h2');
-    title.textContent = VICTORY_LETTER_TITLE;
+    title.textContent = VICTORY_THANKS_TITLE;
     title.style.cssText = [
-      'margin:0 0 20px',
+      'margin:0',
       `color:${PAPER_TEXT}`,
       'font:700 28px/1.2 "Overgrown Averia","Segoe UI",sans-serif',
     ].join(';');
 
-    const body = document.createElement('p');
-    body.textContent = VICTORY_LETTER_BODY;
-    body.style.cssText = [
-      'margin:0',
-      `color:${PAPER_TEXT}`,
-      'font:700 22px/1.55 "Overgrown Averia","Segoe UI",sans-serif',
-      'white-space:pre-wrap',
+    const actions = document.createElement('div');
+    actions.style.cssText = [
+      'display:flex',
+      'flex-wrap:wrap',
+      'gap:12px',
+      'margin-top:28px',
+      'justify-content:flex-start',
     ].join(';');
 
-    const from = document.createElement('p');
-    from.textContent = VICTORY_LETTER_FROM;
-    from.style.cssText = [
-      'margin:22px 0 0',
-      `color:${PAPER_TEXT}`,
-      'font:700 20px/1.4 "Overgrown Averia","Segoe UI",sans-serif',
-    ].join(';');
+    const continueBtn = this.createModalActionButton(COMPLETION_CONTINUE);
+    continueBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      this.onVictoryContinuePlaying();
+    });
 
-    const punchline = document.createElement('p');
-    punchline.textContent =
-      `${VICTORY_PUNCHLINE_PREFIX}${createdCount}${VICTORY_PUNCHLINE_SUFFIX}`;
-    punchline.style.cssText = [
-      'margin:36px 0 0',
-      `color:${PAPER_TEXT}`,
-      'font:700 22px/1.4 "Overgrown Averia","Segoe UI",sans-serif',
-    ].join(';');
+    const exitBtn = this.createModalActionButton(VICTORY_EXIT, true);
+    exitBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      this.onVictoryExit();
+    });
 
-    const thanks = document.createElement('p');
-    thanks.textContent = VICTORY_THANKS;
-    thanks.style.cssText = [
-      'margin:10px 0 0',
-      `color:${PAPER_TEXT}`,
-      'font:700 20px/1.4 "Overgrown Averia","Segoe UI",sans-serif',
-    ].join(';');
-
+    actions.appendChild(continueBtn);
+    actions.appendChild(exitBtn);
     card.appendChild(title);
-    card.appendChild(body);
-    card.appendChild(from);
-    card.appendChild(punchline);
-    card.appendChild(thanks);
+    card.appendChild(actions);
     this.finalizePaperContent(card);
     end.appendChild(stack);
     container.appendChild(end);
-    this.victoryEndScreen = end;
+    this.victoryThanksScreen = end;
+  }
+
+  private closeVictoryLetterScreen(): void {
+    this.victoryLetterScreen?.remove();
+    this.victoryLetterScreen = null;
+  }
+
+  private closeVictoryThanksScreen(): void {
+    this.victoryThanksScreen?.remove();
+    this.victoryThanksScreen = null;
+  }
+
+  private onVictoryContinuePlaying(): void {
+    this.closeVictoryThanksScreen();
+    this.getFlow()?.dismissCompletionOverlay();
+  }
+
+  private onVictoryExit(): void {
+    window.close();
+    window.setTimeout(() => {
+      if (!window.closed) {
+        window.location.replace('about:blank');
+      }
+    }, 120);
   }
 
   private createModalShell(
     title: string,
-    options?: { dismissible?: boolean },
+    options?: { dismissible?: boolean; onDismiss?: () => void },
   ): {
     root: HTMLDivElement;
     panel: HTMLDivElement;
   } {
     const dismissible = options?.dismissible !== false;
+    const dismiss = options?.onDismiss ?? (() => this.closeModals());
     const root = document.createElement('div');
     root.style.cssText = [
       'position:absolute',
@@ -621,7 +819,10 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       'font-family:"Overgrown Averia","Segoe UI Rounded","Segoe UI",sans-serif',
     ].join(';');
     if (dismissible) {
-      root.addEventListener('click', () => this.closeModals());
+      root.addEventListener('click', () => {
+        playSound(this.getWorld(), GameSound.UiClose, 0.6);
+        dismiss();
+      });
     }
 
     const { stack, panel } = this.createPaperStack();
@@ -642,7 +843,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       close.addEventListener('click', (event) => {
         event.stopPropagation();
         playSound(this.getWorld(), GameSound.UiClose, 0.6);
-        this.closeModals();
+        dismiss();
       });
       panel.appendChild(close);
     }
@@ -685,7 +886,9 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     if (
       !this.mysteryWinShown
       && !this.choiceModal
-      && !this.victoryEndScreen
+      && !this.pauseModal
+      && !this.victoryLetterScreen
+      && !this.victoryThanksScreen
       && flow?.isMysteryDeliveryWinReady()
     ) {
       this.mysteryWinShown = true;
@@ -696,7 +899,9 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     if (
       !this.completionShown
       && !this.choiceModal
-      && !this.victoryEndScreen
+      && !this.pauseModal
+      && !this.victoryLetterScreen
+      && !this.victoryThanksScreen
       && count >= DELIVERY_WAY_GOAL
       && flow?.isAwaitingDelivery()
     ) {
@@ -707,6 +912,10 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
 
   private getFlow(): MailDeliveryFlowSystem | null {
     return this.getWorld()?.getNodes(MailDeliveryFlowSystem)[0] ?? null;
+  }
+
+  private getPlayer(): ThirdPersonPlayer | null {
+    return this.getWorld()?.getNodes(ThirdPersonPlayer)[0] ?? null;
   }
 
   private async waitForContainer(): Promise<HTMLElement | null> {
@@ -724,8 +933,9 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     this.closeModals();
     this.choiceModal?.remove();
     this.choiceModal = null;
-    this.victoryEndScreen?.remove();
-    this.victoryEndScreen = null;
+    this.closePauseMenu();
+    this.closeVictoryLetterScreen();
+    this.closeVictoryThanksScreen();
     this.root?.remove();
     this.root = null;
     this.countLabel = null;

@@ -173,8 +173,8 @@ const TRAIL_ARROW_HEIGHT = 0.52;
 const TRAIL_ARROW_WIDTH = TRAIL_ARROW_HEIGHT * TRAIL_ARROW_ASPECT_RATIO;
 /** World-space speed of the repeating player → mailbox arrow flow. */
 const TRAIL_ARROW_TRAVEL_SPEED = 1.8;
-/** Later days briefly remind the player of the mailbox route. */
-const LATER_DAY_TRAIL_DURATION_SEC = 5;
+/** Later-day mailbox trails auto-hide this many seconds after spawn. */
+const TRAIL_AFTER_SPEECH_SEC = 5;
 const TRAIL_ARROW_TEXTURE_PATH = '@project/assets/textures/mail-trail-arrow.png';
 const ENVELOPE_INSERT_SEC = 2.0;
 /** Extra world-Y lift so the envelope meets the mailbox slot. */
@@ -581,6 +581,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private mysteryDeliveryWinReady = false;
   /** Ordinances revealed/broken across the run, in discovery order. */
   private readonly brokenOrdinanceOrder: PendingOrdinance[] = [];
+  /** Day-one mailbox trail stays up until the first delivery completes. */
+  private hasCompletedFirstDelivery = false;
   /** Maintenance board + cones are already in the world. */
   private maintenanceOrdinanceActive = false;
   /** JayWalking board(s) are already in the world. */
@@ -1555,7 +1557,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     markIntroPhysicsPrimed();
   }
 
-  private enterPlayableDay(resetPathUsage: boolean, preserveCurrentCamera = false): void {
+  private enterPlayableDay(
+    resetPathUsage: boolean,
+    preserveCurrentCamera = false,
+    options?: { spawnTrail?: boolean },
+  ): void {
     if (resetPathUsage) {
       this.pendingOrdinance = null;
       this.mainRoadLoopTriggered = false;
@@ -1609,11 +1615,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.stopModelFrontCinematic();
     this.playableGraceRemaining = 1.35;
     this.setMailboxHoverOutline(false);
-    this.setMailboxHighlight(true);
-    this.trailVisibleRemaining = resetPathUsage
-      ? LATER_DAY_TRAIL_DURATION_SEC
-      : Number.POSITIVE_INFINITY;
-    this.setTrailVisible(true);
+    if (options?.spawnTrail !== false) {
+      this.spawnMailboxTrail();
+    } else {
+      this.setMailboxHighlight(true);
+    }
     this.player?.setMailEnvelopeCarried(true);
     this.player?.setMailDeliveryClickHandler(() => this.tryDeliverByClick());
     this.player?.setCinematicCameraLock(false);
@@ -2053,6 +2059,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   }
 
   private completeDelivery(): void {
+    this.hasCompletedFirstDelivery = true;
     this.player?.setMailEnvelopeCarried(false);
     this.hideSpeechBubble();
     this.setTrailVisible(false);
@@ -2322,6 +2329,23 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.setFade(0);
     this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
     this.setPhase(FlowPhase.AwaitingDelivery);
+  }
+
+  /**
+   * Escape-menu respawn: home position and default camera only — no day baseline restore.
+   */
+  public respawnPlayerWithoutDayReset(): void {
+    this.stopModelFrontCinematic();
+    this.setFade(0);
+    this.setCompletionInteractionPaused(false);
+    this.player?.setCinematicCameraLock(false);
+    this.player?.teleportToPlayerStartAndSettle();
+    this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    if (this.phase !== FlowPhase.AwaitingDelivery
+      && this.phase !== FlowPhase.ZoomOutReveal
+      && this.phase !== FlowPhase.IntroSpeech) {
+      this.setPhase(FlowPhase.AwaitingDelivery);
+    }
   }
 
   private ensureWakeOrdinanceCinematic(): void {
@@ -7166,6 +7190,14 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.setMailboxHighlight(visible);
   }
 
+  /** Show the mailbox trail; day one persists until delivery, later days auto-hide. */
+  private spawnMailboxTrail(): void {
+    this.trailVisibleRemaining = this.hasCompletedFirstDelivery
+      ? TRAIL_AFTER_SPEECH_SEC
+      : Number.POSITIVE_INFINITY;
+    this.setTrailVisible(true);
+  }
+
   private updateTrailVisibility(deltaTime: number): void {
     if (!this.trailGroup?.visible || !Number.isFinite(this.trailVisibleRemaining)) {
       return;
@@ -7610,12 +7642,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     if (this.phase === FlowPhase.IntroSpeech) {
       this.playTutorialKeysHint();
-      this.setMailboxHighlight(true);
-      this.setTrailVisible(true);
       this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
       this.enterPlayableDay(false);
       return;
     }
+    this.spawnMailboxTrail();
     this.endAxeRingPulseAfterMorningBubble();
     const showTutorialKeys = this.pendingTutorialKeysAfterSpeech;
     if (showTutorialKeys) {
@@ -7892,12 +7923,14 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
   /** Finish a delivery-driven next-day reveal, optionally restoring its prompt. */
   private finishNextDayIntoPlayable(preserveCurrentCamera = false): void {
-    this.enterPlayableDay(true, preserveCurrentCamera);
+    this.enterPlayableDay(true, preserveCurrentCamera, { spawnTrail: false });
     if (!this.showPromptAfterNextDayTransition) {
+      this.spawnMailboxTrail();
+      this.playTutorialKeysHint();
       return;
     }
     this.showPromptAfterNextDayTransition = false;
-    this.pendingTutorialKeysAfterSpeech = false;
+    this.pendingTutorialKeysAfterSpeech = true;
     this.showSpeechBubble(this.getMorningSpeechText(), SPEECH_READ_HOLD_SEC);
     this.tryPlayAxeRingMorningHint();
   }

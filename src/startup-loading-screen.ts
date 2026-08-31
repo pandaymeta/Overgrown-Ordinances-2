@@ -13,10 +13,18 @@ const CREAM_CSS = '#f4f1ea';
 const TEXT_CSS = '#6b6560';
 const LOADING_TITLE = 'Overgrown Ordinances';
 const LOADING_MESSAGE = 'One last letter.\nThe mailbox is still open.';
+const LOADING_MESSAGE_LINES = LOADING_MESSAGE.split('\n');
 const TYPEWRITER_CHAR_INTERVAL_MS = 55;
-const LOADING_MESSAGE_GAP_MS = 1000;
+/** Hold after the title finishes typing, before it disappears. */
+const POST_TITLE_HOLD_MS = 3500;
 /** Hold after the message finishes typing, before the splash opens. */
-const POST_MESSAGE_HOLD_MS = 2500;
+const POST_MESSAGE_HOLD_MS = 4500;
+const LOADING_TITLE_FONT_PX = 56;
+const LOADING_MESSAGE_FONT_PX = 30;
+const LOADING_MESSAGE_LINE_HEIGHT = 1.45;
+/** Base vertical lift for the envelope above the message copy. */
+const LETTER_STAGE_LIFT_PX = -34;
+const LETTER_FLOAT_AMPLITUDE_PX = 14;
 const PRELOAD_CONCURRENCY = 8;
 /** Slower cream splash so the open reads clearly after loading. */
 const STARTUP_REVEAL_HOLD_MS = 200;
@@ -31,6 +39,10 @@ export function waitForStartupLoading(): Promise<void> {
     return Promise.resolve();
   }
   return new Promise((resolve) => loadingWaiters.push(resolve));
+}
+
+export function isStartupLoadingFinished(): boolean {
+  return loadingFinished;
 }
 
 function finishLoading(): void {
@@ -155,7 +167,7 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
   private styleEl: HTMLStyleElement | null = null;
   private titleEl: HTMLHeadingElement | null = null;
   private messageStage: HTMLDivElement | null = null;
-  private copyEl: HTMLParagraphElement | null = null;
+  private messageLineEls: HTMLParagraphElement[] = [];
   private typingGeneration = 0;
   private started = false;
   private sequenceGeneration = 0;
@@ -309,9 +321,9 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
       style.id = 'startup-loading-style';
       style.textContent = [
         '@keyframes startup-letter-float {',
-        '0% { transform: translate(0, 5px) rotate(-4deg) scale(0.98); }',
-        '50% { transform: translate(0, -12px) rotate(4deg) scale(1.03); }',
-        '100% { transform: translate(0, 5px) rotate(-4deg) scale(0.98); }',
+        `0% { transform: translateY(${LETTER_STAGE_LIFT_PX}px); }`,
+        `50% { transform: translateY(${LETTER_STAGE_LIFT_PX - LETTER_FLOAT_AMPLITUDE_PX}px); }`,
+        `100% { transform: translateY(${LETTER_STAGE_LIFT_PX}px); }`,
         '}',
         '@keyframes startup-letter-draw {',
         '0% { stroke-dashoffset: 420; opacity: 0.4; }',
@@ -326,6 +338,10 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
         '#startup-loading-style-root .startup-letter-path:nth-child(2) { animation-delay: 0.1s; }',
         '#startup-loading-style-root .startup-letter-path:nth-child(3) { animation-delay: 0.18s; }',
         '#startup-loading-style-root .startup-letter-path:nth-child(4) { animation-delay: 0.26s; }',
+        '#startup-loading-style-root .startup-letter-stage {',
+        'animation: startup-letter-float 2.8s ease-in-out infinite;',
+        'will-change: transform;',
+        '}',
       ].join('');
       document.head.appendChild(style);
       this.styleEl = style;
@@ -348,35 +364,61 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
       'font-family:"Overgrown Averia","Segoe UI Rounded","Segoe UI",sans-serif',
     ].join(';');
 
+    const contentShell = document.createElement('div');
+    const messageBlockHeight = 98 + 28 + LOADING_MESSAGE_LINES.length * LOADING_MESSAGE_FONT_PX * LOADING_MESSAGE_LINE_HEIGHT;
+    const contentHeight = Math.max(
+      Math.ceil(LOADING_TITLE_FONT_PX * 1.15),
+      messageBlockHeight,
+    );
+    contentShell.style.cssText = [
+      'position:relative',
+      'width:100%',
+      `height:${contentHeight}px`,
+    ].join(';');
+
+    const centeredStageStyle = [
+      'position:absolute',
+      'left:50%',
+      'top:50%',
+      'transform:translate(-50%,-50%)',
+      'width:100%',
+      'display:flex',
+      'flex-direction:column',
+      'align-items:center',
+      'justify-content:center',
+    ].join(';');
+
     const title = document.createElement('h1');
     title.textContent = '';
     title.style.cssText = [
+      centeredStageStyle,
       'margin:0',
       'max-width:min(720px,92vw)',
       `color:${TEXT_CSS}`,
-      'font:700 56px/1.15 "Overgrown Averia","Segoe UI Rounded","Segoe UI",sans-serif',
+      `font:700 ${LOADING_TITLE_FONT_PX}px/1.15 "Overgrown Averia","Segoe UI Rounded","Segoe UI",sans-serif`,
       'text-align:center',
       'padding:0 20px',
       'letter-spacing:-0.03em',
+      'min-height:1.15em',
     ].join(';');
 
     const messageStage = document.createElement('div');
     messageStage.style.cssText = [
+      centeredStageStyle,
       'display:none',
-      'flex-direction:column',
-      'align-items:center',
-      'gap:18px',
+      'gap:28px',
       'max-width:min(520px,86vw)',
     ].join(';');
 
     const letterStage = document.createElement('div');
+    letterStage.className = 'startup-letter-stage';
     letterStage.style.cssText = [
       'width:min(140px,34vw)',
       'height:min(98px,24vw)',
+      'flex:0 0 min(98px,24vw)',
       'display:flex',
       'align-items:center',
       'justify-content:center',
-      'animation:startup-letter-float 2.8s ease-in-out infinite',
     ].join(';');
 
     const letter = createHandDrawnLetterSvg();
@@ -387,39 +429,60 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     }
     letterStage.appendChild(letter);
 
-    const copy = document.createElement('p');
-    copy.textContent = '';
-    copy.style.cssText = [
-      'margin:0',
-      `color:${TEXT_CSS}`,
-      'font:700 30px/1.45 "Overgrown Averia","Segoe UI",sans-serif',
-      'text-align:center',
-      'white-space:pre-wrap',
-      'padding:0 16px',
+    const messageCopy = document.createElement('div');
+    messageCopy.style.cssText = [
+      'display:flex',
+      'flex-direction:column',
+      'align-items:center',
+      'gap:0',
+      'width:100%',
+      `min-height:${LOADING_MESSAGE_LINES.length * LOADING_MESSAGE_FONT_PX * LOADING_MESSAGE_LINE_HEIGHT}px`,
     ].join(';');
 
-    messageStage.appendChild(letterStage);
-    messageStage.appendChild(copy);
+    const messageLineEls: HTMLParagraphElement[] = [];
+    const lineHeightPx = LOADING_MESSAGE_FONT_PX * LOADING_MESSAGE_LINE_HEIGHT;
+    for (let lineIndex = 0; lineIndex < LOADING_MESSAGE_LINES.length; lineIndex += 1) {
+      const line = document.createElement('p');
+      line.textContent = '';
+      line.style.cssText = [
+        'margin:0',
+        `color:${TEXT_CSS}`,
+        `font:700 ${LOADING_MESSAGE_FONT_PX}px/${LOADING_MESSAGE_LINE_HEIGHT} "Overgrown Averia","Segoe UI",sans-serif`,
+        'text-align:center',
+        'padding:0 16px',
+        `min-height:${lineHeightPx}px`,
+        'width:100%',
+        'box-sizing:border-box',
+      ].join(';');
+      messageCopy.appendChild(line);
+      messageLineEls.push(line);
+    }
 
-    overlay.appendChild(title);
-    overlay.appendChild(messageStage);
+    messageStage.appendChild(letterStage);
+    messageStage.appendChild(messageCopy);
+
+    contentShell.appendChild(title);
+    contentShell.appendChild(messageStage);
+    overlay.appendChild(contentShell);
     container.appendChild(overlay);
 
     this.overlay = overlay;
     this.titleEl = title;
     this.messageStage = messageStage;
-    this.copyEl = copy;
+    this.messageLineEls = messageLineEls;
   }
 
   private async runLoadingCopySequence(typingGeneration: number): Promise<void> {
-    if (!this.titleEl || !this.messageStage || !this.copyEl) {
+    if (!this.titleEl || !this.messageStage || this.messageLineEls.length === 0) {
       return;
     }
 
     this.titleEl.textContent = '';
-    this.titleEl.style.display = '';
-    this.copyEl.textContent = '';
+    this.titleEl.style.display = 'flex';
     this.messageStage.style.display = 'none';
+    for (const lineEl of this.messageLineEls) {
+      lineEl.textContent = '';
+    }
 
     for (let charIndex = 0; charIndex < LOADING_TITLE.length; charIndex += 1) {
       if (typingGeneration !== this.typingGeneration || !this.titleEl) {
@@ -432,24 +495,30 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     }
 
     await new Promise<void>((resolve) => {
-      window.setTimeout(resolve, LOADING_MESSAGE_GAP_MS);
+      window.setTimeout(resolve, POST_TITLE_HOLD_MS);
     });
-    if (typingGeneration !== this.typingGeneration || !this.messageStage || !this.copyEl) {
+    if (typingGeneration !== this.typingGeneration || !this.messageStage) {
       return;
     }
 
     this.titleEl.style.display = 'none';
     this.messageStage.style.display = 'flex';
-    this.copyEl.textContent = '';
 
-    for (let charIndex = 0; charIndex < LOADING_MESSAGE.length; charIndex += 1) {
-      if (typingGeneration !== this.typingGeneration || !this.copyEl) {
-        return;
+    for (let lineIndex = 0; lineIndex < LOADING_MESSAGE_LINES.length; lineIndex += 1) {
+      const lineText = LOADING_MESSAGE_LINES[lineIndex];
+      const lineEl = this.messageLineEls[lineIndex];
+      if (!lineEl) {
+        continue;
       }
-      this.copyEl.textContent = LOADING_MESSAGE.slice(0, charIndex + 1);
-      await new Promise<void>((resolve) => {
-        window.setTimeout(resolve, TYPEWRITER_CHAR_INTERVAL_MS);
-      });
+      for (let charIndex = 0; charIndex < lineText.length; charIndex += 1) {
+        if (typingGeneration !== this.typingGeneration) {
+          return;
+        }
+        lineEl.textContent = lineText.slice(0, charIndex + 1);
+        await new Promise<void>((resolve) => {
+          window.setTimeout(resolve, TYPEWRITER_CHAR_INTERVAL_MS);
+        });
+      }
     }
   }
 
@@ -459,7 +528,7 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     this.overlay = null;
     this.titleEl = null;
     this.messageStage = null;
-    this.copyEl = null;
+    this.messageLineEls = [];
   }
 
   private async waitForContainer(): Promise<HTMLElement | null> {

@@ -16,6 +16,7 @@ import './game-data.js';
 import './hover-silhouette.js';
 import './hydrant-water-stream.js';
 import './intro-physics-gate.js';
+import './island-rim-clouds.js';
 import './mail-delivery-flow.js';
 import './ordinance-sign-sharpness.js';
 import './overgrown-averia-font.js';

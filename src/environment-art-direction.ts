@@ -70,10 +70,10 @@ const SURFACE_STYLES: Record<string, SurfaceStyle> = {
     exposure: 1.02,
   },
   cloud: {
-    tint: new THREE.Color('#f2ebe2'),
-    tintAmount: 0.22,
+    tint: new THREE.Color('#cfd9e0'),
+    tintAmount: 0.62,
     roughness: 1,
-    exposure: 1.06,
+    exposure: 1,
   },
 };
 
@@ -231,9 +231,11 @@ function styleMaterial(
     metalness?: number;
   };
 
-  const paintedMap = textured.map
-    ? createPaintedMap(textured.map, detailTexture, style)
-    : null;
+  const paintedMap = style === SURFACE_STYLES.cloud
+    ? null
+    : textured.map
+      ? createPaintedMap(textured.map, detailTexture, style)
+      : null;
   if (paintedMap) {
     textured.map = paintedMap;
   }
@@ -252,6 +254,17 @@ function styleMaterial(
   }
   if (typeof textured.metalness === 'number' && style !== SURFACE_STYLES.metal) {
     textured.metalness *= 0.45;
+  }
+  if (style === SURFACE_STYLES.cloud) {
+    textured.map = null;
+    material.transparent = false;
+    material.opacity = 1;
+    material.depthWrite = true;
+    material.side = THREE.DoubleSide;
+    if (textured.emissive) {
+      textured.emissive.set('#b8c5cf');
+      textured.emissiveIntensity = 0.06;
+    }
   }
   material.needsUpdate = true;
   return material;
