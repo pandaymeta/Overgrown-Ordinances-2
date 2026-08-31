@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import subprocess
 from pathlib import Path
@@ -11,7 +12,7 @@ from PIL import Image
 from scipy import ndimage as ndi
 
 ROOT = Path(__file__).resolve().parents[1]
-VIDEO = Path(r"C:\Users\Reyjhon Entenia\Documents\Overgrown\transition .mp4")
+DEFAULT_VIDEO = Path(r"C:\Users\Reyjhon Entenia\Documents\Overgrown\transitionplease.mp4")
 RAW = ROOT / "assets" / "textures" / "startup-splash" / "transition-raw"
 OUT_PNG = ROOT / "assets" / "textures" / "startup-splash" / "transition-cream-png"
 ATLAS_PATH = ROOT / "assets" / "textures" / "startup-splash" / "transition-cream-atlas.png"
@@ -20,7 +21,6 @@ ATLAS_META = ROOT / "assets" / "textures" / "startup-splash" / "transition-cream
 # Match Overgrown Rules panel cream (#f4f1ea).
 CREAM = np.array([0xF4, 0xF1, 0xEA], dtype=np.uint8)
 TARGET_W = 1280
-DURATION_SEC = 1.0886
 FPS = 30
 ATLAS_FRAME_W = 640
 ATLAS_FRAME_H = 357
@@ -28,12 +28,31 @@ ATLAS_COLS = 6
 STRUCTURE = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]], dtype=np.uint8)
 
 
-def extract_raw() -> list[Path]:
+def probe_video(video: Path) -> float:
+  result = subprocess.check_output(
+    [
+      "ffprobe",
+      "-v",
+      "error",
+      "-select_streams",
+      "v:0",
+      "-show_entries",
+      "stream=duration",
+      "-of",
+      "csv=p=0",
+      str(video),
+    ],
+    text=True,
+  ).strip()
+  return float(result)
+
+
+def extract_raw(video: Path) -> list[Path]:
   RAW.mkdir(parents=True, exist_ok=True)
   for old in RAW.glob("frame-*.png"):
     old.unlink()
   subprocess.check_call(
-    ["ffmpeg", "-y", "-i", str(VIDEO), "-vsync", "0", str(RAW / "frame-%02d.png")],
+    ["ffmpeg", "-y", "-i", str(video), "-vsync", "0", str(RAW / "frame-%02d.png")],
     stdout=subprocess.DEVNULL,
     stderr=subprocess.DEVNULL,
   )
@@ -126,7 +145,7 @@ def process_frame(im: Image.Image) -> Image.Image:
   return Image.fromarray(out, "RGBA")
 
 
-def build_atlas(frames: list[Image.Image]) -> None:
+def build_atlas(frames: list[Image.Image], duration_sec: float) -> None:
   imgs = [
     im.resize((ATLAS_FRAME_W, ATLAS_FRAME_H), Image.Resampling.LANCZOS) for im in frames
   ]
@@ -145,7 +164,7 @@ def build_atlas(frames: list[Image.Image]) -> None:
         "rows": rows,
         "frameWidth": ATLAS_FRAME_W,
         "frameHeight": ATLAS_FRAME_H,
-        "durationSec": DURATION_SEC,
+        "durationSec": duration_sec,
         "fps": FPS,
         "cream": "#f4f1ea",
       },
@@ -158,8 +177,21 @@ def build_atlas(frames: list[Image.Image]) -> None:
 
 
 def main() -> None:
+  parser = argparse.ArgumentParser(description="Process green-screen transition video into cream atlas.")
+  parser.add_argument(
+    "--video",
+    type=Path,
+    default=DEFAULT_VIDEO,
+    help="Source MP4 (green = cream cover, white = scene hole).",
+  )
+  args = parser.parse_args()
+  video = args.video.resolve()
+  if not video.is_file():
+    raise SystemExit(f"Video not found: {video}")
+
+  duration_sec = probe_video(video)
   OUT_PNG.mkdir(parents=True, exist_ok=True)
-  raw_frames = extract_raw()
+  raw_frames = extract_raw(video)
   cleaned: list[Image.Image] = []
   manifest = []
   for i, path in enumerate(raw_frames):
@@ -184,8 +216,9 @@ def main() -> None:
     json.dumps(
       {
         "frameCount": len(manifest),
-        "durationSec": DURATION_SEC,
+        "durationSec": duration_sec,
         "fps": FPS,
+        "sourceVideo": str(video),
         "cream": "#f4f1ea",
         "frames": manifest,
       },
@@ -194,7 +227,7 @@ def main() -> None:
     + "\n",
     encoding="utf-8",
   )
-  build_atlas(cleaned)
+  build_atlas(cleaned, duration_sec)
   print("done")
 
 

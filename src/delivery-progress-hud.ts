@@ -23,9 +23,9 @@ const INFO_BODY_AFTER =
 const INFO_SIGNATURE = '-Entenium';
 const LIST_TITLE = 'Overgrown Ordinances';
 const LIST_EMPTY = 'No ordinances broken yet. Keep exploring.';
-const COMPLETION_TITLE = 'Congratulations!';
+const COMPLETION_TITLE = 'The town noticed.';
 const COMPLETION_BODY =
-  `You just posted ${DELIVERY_WAY_GOAL} new ordinances. That's only half of them — keep going, or open the letter.`;
+  'Twelve signs went up overnight. That\'s only half the trouble you can cause. Keep going, or open the letter.';
 const MYSTERY_TITLE = 'No sign for that.';
 const MYSTERY_BODY =
   'You found a way the town has no ordinance for. Yet.';

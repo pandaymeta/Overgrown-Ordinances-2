@@ -276,11 +276,13 @@ export function startGoldenHourAudio(world: ENGINE.World | null | undefined): vo
     return;
   }
   configureBuses(world);
-  if (loopsRequested) {
-    return;
-  }
   loopsRequested = true;
 
+  // An early loading-screen request can arrive before the listener/context is
+  // ready. Keep later idempotent calls able to finish starting the loops.
+  if (loopsStarted) {
+    return;
+  }
   const context = world.audioListener?.context;
   if (!context) {
     return;

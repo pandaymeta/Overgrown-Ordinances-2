@@ -8,11 +8,11 @@
 import * as ENGINE from '@gnsx/genesys.js';
 
 const ATLAS_PATH = '@project/assets/textures/startup-splash/transition-cream-atlas.png';
-const FRAME_COUNT = 34;
+const FRAME_COUNT = 50;
 const ATLAS_COLS = 6;
 const FRAME_WIDTH = 640;
 const FRAME_HEIGHT = 357;
-const VIDEO_DURATION_MS = 1089;
+const VIDEO_DURATION_MS = 1667;
 const CREAM_CSS = '#f4f1ea';
 /** Default splash open length when callers omit revealMs. */
 const DEFAULT_REVEAL_MS = 1600;
@@ -93,7 +93,7 @@ function sourceSize(source: CanvasImageSource): { width: number; height: number 
   return { width: FRAME_WIDTH * ATLAS_COLS, height: FRAME_HEIGHT * 6 };
 }
 
-/** Startup cream splash atlas matching transition.mp4. */
+/** Startup cream splash atlas from transitionplease.mp4. */
 @ENGINE.GameClass()
 export class StartupBrushRevealSystem extends ENGINE.SceneNode {
   private overlay: HTMLDivElement | null = null;

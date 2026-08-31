@@ -29,7 +29,7 @@ import { TutorialKeysGuide } from './tutorial-keys-guide.js';
 import { StreetLampGroundLightsSystem } from './street-lamp-ground-lights.js';
 import { applyDirectionalShadowBudget } from './environment-art-direction.js';
 import { guardSceneGeometryEarly } from './ordinance-sign-sharpness.js';
-import { preloadGameAudio } from './game-audio.js';
+import { preloadGameAudio, startGoldenHourAudio } from './game-audio.js';
 import { waitForStartupLoading } from './startup-loading-screen.js';
 
 installAnimationOneShotHostPatch(ENGINE);
@@ -64,6 +64,9 @@ class ThirdPersonGameMode extends ENGINE.GameMode {
     guardSceneGeometryEarly(this.getWorld(), 'GameMode.beginPlay');
     // Cream cover before anything else so the world never flashes on the first frames.
     this.ensureStartupLoadingScreen();
+    // Begin the background track under the loading copy. If browser autoplay is
+    // locked, this arms the first input gesture instead of waiting for reveal.
+    startGoldenHourAudio(this.getWorld());
     // Keep sun shadows/CSM off after scene load (isSunLight can re-enable expensive cascades).
     applyDirectionalShadowBudget(this.getWorld());
     // Warm audio after the cream screen — avoids parallel loadSound preloads at spawn.

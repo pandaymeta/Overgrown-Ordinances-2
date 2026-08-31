@@ -1,5 +1,5 @@
 /**
- * Cream startup loading screen: hand-drawn letter + progress bar, then splash reveal.
+ * Cream startup loading screen: title + letter message, then splash reveal.
  */
 
 import * as ENGINE from '@gnsx/genesys.js';
@@ -11,17 +11,16 @@ import { StartupBrushRevealSystem } from './startup-brush-reveal.js';
 
 const CREAM_CSS = '#f4f1ea';
 const TEXT_CSS = '#6b6560';
-const LOADING_MESSAGES = [
-  'You\'re playing Overgrown Ordinances...',
-  'One last letter. The mailbox is still open.',
-] as const;
+const LOADING_TITLE = 'Overgrown Ordinances';
+const LOADING_MESSAGE = 'One last letter.\nThe mailbox is still open.';
 const TYPEWRITER_CHAR_INTERVAL_MS = 55;
 const LOADING_MESSAGE_GAP_MS = 1000;
-const MIN_VISIBLE_MS = 1400;
+/** Hold after the message finishes typing, before the splash opens. */
+const POST_MESSAGE_HOLD_MS = 2500;
 const PRELOAD_CONCURRENCY = 8;
 /** Slower cream splash so the open reads clearly after loading. */
 const STARTUP_REVEAL_HOLD_MS = 200;
-const STARTUP_REVEAL_MS = 1600;
+const STARTUP_REVEAL_MS = 1667;
 
 let loadingFinished = false;
 const loadingWaiters: Array<() => void> = [];
@@ -73,17 +72,10 @@ async function preloadOne(path: string): Promise<void> {
   }
 }
 
-async function preloadPool(
-  paths: readonly string[],
-  onProgress?: (done: number, total: number) => void,
-): Promise<void> {
-  const total = paths.length;
-  let done = 0;
+async function preloadPool(paths: readonly string[]): Promise<void> {
   let next = 0;
-  onProgress?.(0, Math.max(1, total));
 
-  if (total === 0) {
-    onProgress?.(1, 1);
+  if (paths.length === 0) {
     return;
   }
 
@@ -92,8 +84,6 @@ async function preloadPool(
       const index = next;
       next += 1;
       await preloadOne(paths[index]);
-      done += 1;
-      onProgress?.(done, total);
     }
   });
   await Promise.all(workers);
@@ -141,7 +131,6 @@ function createHandDrawnLetterSvg(): SVGSVGElement {
     return el;
   };
 
-  // Outer rectangle — slightly wobbly corners
   svg.appendChild(path(
     'M 18 22 '
     + 'Q 14 20 22 18 '
@@ -153,11 +142,7 @@ function createHandDrawnLetterSvg(): SVGSVGElement {
     + 'Q 14 94 16 86 '
     + 'Z',
   ));
-
-  // Top flap V
   svg.appendChild(path('M 22 22 L 80 62 L 140 20'));
-
-  // Lower folds meeting the flap (closed-envelope X)
   svg.appendChild(path('M 18 88 L 68 58'));
   svg.appendChild(path('M 142 86 L 92 58'));
 
@@ -168,8 +153,8 @@ function createHandDrawnLetterSvg(): SVGSVGElement {
 export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
   private overlay: HTMLDivElement | null = null;
   private styleEl: HTMLStyleElement | null = null;
-  private progressFill: HTMLDivElement | null = null;
-  private progressLabel: HTMLParagraphElement | null = null;
+  private titleEl: HTMLHeadingElement | null = null;
+  private messageStage: HTMLDivElement | null = null;
   private copyEl: HTMLParagraphElement | null = null;
   private typingGeneration = 0;
   private started = false;
@@ -187,7 +172,6 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
 
   public override postLoad(): void {
     super.postLoad();
-    // Consume Studio <link rel="preload"> hints before the browser warns (~3s).
     this.earlyPreloadPromise = this.runEarlyAssetWarmup();
   }
 
@@ -199,13 +183,11 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     return true;
   }
 
-  /** Idempotent entry used from GameMode when beginPlay may be skipped. */
   public startLoadingSequence(): void {
     if (this.started) {
       return;
     }
     this.started = true;
-    // Cover the world on the same tick if the container already exists.
     const container = this.getWorld()?.gameContainer ?? null;
     if (container) {
       this.mountUi(container);
@@ -249,15 +231,12 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
       return;
     }
 
-    // Cream cover first — font can load underneath so the world never flashes.
     this.mountUi(container);
-    void this.runLoadingCopyTypewriter(this.typingGeneration);
     await ensureOvergrownAveriaFont();
     if (generation !== this.sequenceGeneration) {
       return;
     }
 
-    const startedAt = performance.now();
     const paths = Array.from(
       new Set([
         ...STARTUP_PRELOAD_ASSETS,
@@ -265,48 +244,31 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
       ]),
     );
 
-    if (this.earlyPreloadPromise) {
-      await this.earlyPreloadPromise;
-      this.earlyPreloadPromise = null;
-    }
+    const preloadPromise = (async (): Promise<void> => {
+      if (this.earlyPreloadPromise) {
+        await this.earlyPreloadPromise;
+        this.earlyPreloadPromise = null;
+      }
+      await preloadPool(paths);
+      try {
+        await ENGINE.resourceManager.waitForResources(ENGINE.ResourceType.All);
+      } catch (error) {
+        console.warn('[StartupLoading] waitForResources failed', error);
+      }
+      await waitForIntroPhysicsPrimed();
+    })();
 
-    // Reserve the last ~12% of the bar for waitForResources + min display time.
-    await preloadPool(paths, (done, total) => {
+    const copyPromise = (async (): Promise<void> => {
+      await this.runLoadingCopySequence(this.typingGeneration);
       if (generation !== this.sequenceGeneration) {
         return;
       }
-      const preloadShare = total <= 0 ? 0.88 : (done / total) * 0.88;
-      this.setProgress(preloadShare);
-    });
-    if (generation !== this.sequenceGeneration) {
-      this.teardownUi();
-      return;
-    }
-    this.setProgress(0.9);
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, POST_MESSAGE_HOLD_MS);
+      });
+    })();
 
-    try {
-      await ENGINE.resourceManager.waitForResources(ENGINE.ResourceType.All);
-    } catch (error) {
-      console.warn('[StartupLoading] waitForResources failed', error);
-    }
-    if (generation !== this.sequenceGeneration) {
-      this.teardownUi();
-      return;
-    }
-    this.setProgress(0.97);
-
-    const remaining = MIN_VISIBLE_MS - (performance.now() - startedAt);
-    if (remaining > 0) {
-      await new Promise<void>((resolve) => window.setTimeout(resolve, remaining));
-    }
-    if (generation !== this.sequenceGeneration) {
-      this.teardownUi();
-      return;
-    }
-    this.setProgress(1);
-
-    this.setProgressLabel('Settling in...');
-    await waitForIntroPhysicsPrimed();
+    await Promise.all([preloadPromise, copyPromise]);
     if (generation !== this.sequenceGeneration) {
       this.teardownUi();
       return;
@@ -381,15 +343,36 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
       'flex-direction:column',
       'align-items:center',
       'justify-content:center',
-      'gap:22px',
+      'gap:28px',
       'pointer-events:auto',
       'font-family:"Overgrown Averia","Segoe UI Rounded","Segoe UI",sans-serif',
     ].join(';');
 
-    const stage = document.createElement('div');
-    stage.style.cssText = [
-      'width:min(200px,46vw)',
-      'height:min(140px,32vw)',
+    const title = document.createElement('h1');
+    title.textContent = '';
+    title.style.cssText = [
+      'margin:0',
+      'max-width:min(720px,92vw)',
+      `color:${TEXT_CSS}`,
+      'font:700 56px/1.15 "Overgrown Averia","Segoe UI Rounded","Segoe UI",sans-serif',
+      'text-align:center',
+      'padding:0 20px',
+      'letter-spacing:-0.03em',
+    ].join(';');
+
+    const messageStage = document.createElement('div');
+    messageStage.style.cssText = [
+      'display:none',
+      'flex-direction:column',
+      'align-items:center',
+      'gap:18px',
+      'max-width:min(520px,86vw)',
+    ].join(';');
+
+    const letterStage = document.createElement('div');
+    letterStage.style.cssText = [
+      'width:min(140px,34vw)',
+      'height:min(98px,24vw)',
       'display:flex',
       'align-items:center',
       'justify-content:center',
@@ -402,123 +385,71 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
         child.classList.add('startup-letter-path');
       }
     }
-    stage.appendChild(letter);
+    letterStage.appendChild(letter);
 
     const copy = document.createElement('p');
     copy.textContent = '';
     copy.style.cssText = [
       'margin:0',
-      'max-width:min(520px,86vw)',
       `color:${TEXT_CSS}`,
-      'font:700 22px/1.45 "Overgrown Averia","Segoe UI",sans-serif',
+      'font:700 30px/1.45 "Overgrown Averia","Segoe UI",sans-serif',
       'text-align:center',
+      'white-space:pre-wrap',
       'padding:0 16px',
     ].join(';');
 
-    const barWrap = document.createElement('div');
-    barWrap.style.cssText = [
-      'width:min(280px,70vw)',
-      'display:flex',
-      'flex-direction:column',
-      'align-items:stretch',
-      'gap:8px',
-      'margin-top:4px',
-    ].join(';');
+    messageStage.appendChild(letterStage);
+    messageStage.appendChild(copy);
 
-    const track = document.createElement('div');
-    track.setAttribute('role', 'progressbar');
-    track.setAttribute('aria-valuemin', '0');
-    track.setAttribute('aria-valuemax', '100');
-    track.setAttribute('aria-valuenow', '0');
-    track.style.cssText = [
-      'height:10px',
-      'border-radius:999px',
-      `border:2px solid ${TEXT_CSS}`,
-      'background:rgba(107,101,96,0.08)',
-      'overflow:hidden',
-      'box-sizing:border-box',
-    ].join(';');
-
-    const fill = document.createElement('div');
-    fill.style.cssText = [
-      'height:100%',
-      'width:0%',
-      `background:${TEXT_CSS}`,
-      'border-radius:999px',
-      'transition:width 0.18s ease-out',
-    ].join(';');
-    track.appendChild(fill);
-
-    const label = document.createElement('p');
-    label.textContent = 'Loading 0%';
-    label.style.cssText = [
-      'margin:0',
-      `color:${TEXT_CSS}`,
-      'font:600 13px/1.2 "Overgrown Averia","Segoe UI",sans-serif',
-      'text-align:center',
-      'letter-spacing:0.02em',
-    ].join(';');
-
-    barWrap.appendChild(track);
-    barWrap.appendChild(label);
-
-    overlay.appendChild(stage);
-    overlay.appendChild(copy);
-    overlay.appendChild(barWrap);
+    overlay.appendChild(title);
+    overlay.appendChild(messageStage);
     container.appendChild(overlay);
 
     this.overlay = overlay;
-    this.progressFill = fill;
-    this.progressLabel = label;
+    this.titleEl = title;
+    this.messageStage = messageStage;
     this.copyEl = copy;
-    this.setProgress(0);
   }
 
-  private async runLoadingCopyTypewriter(typingGeneration: number): Promise<void> {
-    if (!this.copyEl) {
+  private async runLoadingCopySequence(typingGeneration: number): Promise<void> {
+    if (!this.titleEl || !this.messageStage || !this.copyEl) {
       return;
     }
-    for (let messageIndex = 0; messageIndex < LOADING_MESSAGES.length; messageIndex += 1) {
-      if (typingGeneration !== this.typingGeneration) {
+
+    this.titleEl.textContent = '';
+    this.titleEl.style.display = '';
+    this.copyEl.textContent = '';
+    this.messageStage.style.display = 'none';
+
+    for (let charIndex = 0; charIndex < LOADING_TITLE.length; charIndex += 1) {
+      if (typingGeneration !== this.typingGeneration || !this.titleEl) {
         return;
       }
-      const message = LOADING_MESSAGES[messageIndex];
-      this.copyEl.textContent = '';
-      for (let charIndex = 0; charIndex < message.length; charIndex += 1) {
-        if (typingGeneration !== this.typingGeneration || !this.copyEl) {
-          return;
-        }
-        this.copyEl.textContent = message.slice(0, charIndex + 1);
-        await new Promise<void>((resolve) => {
-          window.setTimeout(resolve, TYPEWRITER_CHAR_INTERVAL_MS);
-        });
-      }
-      if (messageIndex < LOADING_MESSAGES.length - 1) {
-        await new Promise<void>((resolve) => {
-          window.setTimeout(resolve, LOADING_MESSAGE_GAP_MS);
-        });
-      }
+      this.titleEl.textContent = LOADING_TITLE.slice(0, charIndex + 1);
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, TYPEWRITER_CHAR_INTERVAL_MS);
+      });
     }
-  }
 
-  private setProgress(ratio: number): void {
-    const clamped = Math.max(0, Math.min(1, ratio));
-    const pct = Math.round(clamped * 100);
-    if (this.progressFill) {
-      this.progressFill.style.width = `${pct}%`;
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, LOADING_MESSAGE_GAP_MS);
+    });
+    if (typingGeneration !== this.typingGeneration || !this.messageStage || !this.copyEl) {
+      return;
     }
-    if (this.progressLabel) {
-      this.progressLabel.textContent = `Loading ${pct}%`;
-    }
-    const track = this.progressFill?.parentElement;
-    if (track) {
-      track.setAttribute('aria-valuenow', String(pct));
-    }
-  }
 
-  private setProgressLabel(text: string): void {
-    if (this.progressLabel) {
-      this.progressLabel.textContent = text;
+    this.titleEl.style.display = 'none';
+    this.messageStage.style.display = 'flex';
+    this.copyEl.textContent = '';
+
+    for (let charIndex = 0; charIndex < LOADING_MESSAGE.length; charIndex += 1) {
+      if (typingGeneration !== this.typingGeneration || !this.copyEl) {
+        return;
+      }
+      this.copyEl.textContent = LOADING_MESSAGE.slice(0, charIndex + 1);
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, TYPEWRITER_CHAR_INTERVAL_MS);
+      });
     }
   }
 
@@ -526,8 +457,8 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     this.typingGeneration += 1;
     this.overlay?.remove();
     this.overlay = null;
-    this.progressFill = null;
-    this.progressLabel = null;
+    this.titleEl = null;
+    this.messageStage = null;
     this.copyEl = null;
   }
 
@@ -535,8 +466,6 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     for (let attempt = 0; attempt < 180; attempt += 1) {
       const container = this.getWorld()?.gameContainer ?? null;
       if (container) {
-        // Paint cream on the container itself so the 3D canvas cannot flash
-        // through before the overlay is mounted.
         container.style.background = CREAM_CSS;
         return container;
       }

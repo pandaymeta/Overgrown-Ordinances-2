@@ -34,3 +34,6 @@
 # Local scratch space (asset-cleanup staging copies of removed assets).
 .tmp/
 
+# ffmpeg dump from scripts/process-transition-frames.py — regenerate from source video.
+assets/textures/startup-splash/transition-raw/
+

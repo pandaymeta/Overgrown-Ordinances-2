@@ -1453,8 +1453,8 @@ export class StreetLampDismantlingSystem {
     if (this.isSmallRockProjectile(projectile)) {
       const rockAt = new THREE.Vector3();
       projectile.getWorldPosition(rockAt);
-      // Match scrap metal land: positional 2× (non-positional played louder).
-      playSoundAt(hydrant.getWorld(), GameSound.AxeHitRock, rockAt, 2);
+      // Axe-hit-rock is intentionally twice its previous positional gain.
+      playSoundAt(hydrant.getWorld(), GameSound.AxeHitRock, rockAt, 4);
       // Suppress the flight-land cue so the hydrant hit is the only axe-hit-rock.
       for (const pawn of hydrant.getWorld()?.getNodes(ENGINE.CharacterPawn) ?? []) {
         const marker = pawn as ENGINE.CharacterPawn & {
@@ -1570,8 +1570,13 @@ export class StreetLampDismantlingSystem {
     const hitAt = new THREE.Vector3();
     target.getWorldPosition(hitAt);
     const hitSound = this.getAxeHitSound(target);
-    // All axe impact clips at 3.4× (metal / wood / rock / bush).
-    playSoundAt(target.getWorld(), hitSound, hitAt, 3.4);
+    // Rock and bush impacts are intentionally twice their previous 3.4× gain;
+    // metal and wood keep the existing mix.
+    const hitVolume = hitSound === GameSound.AxeHitRock
+      || hitSound === GameSound.AxeHitBush
+      ? 6.8
+      : 3.4;
+    playSoundAt(target.getWorld(), hitSound, hitAt, hitVolume);
     // Mark a final hit before applying feedback so the standing lamp is never
     // moved while its dismantled replacement is being created.
     if (health <= 0) {

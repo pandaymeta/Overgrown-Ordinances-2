@@ -1843,9 +1843,9 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     }
     record.landPlayed = true;
     const at = record.crate.getWorldPosition(new THREE.Vector3());
-    // Same 2× positional gain as scrap wood/metal land (non-positional was louder).
+    // Axe-hit-rock is intentionally twice its previous positional gain.
     if (record.landSound === 'rock') {
-      playSoundAt(this.getWorld(), GameSound.AxeHitRock, at, 2);
+      playSoundAt(this.getWorld(), GameSound.AxeHitRock, at, 4);
       return;
     }
     const sound = record.landSound === 'wood'

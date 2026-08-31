@@ -451,30 +451,30 @@ const DELIVERY_SPEECH_MYSTERY = 'Delivered.\nNo rule for that. Yet.';
 const DELIVERY_SPEECH_CAT_PEACH = 'Outsourced.\nDon\'t tell the mailbox.';
 const DELIVERY_SPEECH_CAT_UNFED = 'Freelance delivery.\nNo benefits.';
 const DELIVERY_SPEECH_BY_ORDINANCE: Record<PendingOrdinance, string> = {
-  maintenance: 'Road\'s closed.\nI\'m not.',
-  jaywalking: 'The crosswalk\nis a suggestion.',
-  doNotStepCar: 'It\'s a shortcut.\nThe car can wait.',
-  doNotStepTram: 'Tram tracks are just…\nwide sidewalks.',
-  streetLightsClimb: 'Nice view.\nDon\'t look down.',
-  dontDestroyTheStreetLights: 'I only borrowed\nthe ladder part.',
-  dontFeedTheCat: 'One peach.\nOne felony. Worth it.',
-  noCatsOnStreets: 'The cat had a shift.\nI had a letter.',
-  noCratesOnRoads: 'It\'s not litter.\nIt\'s infrastructure.',
-  noRocksOnRoads: 'Rocks are just\nslow crates.',
+  maintenance: 'Just a tiny detour.',
+  jaywalking: 'The road looks clear.',
+  doNotStepCar: 'Nice little shortcut.',
+  doNotStepTram: 'The tram is\nnowhere near.',
+  streetLightsClimb: 'Up I go.',
+  dontDestroyTheStreetLights: 'I only needed\none part.',
+  dontFeedTheCat: 'That cat looks hungry.',
+  noCatsOnStreets: 'That cat is my\ndelivery assistant.',
+  noCratesOnRoads: 'The road has space.',
+  noRocksOnRoads: 'Just one little rock.',
   noBenchOnRoads: 'Public seating.\nMobile edition.',
-  noLogsOnRoads: 'That\'s timber,\nnot trash.',
+  noLogsOnRoads: 'That was timber,\nnot trash.',
   noWoodPlanksOnRoads: 'DIY bridge.\nVery legal.',
-  dontRemoveTheCones: 'The cone chose\nthis life.',
-  noScrapMetalsOnRoads: 'Recycling\non the go.',
-  dontRemoveThisBush: 'It\'s a disguise.\nVery professional.',
-  dontRemoveThisKiosk: 'Kiosk parts are\nload-bearing now.',
-  dontCutThisPole: 'Timber!\n…Wrong kind of timber.',
-  doNotDestroyThisSign: 'The sign was\nalready leaning.',
-  dontHitTheFireHydrant: 'I wanted mail,\nnot a fountain.',
-  highVoltage: 'The wires held.\nMy nerves didn\'t.',
-  noClimbingOnTheTree: 'The tree had\na mailbox line of sight.',
-  noCuttingOfTrees: 'The tree had\nit coming.',
-  doNotRemoveTheSigns: 'I\'m not removing signs.\nGravity is.',
+  dontRemoveTheCones: 'The cone won\'t mind.',
+  noScrapMetalsOnRoads: 'Roadside recycling.',
+  dontRemoveThisBush: 'It\'s a disguise.',
+  dontRemoveThisKiosk: 'I needed the wood.',
+  dontCutThisPole: 'That pole was\nin my way.',
+  doNotDestroyThisSign: 'The sign was unstable.',
+  dontHitTheFireHydrant: 'The water helps.',
+  highVoltage: 'The wire looks sturdy.',
+  noClimbingOnTheTree: 'Branches are\nnature\'s stairs.',
+  noCuttingOfTrees: 'That tree needed\na trim.',
+  doNotRemoveTheSigns: 'That sign was\nblocking me.',
 };
 const DELIVERY_SPEECH_GENERIC = [
   'Posted.\nMy conscience didn\'t.',
@@ -8710,7 +8710,22 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.tmpForward.normalize();
     }
     const activeCamera = world.getActiveCamera();
-    if (activeCamera) {
+    // Jaywalking is revealed after the player has been reset home. Always use
+    // Player Start as its side reference so the camera frames the board face
+    // visible from the reset position, even if the previously active camera is
+    // still sitting on the opposite side during the covered transition.
+    const jaywalkingSideReference = JAYWALKING_ANY_NAME.test(target.name ?? '')
+      ? world.getNodes(ENGINE.PlayerStart)[0] ?? null
+      : null;
+    if (jaywalkingSideReference) {
+      jaywalkingSideReference.updateMatrixWorld(true);
+      jaywalkingSideReference.getWorldPosition(this.tmpDir);
+      this.tmpDir.sub(this.cinematicLookAt);
+      this.tmpDir.y = 0;
+      if (this.tmpDir.lengthSq() > 1e-6 && this.tmpForward.dot(this.tmpDir) < 0) {
+        this.tmpForward.negate();
+      }
+    } else if (activeCamera) {
       activeCamera.updateMatrixWorld(true);
       activeCamera.getWorldPosition(this.tmpDir);
       this.tmpDir.sub(this.cinematicLookAt);
