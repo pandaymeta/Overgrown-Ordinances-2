@@ -1,12 +1,12 @@
 /**
- * Cream startup loading screen: title + letter message, then splash reveal.
+ * Cream startup loading screen: title + stick-figure mailman + letter message, then splash reveal.
  */
 
 import * as ENGINE from '@gnsx/genesys.js';
 
 import { ensureOvergrownAveriaFont } from './overgrown-averia-font.js';
 import { waitForIntroPhysicsPrimed } from './intro-physics-gate.js';
-import { STARTUP_PRELOAD_ASSETS } from './startup-preload-manifest.js';
+import { STARTUP_PRELOAD_ASSETS, STARTUP_WALKER_FRAME_PATHS } from './startup-preload-manifest.js';
 import { StartupBrushRevealSystem } from './startup-brush-reveal.js';
 
 const CREAM_CSS = '#f4f1ea';
@@ -22,9 +22,9 @@ const POST_MESSAGE_HOLD_MS = 4500;
 const LOADING_TITLE_FONT_PX = 56;
 const LOADING_MESSAGE_FONT_PX = 30;
 const LOADING_MESSAGE_LINE_HEIGHT = 1.45;
-/** Base vertical lift for the envelope above the message copy. */
-const LETTER_STAGE_LIFT_PX = -34;
-const LETTER_FLOAT_AMPLITUDE_PX = 14;
+/** Walk cycle length for the SVG frame sequence. */
+const WALKER_CYCLE_SEC = 0.8;
+const WALKER_STAGE_HEIGHT_PX = 220;
 const PRELOAD_CONCURRENCY = 8;
 /** Slower cream splash so the open reads clearly after loading. */
 const STARTUP_REVEAL_HOLD_MS = 200;
@@ -119,46 +119,65 @@ function collectSceneModelUrls(world: ENGINE.World): string[] {
   return urls;
 }
 
-/** Sketchy closed envelope matching the hand-drawn reference. */
-function createHandDrawnLetterSvg(): SVGSVGElement {
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('viewBox', '0 0 160 110');
-  svg.setAttribute('aria-hidden', 'true');
-  svg.style.cssText = 'width:100%;height:100%;overflow:visible';
+async function resolveProjectAssetUrl(logicalPath: string): Promise<string> {
+  const resolved = await ENGINE.resolveAssetPathsInText(`"${logicalPath}"`);
+  const url = resolved.replace(/^["']|["']$/g, '').trim();
+  if (!url || url.includes('@project/') || url.includes('@engine/')) {
+    throw new Error(`Unresolved asset: ${logicalPath} -> ${resolved}`);
+  }
+  return url;
+}
 
-  const stroke = {
-    fill: 'none',
-    stroke: TEXT_CSS,
-    'stroke-width': '3.2',
-    'stroke-linecap': 'round',
-    'stroke-linejoin': 'round',
+async function preloadWalkerFrames(): Promise<string[]> {
+  const urls = await Promise.all(STARTUP_WALKER_FRAME_PATHS.map(resolveProjectAssetUrl));
+  await Promise.all(urls.map((url) => new Promise<void>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve();
+    image.onerror = () => reject(new Error(`Failed to preload walker frame: ${url}`));
+    image.src = url;
+  })));
+  return urls;
+}
+
+/** Flipbook walk cycle from authored SVG frames. */
+async function mountWalkerFrameAnimation(container: HTMLElement): Promise<() => void> {
+  const urls = await preloadWalkerFrames();
+  container.replaceChildren();
+  container.style.cssText = 'position:relative;width:100%;height:100%;';
+
+  const images = urls.map((url, index) => {
+    const image = document.createElement('img');
+    image.src = url;
+    image.alt = '';
+    image.setAttribute('aria-hidden', 'true');
+    image.draggable = false;
+    image.style.cssText = [
+      'position:absolute',
+      'inset:0',
+      'width:100%',
+      'height:100%',
+      'object-fit:contain',
+      'object-position:center bottom',
+      `opacity:${index === 0 ? '1' : '0'}`,
+      'pointer-events:none',
+      'user-select:none',
+    ].join(';');
+    container.appendChild(image);
+    return image;
+  });
+
+  const frameMs = (WALKER_CYCLE_SEC * 1000) / images.length;
+  let frame = 0;
+  const timer = window.setInterval(() => {
+    images[frame].style.opacity = '0';
+    frame = (frame + 1) % images.length;
+    images[frame].style.opacity = '1';
+  }, frameMs);
+
+  return () => {
+    window.clearInterval(timer);
+    container.replaceChildren();
   };
-
-  const path = (d: string, extra?: Record<string, string>): SVGPathElement => {
-    const el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    el.setAttribute('d', d);
-    for (const [key, value] of Object.entries({ ...stroke, ...extra })) {
-      el.setAttribute(key, value);
-    }
-    return el;
-  };
-
-  svg.appendChild(path(
-    'M 18 22 '
-    + 'Q 14 20 22 18 '
-    + 'L 138 16 '
-    + 'Q 146 17 144 24 '
-    + 'L 146 86 '
-    + 'Q 146 94 138 93 '
-    + 'L 22 95 '
-    + 'Q 14 94 16 86 '
-    + 'Z',
-  ));
-  svg.appendChild(path('M 22 22 L 80 62 L 140 20'));
-  svg.appendChild(path('M 18 88 L 68 58'));
-  svg.appendChild(path('M 142 86 L 92 58'));
-
-  return svg;
 }
 
 @ENGINE.GameClass()
@@ -172,6 +191,7 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
   private started = false;
   private sequenceGeneration = 0;
   private earlyPreloadPromise: Promise<void> | null = null;
+  private walkerAnimCleanup: (() => void) | null = null;
 
   constructor() {
     super();
@@ -316,34 +336,18 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
       return;
     }
 
-    if (!document.getElementById('startup-loading-style')) {
+    if (!container.querySelector('#startup-loading-style')) {
       const style = document.createElement('style');
       style.id = 'startup-loading-style';
       style.textContent = [
-        '@keyframes startup-letter-float {',
-        `0% { transform: translateY(${LETTER_STAGE_LIFT_PX}px); }`,
-        `50% { transform: translateY(${LETTER_STAGE_LIFT_PX - LETTER_FLOAT_AMPLITUDE_PX}px); }`,
-        `100% { transform: translateY(${LETTER_STAGE_LIFT_PX}px); }`,
+        '#startup-loading-style-root .startup-walker-stage {',
+        'will-change:opacity;',
         '}',
-        '@keyframes startup-letter-draw {',
-        '0% { stroke-dashoffset: 420; opacity: 0.4; }',
-        '40% { stroke-dashoffset: 0; opacity: 1; }',
-        '70% { stroke-dashoffset: 0; opacity: 1; }',
-        '100% { stroke-dashoffset: 420; opacity: 0.4; }',
-        '}',
-        '#startup-loading-style-root .startup-letter-path {',
-        'stroke-dasharray: 420;',
-        'animation: startup-letter-draw 2.4s ease-in-out infinite;',
-        '}',
-        '#startup-loading-style-root .startup-letter-path:nth-child(2) { animation-delay: 0.1s; }',
-        '#startup-loading-style-root .startup-letter-path:nth-child(3) { animation-delay: 0.18s; }',
-        '#startup-loading-style-root .startup-letter-path:nth-child(4) { animation-delay: 0.26s; }',
-        '#startup-loading-style-root .startup-letter-stage {',
-        'animation: startup-letter-float 2.8s ease-in-out infinite;',
-        'will-change: transform;',
+        '#startup-loading-style-root .startup-walker-frames img {',
+        '-webkit-user-drag:none;',
         '}',
       ].join('');
-      document.head.appendChild(style);
+      container.appendChild(style);
       this.styleEl = style;
     }
 
@@ -365,7 +369,9 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     ].join(';');
 
     const contentShell = document.createElement('div');
-    const messageBlockHeight = 98 + 28 + LOADING_MESSAGE_LINES.length * LOADING_MESSAGE_FONT_PX * LOADING_MESSAGE_LINE_HEIGHT;
+    const messageBlockHeight = WALKER_STAGE_HEIGHT_PX
+      + 28
+      + LOADING_MESSAGE_LINES.length * LOADING_MESSAGE_FONT_PX * LOADING_MESSAGE_LINE_HEIGHT;
     const contentHeight = Math.max(
       Math.ceil(LOADING_TITLE_FONT_PX * 1.15),
       messageBlockHeight,
@@ -410,24 +416,31 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
       'max-width:min(520px,86vw)',
     ].join(';');
 
-    const letterStage = document.createElement('div');
-    letterStage.className = 'startup-letter-stage';
-    letterStage.style.cssText = [
-      'width:min(140px,34vw)',
-      'height:min(98px,24vw)',
-      'flex:0 0 min(98px,24vw)',
+    const walkerStage = document.createElement('div');
+    walkerStage.className = 'startup-walker-stage';
+    walkerStage.style.cssText = [
+      'width:min(200px,48vw)',
+      `height:min(${WALKER_STAGE_HEIGHT_PX}px,52vw)`,
+      `flex:0 0 min(${WALKER_STAGE_HEIGHT_PX}px,52vw)`,
       'display:flex',
-      'align-items:center',
+      'align-items:flex-end',
       'justify-content:center',
     ].join(';');
-
-    const letter = createHandDrawnLetterSvg();
-    for (const child of Array.from(letter.children)) {
-      if (child instanceof SVGPathElement) {
-        child.classList.add('startup-letter-path');
-      }
-    }
-    letterStage.appendChild(letter);
+    const walkerFrames = document.createElement('div');
+    walkerFrames.className = 'startup-walker-frames';
+    walkerFrames.style.cssText = 'width:100%;height:100%;';
+    walkerStage.appendChild(walkerFrames);
+    void mountWalkerFrameAnimation(walkerFrames)
+      .then((cleanup) => {
+        if (!walkerStage.isConnected) {
+          cleanup();
+          return;
+        }
+        this.walkerAnimCleanup = cleanup;
+      })
+      .catch((error) => {
+        console.warn('[StartupLoading] Walker frames failed to load', error);
+      });
 
     const messageCopy = document.createElement('div');
     messageCopy.style.cssText = [
@@ -458,7 +471,7 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
       messageLineEls.push(line);
     }
 
-    messageStage.appendChild(letterStage);
+    messageStage.appendChild(walkerStage);
     messageStage.appendChild(messageCopy);
 
     contentShell.appendChild(title);
@@ -524,6 +537,10 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
 
   private teardownUi(): void {
     this.typingGeneration += 1;
+    this.walkerAnimCleanup?.();
+    this.walkerAnimCleanup = null;
+    this.styleEl?.remove();
+    this.styleEl = null;
     this.overlay?.remove();
     this.overlay = null;
     this.titleEl = null;

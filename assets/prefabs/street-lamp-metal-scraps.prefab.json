@@ -1,7 +1,7 @@
 {
   "$root": {
     "$bc": "ENGINE.Prefab",
-    "$uuid": "2c95aa91753c68cb",
+    "$uuid": "3347560867a87596",
     "rootNode": {
       "$bc": "ENGINE.SceneNode",
       "children": [
@@ -78,6 +78,7 @@
           "name": "Metal Scrapt 2",
           "nodeId": 18469,
           "physicsOptions": {
+            "collisionMeshType": "trimesh",
             "density": 1000,
             "motionType": "dynamic"
           },

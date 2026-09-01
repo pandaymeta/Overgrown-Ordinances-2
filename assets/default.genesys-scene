@@ -2781,7 +2781,7 @@
         "$bc": "ENGINE.ModelMeshNode",
         "modelUrl": "@project/assets/PolyforkAssets/grass-ground-tile-131ec0.glb",
         "name": "Grass Ground Tile 131 Ec 05",
-        "nodeId": 16081,
+        "nodeId": 54799,
         "physicsOptions": {
           "collisionMeshType": "boundingBox"
         },
@@ -5612,7 +5612,7 @@
         "position": {
           "$bc": "v3",
           "_": [
-            -7.8,
+            -8.5,
             -1.5,
             4.2
           ]
@@ -8418,7 +8418,7 @@
         "position": {
           "$bc": "v3",
           "_": [
-            -14.6,
+            -15.8,
             -1.5,
             15.5
           ]
@@ -8854,7 +8854,7 @@
         "position": {
           "$bc": "v3",
           "_": [
-            -12.3,
+            -13.2,
             -1.5,
             15.5
           ]
@@ -9349,62 +9349,6 @@
             "frustumCulled": false,
             "modelMaterials": [],
             "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Metals_Card_Upright_v5.glb",
-            "name": "Metals Card Upright v 06",
-            "navigationGeometryRole": "none",
-            "nodeId": 39965,
-            "physicsOptions": {
-              "collisionMeshType": "none",
-              "collisionProfile": "NoCollision",
-              "enabled": false,
-              "generateCollisionEvents": false,
-              "ignoreForInputCollision": true
-            },
-            "position": {
-              "$bc": "v3",
-              "_": [
-                0,
-                2.568416,
-                0
-              ]
-            },
-            "tickEnabled": false,
-            "uuid": "d1551d55226748b0"
-          }
-        ],
-        "modelUrl": "@project/assets/OrdinanceCards/Clean/Metals_Clean.glb",
-        "name": "Metals 04",
-        "nodeId": 31426,
-        "position": {
-          "$bc": "v3",
-          "_": [
-            -20.3,
-            -1.6,
-            15.5
-          ]
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1.5,
-            1.5,
-            1.5
-          ]
-        },
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "b4f469aa9fda86c8"
-      },
-      {
-        "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
-        "children": [
-          {
-            "$bc": "ENGINE.ModelMeshNode",
-            "canEverTick": false,
-            "frustumCulled": false,
-            "modelMaterials": [],
-            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Metals_Card_Upright_v5.glb",
             "name": "Metals Card Upright v5",
             "navigationGeometryRole": "none",
             "nodeId": 8939,
@@ -9545,7 +9489,7 @@
         "position": {
           "$bc": "v3",
           "_": [
-            -4,
+            -5.8,
             -1.6,
             4.7
           ]
@@ -9737,17 +9681,17 @@
         "position": {
           "$bc": "v3",
           "_": [
-            -4.2,
-            0.8,
-            -14.3
+            -4.9,
+            0.7,
+            -14.4
           ]
         },
         "rotation": {
           "$bc": "e",
           "_": [
-            -3.141593,
-            0.872665,
-            -3.141593
+            3.141592,
+            0,
+            3.141592
           ]
         },
         "scale": {
@@ -9945,7 +9889,7 @@
         "position": {
           "$bc": "v3",
           "_": [
-            -17.9,
+            -18.5,
             -1.6,
             15.5
           ]
@@ -11574,33 +11518,72 @@
         "castShadow": true,
         "children": [
           {
-            "$bc": "ENGINE.SceneNode",
+            "$bc": "ENGINE.MeshNode",
+            "children": {
+              "$length": 1
+            },
+            "hiddenInGame": true,
             "name": "TramTrigger",
-            "nodeId": 38159,
+            "nodeId": 50796,
+            "physicsOptions": {
+              "collisionProfile": "NoCollision",
+              "enabled": false
+            },
             "position": {
               "$bc": "v3",
               "_": [
                 0.006514,
-                3.4,
+                3.3,
                 0
               ]
-            },
-            "rotation": {
-              "$bc": "e",
-              "_": {
-                "$length": 3
-              }
             },
             "scale": {
               "$bc": "v3",
               "_": [
                 2.32,
-                0.76,
+                0.57,
                 7.92
               ]
             },
-            "uuid": "8334c6791319357f",
-            "visible": false
+            "uuid": "ea1fc62726b6d936"
+          },
+          {
+            "$bc": "ENGINE.MeshNode",
+            "children": {
+              "$length": 1
+            },
+            "hiddenInGame": true,
+            "name": "TramTrigger 02",
+            "nodeId": 8421,
+            "physicsOptions": {
+              "collisionProfile": "NoCollision",
+              "enabled": false
+            },
+            "position": {
+              "$bc": "v3",
+              "_": [
+                0,
+                3.6,
+                2.211173
+              ]
+            },
+            "rotation": {
+              "$bc": "e",
+              "_": [
+                -0.523599,
+                0,
+                0
+              ]
+            },
+            "scale": {
+              "$bc": "v3",
+              "_": [
+                1.36,
+                0.57,
+                1.59
+              ]
+            },
+            "uuid": "eb5f76417c3f8e1f"
           }
         ],
         "modelUrl": "@project/assets/PolyforkAssets/City-tram.glb",
@@ -13297,10 +13280,6 @@
           },
           {
             "id": "933e143d60313ca4",
-            "nodeType": "actor"
-          },
-          {
-            "id": "b4f469aa9fda86c8",
             "nodeType": "actor"
           },
           {

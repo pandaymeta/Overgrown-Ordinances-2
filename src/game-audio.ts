@@ -38,6 +38,8 @@ export const GameSound = {
   UiOpen: '@project/assets/audio/sfx/ui-open.mp3',
   UiClose: '@project/assets/audio/sfx/ui-close.mp3',
   Victory: '@project/assets/audio/sfx/victory.mp3',
+  /** Player broke a live ordinance (soft-loop re-violation). */
+  Error: '@project/assets/audio/sfx/Error.mp3',
 } as const;
 
 const FOOTSTEPS = [
@@ -79,6 +81,7 @@ let busesConfigured = false;
 let loopsRequested = false;
 let loopsStarted = false;
 let unlockHooked = false;
+let ordinanceBreakErrorBuffer: AudioBuffer | null = null;
 
 function getManager(
   world: ENGINE.World | null | undefined,
@@ -120,6 +123,50 @@ function configureBuses(world: ENGINE.World): void {
   busesConfigured = true;
 }
 
+function playBufferImmediateGainSound(
+  world: ENGINE.World,
+  buffer: AudioBuffer,
+  volume: number,
+): void {
+  const manager = getManager(world);
+  const listener = world.audioListener;
+  if (!manager || !listener) {
+    return;
+  }
+  configureBuses(world);
+
+  const context = listener.context;
+  const start = (): void => {
+    if (context.state !== 'running') {
+      return;
+    }
+    const destination = manager.getBus('SFX')?.getInput() ?? listener.getInput();
+    const source = context.createBufferSource();
+    source.buffer = buffer;
+
+    const gain = context.createGain();
+    gain.gain.value = volume;
+    source.connect(gain);
+    gain.connect(destination);
+
+    source.start(0);
+    source.onended = () => {
+      try {
+        source.disconnect();
+        gain.disconnect();
+      } catch {
+        // Already disconnected.
+      }
+    };
+  };
+
+  if (context.state !== 'running') {
+    void context.resume().then(start);
+    return;
+  }
+  start();
+}
+
 /**
  * One-shot SFX with immediate gain. Three.js Audio.setVolume() ramps from 1.0
  * via setTargetAtTime, so short hits (axe, stamp, latch, paper) never reach the
@@ -144,10 +191,17 @@ function playImmediateGainSound(
 
   void (async () => {
     try {
+      if (context.state !== 'running') {
+        await context.resume();
+      }
       const buffer = await ENGINE.resourceManager.loadSound(
         ENGINE.AssetPath.fromString(url),
       );
       if (!buffer) {
+        return;
+      }
+
+      if (context.state !== 'running') {
         return;
       }
 
@@ -211,6 +265,11 @@ export function playSound(
 const ORDINANCE_STAMP_LOOP_COUNT = 3;
 const ORDINANCE_STAMP_DURATION_MS = 430;
 const ORDINANCE_STAMP_VOLUME = 4;
+export const ORDINANCE_BREAK_ERROR_VOLUME = 4;
+/** Mailbox latch when the letter slots in (2× prior 3.6 level). */
+export const MAILBOX_LATCH_VOLUME = 7.2;
+/** Letter / paper UI and envelope interactions. */
+export const ENVELOPE_PAPER_VOLUME = 3.2;
 
 export function playOrdinanceStamp(world: ENGINE.World | null | undefined): void {
   for (let index = 0; index < ORDINANCE_STAMP_LOOP_COUNT; index++) {
@@ -220,6 +279,18 @@ export function playOrdinanceStamp(world: ENGINE.World | null | undefined): void
       delayMs,
     );
   }
+}
+
+/** Same-day rule break sting when a live ordinance is re-violated. */
+export function playOrdinanceBreakError(world: ENGINE.World | null | undefined): void {
+  if (!world) {
+    return;
+  }
+  if (ordinanceBreakErrorBuffer) {
+    playBufferImmediateGainSound(world, ordinanceBreakErrorBuffer, ORDINANCE_BREAK_ERROR_VOLUME);
+    return;
+  }
+  playSound(world, GameSound.Error, ORDINANCE_BREAK_ERROR_VOLUME);
 }
 
 /** Plays a one-shot at a world position so it pans and falls off with distance. */
@@ -310,7 +381,10 @@ export async function preloadGameAudio(): Promise<void> {
   const urls = [...Object.values(GameSound), ...FOOTSTEPS];
   await Promise.all(urls.map(async (url) => {
     try {
-      await ENGINE.resourceManager.loadSound(ENGINE.AssetPath.fromString(url));
+      const buffer = await ENGINE.resourceManager.loadSound(ENGINE.AssetPath.fromString(url));
+      if (url === GameSound.Error && buffer) {
+        ordinanceBreakErrorBuffer = buffer;
+      }
     } catch {
       // A missing clip should never block startup.
     }

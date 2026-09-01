@@ -1,0 +1,8 @@
+{
+  "$root": {
+    "$bc": "ENGINE.SoundResource",
+    "audioPath": "@project/assets/audio/sfx/Error.mp3",
+    "name": "Error"
+  },
+  "$version": 3
+}

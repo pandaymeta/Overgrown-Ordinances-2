@@ -8,7 +8,7 @@ const MAX_HIGHLIGHT_MESHES = 48;
  * Climb / contact volumes parented under lamps, trams, trees, etc.
  * Never include these in the green hover highlight.
  */
-const OUTLINE_EXCLUDED_TRIGGER_NAME = /^(?:LampTrigger|TramTrigger|TramRoofTrigger|TreeTrigg+er|WireTrigger|CarRoofTrigger)(?:\s|$)/i;
+const OUTLINE_EXCLUDED_TRIGGER_NAME = /^(?:LampTrigger|TramTrigger|TramRoofTrigger|TreeTrigg+er|WireTrigger|CarRoofTrigger)(?:\s+\d+)?$/i;
 
 type MaterialSwap = {
   mesh: THREE.Mesh;

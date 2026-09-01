@@ -3,7 +3,8 @@
  * (MainRoad → Maintenance, LeftSideRoad → JayWalking, Yellow Cab → Do Not Step Car,
  *  City Tram → Do Not Step City Tram, Street Lamp tops → Street Lights Climb,
  *  Cargo crates / Park Benches / Logs / Kiosk Wood / Crate Planks Drop on roads/tracks →
- *  No Crates / Bench / Logs / Wood Planks / Scrap Metals on Roads; cone / bush remove →
+ *  No Crates / Bench / Logs / Wood Planks / Scrap Metals on Roads (scrap metals may rest
+ *  on tram track tiles); cone / bush remove →
  *  DontRemoveTheCones / DontRemoveThisBush / DontCutThisPole / Dont Destroy this Sign /
  *  Dont hit the fire hydrant / High Voltage / No cutting of trees).
  *  Wearing a bush across roads queues DontRemoveThisBush; while worn, person MainRoad/
@@ -12,17 +13,20 @@
  *  Kanji Sign queues Dont Destroy this Sign; after active, the next dismantle finishes
  *  falling before the soft-loop. Hitting a fire hydrant (axe/rock) to spray water queues
  *  Dont hit the fire hydrant; after active, water sprays ~1s before the soft-loop. Walking
- *  on utility-pole wires without tram / kanji / street-lamp platforms queues High Voltage.
+ *  on utility-pole wires without tram / kanji / street-lamp / scrap platforms queues High Voltage.
  *  Delivering mail while carrying a tree log that never touched a road queues No cutting of
- *  trees; after active, cutting a tree soft-loops after the log drops appear. Axing ordinance
+ *  trees; chopping a cherry tree (throw/carry logs off roads) also queues it at lower
+ *  delivery-route priority. After active, cutting a tree soft-loops after the log drops appear. Axing ordinance
  *  boards replaces them with fallen dynamic prefabs (road platforms); using those platforms
  *  or dismantling boards queues Do not remove the SIGNS; after active, the next axe lets the
  *  board tip/fall before the soft-loop. Fallen boards also count as scrap metal on roads —
  *  if they hit the road before other scrap (and SIGNS is not yet active), SIGNS unlocks
  *  first; once SIGNS is active, those boards queue No Scrap Metals on Roads. Standing on
  *  street-lamp Metal Scrapt over a road without that scrap resting on asphalt queues
- *  Dont destroy the street lights; Metal Scrapt resting on a road always queues No Scrap
- *  Metals. After Dont destroy is active, the next lamp dismantle soft-loops after scrap
+ *  Dont destroy the street lights; chopping a street lamp also queues it at lower
+ *  delivery-route priority. Metal Scrapt resting on asphalt/side roads queues No Scrap
+ *  Metals and voids the destroy route (tram track tiles are excluded). After Dont destroy is
+ *  active, the next lamp dismantle soft-loops after scrap
  *  appears. Throwing a peach to lure the Cat queues Dont feed the cat; click the cat within
  *  2.5m to have it carry mail to the mailbox. After active, the next peach lure soft-loops
  *  when the cat reaches the fruit. The cat also patrols (mailbox → cherry tree → wires →
@@ -31,24 +35,24 @@
  *  Climbing a standing cherry canopy (TreeTrigger) then delivering mail queues No climbing
  *  on the tree (board: Trees Climbing); after active, stepping on the canopy soft-loops.
  *  Dismantling the Trail Map Kiosk and using its wood as a platform without resting parts on
- *  a road (e.g. hung on wires) then delivering mail queues Dont remove this kiosk (board:
- *  Kiosk); after active, the next kiosk dismantle soft-loops after the parts appear.
+ *  asphalt roads (tram track tiles do not count) then delivering mail queues Dont remove this
+ *  kiosk (board: Kiosk); after active, the next kiosk dismantle soft-loops after the parts appear.
  *
  * Flow:
  * 1. Normal gameplay camera at 20m + speech bubble for a few seconds, then playable day
  * 2. Highlight mailbox (red pulse) + arrow trail
  * 3. Player approaches and left-clicks mailbox to deliver (2.5m, green outline hover)
  * 4. Stepping on MainRoad* / LeftSideRoad* / Yellow Cab / City Tram / LampTrigger, placing a
- *    cargo crate / park bench / log / kiosk wood / crate planks / metal scrap on roads/tracks,
- *    wearing a bush across roads, using a traffic cone or fallen utility pole as a platform
+ *    cargo crate / park bench / log / kiosk wood / crate planks / metal scrap on roads (scrap
+ *    metals may rest on tram track tiles), wearing a bush across roads, using a traffic cone or fallen utility pole as a platform
  *    over a road, finishing a traffic-cone axe dismantle (5th hit), or dismantling the Kanji
  *    Sign, or releasing fire-hydrant water (axe/rock), or walking utility-pole wires without
- *    tram / kanji / street-lamp platforms, or delivering while carrying a tree log that never
+ *    tram / kanji / street-lamp / scrap platforms, or delivering while carrying a tree log that never
  *    touched a road. Violation ordinances (roads / litter / hydrant / bush / cone axe) queue
  *    at most ONE new ordinance for the next day (first broken). Delivery-route ordinances
  *    (climbs, platforms, cat, clean log/kiosk/tree) are candidate-tracked and the successful
  *    delivery picker chooses which one unlocks — last enabling method wins, with a static
- *    priority tie-break.
+ *    priority tie-break (No cutting of trees beats High Voltage when both apply).
  * 5. After delivery: mailbox close-up + envelope insert → fade black → teleport + prop reset
  *    → "the Next Day..." → fade in on newly revealed ordinance → zoom out to player
  * 6. Later: repeating the same break focuses that ordinance + instant teleport home
@@ -61,7 +65,7 @@ import * as THREE from 'three';
 import { createAirmailEnvelope, disposeAirmailEnvelope } from './airmail-envelope.js';
 import { AxePickupRingSystem } from './axe-pickup-ring.js';
 import { CatMailCourier } from './cat-mail-courier.js';
-import { GameSound, playOrdinanceStamp, playSound, startGoldenHourAudio } from './game-audio.js';
+import { GameSound, MAILBOX_LATCH_VOLUME, playOrdinanceBreakError, playOrdinanceStamp, playSound, startGoldenHourAudio } from './game-audio.js';
 import { HoverSilhouette } from './hover-silhouette.js';
 import { ThirdPersonPlayer } from './player.js';
 import { ensureOvergrownAveriaFont } from './overgrown-averia-font.js';
@@ -132,7 +136,7 @@ const MORNING_SPEECH_FIRST_SIGN =
   'They closed the road overnight.\nFine. I\'ll find another way.';
 /** Second next-day — same morning the axe ring starts pulsing. */
 const MORNING_SPEECH_AXE =
-  'That axe near home might\nopen another path.';
+  'The axe might open\nanother path.';
 /** Third next-day. */
 const MORNING_SPEECH_THIRD_SIGN =
   'They\'re posting signs faster\nthan I can walk.';
@@ -142,6 +146,8 @@ const MORNING_SPEECH_AGAIN = 'How do I deliver\nthis letter?';
 const DELIVERY_SPEECH_READ_HOLD_SEC = 2.5;
 /** Goal shown on the left HUD counter (delivery / ordinance discovery ways). */
 export const DELIVERY_WAY_GOAL = 12;
+/** Every ordinance in the run — full collector completion. */
+export const FULL_ORDINANCE_GOAL = 24;
 /** Solid road cue after first reveal or breaking active Maintenance / Jaywalking ordinances. */
 const ROAD_HIGHLIGHT_DURATION_SEC = 2;
 /** Black-screen staging: hide scrap, then retire, then restore, then reveal. */
@@ -218,8 +224,10 @@ const METAL_SCRAP_MODEL = /metal_scrapt|Bench_scrapt|guardrail[1-4]\.glb/i;
 const CLIMB_CAR_NAME = /^Yellow Cab/i;
 const CAR_ROOF_TRIGGER_NAME = /^CarRoofTrigger/i;
 const CITY_TRAM_NAME = /^City Tram$/i;
-/** Author-scaled MeshNode (preferred) or legacy auto SceneNode. */
-const TRAM_TRIGGER_NAME = /^TramTrigger$/i;
+/** Author-scaled MeshNode (preferred) or legacy auto SceneNode — TramTrigger, TramTrigger 02, … */
+const TRAM_TRIGGER_NAME = /^TramTrigger(?:\s+\d+)?$/i;
+/** Low front ramp volume — ignore when the player is on road-litter platforms. */
+const TRAM_TRIGGER_SECONDARY_NAME = /^TramTrigger 02$/i;
 const TRAM_ROOF_TRIGGER_NAME = /^TramRoofTrigger$/i;
 const MAILBOX_NAME = /Mailbox/i;
 const MAINTENANCE_NAME = /^Maintenance$/i;
@@ -565,6 +573,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private readonly carRoofTriggers: ENGINE.SceneNode[] = [];
   private readonly cityTrams: ENGINE.ModelMeshNode[] = [];
   private readonly tramRoofTriggers: ENGINE.SceneNode[] = [];
+  private tramTrigger02: ENGINE.SceneNode | null = null;
   private readonly lampTriggers: ENGINE.SceneNode[] = [];
   private readonly treeTriggers: ENGINE.SceneNode[] = [];
   private readonly wireTriggers: ENGINE.SceneNode[] = [];
@@ -850,8 +859,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private doNotRemoveTheSignsLoopTriggered = false;
   /** Time spent carrying a cone before soft-looping DontRemoveTheCones. */
   private conePickupCarryElapsed = 0;
+  private conePickupBreakStung = false;
   /** Time spent wearing a bush before soft-looping DontRemoveThisBush. */
   private bushWearCarryElapsed = 0;
+  private bushWearBreakStung = false;
   /** Countdown after a pole cut before soft-looping DontCutThisPole (lets fall finish). */
   private poleCutSoftLoopDelayRemaining = 0;
   /** Countdown after kanji fall before soft-looping Do not destroy this sign. */
@@ -869,6 +880,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   /** Hold time after the ordinance cinematic has settled (not during inbound blend). */
   private ordinanceFocusHoldElapsed = 0;
   private readonly tmpBounds = new THREE.Box3();
+  private readonly tmpTriggerBounds = new THREE.Box3();
   private readonly tmpHead = new THREE.Vector3();
   private readonly tmpHitPoint = new THREE.Vector3();
   private readonly tmpFeetLocal = new THREE.Vector3();
@@ -1603,7 +1615,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.kioskDismantleSoftLoopDelayRemaining = 0;
       this.signsSoftLoopDelayRemaining = 0;
       this.conePickupCarryElapsed = 0;
+      this.conePickupBreakStung = false;
       this.bushWearCarryElapsed = 0;
+      this.bushWearBreakStung = false;
       this.poleCutSoftLoopDelayRemaining = 0;
       this.kanjiSignSoftLoopDelayRemaining = 0;
       this.fireHydrantSoftLoopDelayRemaining = 0;
@@ -1722,6 +1736,25 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.routeCandidateAt.delete('highVoltage');
   }
 
+  /** A tree log rested on a road — No logs on roads wins; cut-tree route is void. */
+  private clearNoCuttingOfTreesRouteCandidate(): void {
+    this.routeCandidates.delete('noCuttingOfTrees');
+    this.routeCandidateAt.delete('noCuttingOfTrees');
+  }
+
+  /** Street-lamp scrap rested on a road — No scrap metals wins; destroy route is void. */
+  private clearDontDestroyTheStreetLightsRouteCandidate(): void {
+    this.routeCandidates.delete('dontDestroyTheStreetLights');
+    this.routeCandidateAt.delete('dontDestroyTheStreetLights');
+  }
+
+  private assignPendingOrdinance(id: PendingOrdinance): void {
+    if (this.pendingOrdinance === id) {
+      return;
+    }
+    this.pendingOrdinance = id;
+  }
+
   private markRouteCandidate(id: DeliveryRouteCandidate): void {
     if (this.isRouteOrdinanceActive(id)) {
       return;
@@ -1730,7 +1763,18 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (id === 'highVoltage' && this.hasWireBypassRouteCandidate()) {
       return;
     }
+    // Chopping a tree outranks bare-wire walking — do not let a later wire stamp win the day.
+    if (
+      id === 'highVoltage'
+      && this.routeCandidates.has('noCuttingOfTrees')
+      && !this.noCuttingOfTreesOrdinanceActive
+    ) {
+      return;
+    }
     if (this.isWireBypassRouteCandidate(id)) {
+      this.clearHighVoltageRouteCandidate();
+    }
+    if (id === 'noCuttingOfTrees') {
       this.clearHighVoltageRouteCandidate();
     }
     // Tree canopy is easy to brush while using tram / lamps / signs — those beat tree.
@@ -1796,9 +1840,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         return 1;
       case 'dontFeedTheCat':
         return 2;
-      case 'noCuttingOfTrees':
-        return 3;
       case 'dontRemoveThisKiosk':
+      case 'dontDestroyTheStreetLights':
         return 4;
       case 'doNotDestroyThisSign':
         return 5;
@@ -1812,10 +1855,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         return 9;
       case 'doNotRemoveTheSigns':
         return 10;
-      case 'dontDestroyTheStreetLights':
-        return 11;
       case 'dontRemoveTheCones':
         return 12;
+      case 'noCuttingOfTrees':
+        return 13;
       case 'noClimbingOnTheTree':
         return 20;
       case 'highVoltage':
@@ -1842,13 +1885,13 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private claimCatDeliveryOrdinanceOnStart(via: 'peach' | 'unfed'): void {
     this.deliveryVia = via === 'unfed' ? 'catUnfed' : 'catPeach';
     if (via === 'peach' && !this.dontFeedTheCatOrdinanceActive) {
-      this.pendingOrdinance = 'dontFeedTheCat';
+      this.assignPendingOrdinance('dontFeedTheCat');
       this.rocksOnRoadViolationSeen = false;
       this.markRouteCandidate('dontFeedTheCat');
       return;
     }
     if (via === 'unfed' && !this.noCatsOnStreetsOrdinanceActive) {
-      this.pendingOrdinance = 'noCatsOnStreets';
+      this.assignPendingOrdinance('noCatsOnStreets');
       this.rocksOnRoadViolationSeen = false;
       this.markRouteCandidate('noCatsOnStreets');
     }
@@ -1888,12 +1931,18 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
 
     if (this.isCarryingCleanTreeLog() && !this.noCuttingOfTreesOrdinanceActive) {
+      // Re-stamp so carry-to-mailbox beats an earlier chop-only mark on the same day.
       this.markRouteCandidate('noCuttingOfTrees');
     }
 
     const eligible = [...this.routeCandidates].filter((id) => !this.isRouteOrdinanceActive(id));
     const hasBypass = eligible.some((id) => this.isWireBypassRouteCandidate(id));
-    let filtered = hasBypass
+    const hvBeatenBy: DeliveryRouteCandidate[] = [
+      'dontRemoveThisKiosk',
+      'dontDestroyTheStreetLights',
+      'noCuttingOfTrees',
+    ];
+    let filtered = hasBypass || eligible.some((id) => hvBeatenBy.includes(id))
       ? eligible.filter((id) => id !== 'highVoltage')
       : eligible;
     // Tree climb loses to intentional elevated routes even if stamped later.
@@ -2337,10 +2386,13 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   public respawnPlayerWithoutDayReset(): void {
     this.stopModelFrontCinematic();
     this.setFade(0);
-    this.setCompletionInteractionPaused(false);
     this.player?.setCinematicCameraLock(false);
+    this.player?.setMovementFrozen(true);
+    this.player?.forceIdlePose();
     this.player?.teleportToPlayerStartAndSettle();
     this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
+    releaseSpawnPhysicsGrace(SPAWN_PHYSICS_HOLD_TICKS);
+    this.movementUnfreezeAfterPhysicsHold = true;
     if (this.phase !== FlowPhase.AwaitingDelivery
       && this.phase !== FlowPhase.ZoomOutReveal
       && this.phase !== FlowPhase.IntroSpeech) {
@@ -2852,102 +2904,116 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
   }
 
-  private triggerBlockedMainRoadLoop(): void {
+  private stingLiveOrdinanceBreak(): void {
+    playOrdinanceBreakError(this.getWorld());
+  }
+
+  private triggerBlockedSoftLoop(
+    target: ENGINE.ModelMeshNode | null,
+    playBreakSting = true,
+  ): void {
+    if (playBreakSting) {
+      this.stingLiveOrdinanceBreak();
+    }
+    this.beginImmediateSoftLoop(target);
+  }
+
+  private triggerBlockedMainRoadLoop(playBreakSting = true): void {
     this.startRoadHighlight('mainRoad');
-    this.beginImmediateSoftLoop(this.maintenance);
+    this.triggerBlockedSoftLoop(this.maintenance, playBreakSting);
   }
 
-  private triggerBlockedJaywalkingLoop(): void {
+  private triggerBlockedJaywalkingLoop(playBreakSting = true): void {
     this.startRoadHighlight('leftSideRoad');
-    this.beginImmediateSoftLoop(this.jaywalking);
+    this.triggerBlockedSoftLoop(this.jaywalking, playBreakSting);
   }
 
-  private triggerBlockedDoNotStepCarLoop(): void {
-    this.beginImmediateSoftLoop(this.doNotStepCar);
+  private triggerBlockedDoNotStepCarLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.doNotStepCar, playBreakSting);
   }
 
-  private triggerBlockedDoNotStepTramLoop(): void {
-    this.beginImmediateSoftLoop(this.doNotStepCityTram);
+  private triggerBlockedDoNotStepTramLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.doNotStepCityTram, playBreakSting);
   }
 
-  private triggerBlockedStreetLightsClimbLoop(): void {
-    this.beginImmediateSoftLoop(this.findNearestStreetLightsClimb());
+  private triggerBlockedStreetLightsClimbLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.findNearestStreetLightsClimb(), playBreakSting);
   }
 
-  private triggerBlockedDontDestroyTheStreetLightsLoop(): void {
-    this.beginImmediateSoftLoop(this.findNearestStreetLightsDestroy());
+  private triggerBlockedDontDestroyTheStreetLightsLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.findNearestStreetLightsDestroy(), playBreakSting);
   }
 
-  private triggerBlockedDontFeedTheCatLoop(): void {
-    this.beginImmediateSoftLoop(this.findNearestDontFeedTheCat());
+  private triggerBlockedDontFeedTheCatLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.findNearestDontFeedTheCat(), playBreakSting);
   }
 
-  private triggerBlockedNoCatsOnStreetsLoop(): void {
-    this.beginImmediateSoftLoop(this.findNearestNoCatsOnStreets());
+  private triggerBlockedNoCatsOnStreetsLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.findNearestNoCatsOnStreets(), playBreakSting);
   }
 
-  private triggerBlockedNoCratesOnRoadsLoop(): void {
-    this.beginImmediateSoftLoop(this.findNearestNoCratesOnRoads());
+  private triggerBlockedNoCratesOnRoadsLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.findNearestNoCratesOnRoads(), playBreakSting);
   }
 
-  private triggerBlockedNoRocksOnRoadsLoop(): void {
-    this.beginImmediateSoftLoop(this.noRocksOnRoads ?? this.findNearestNoRocksOnRoads());
+  private triggerBlockedNoRocksOnRoadsLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.noRocksOnRoads ?? this.findNearestNoRocksOnRoads(), playBreakSting);
   }
 
-  private triggerBlockedNoBenchOnRoadsLoop(): void {
-    this.beginImmediateSoftLoop(this.findNearestNoBenchOnRoads());
+  private triggerBlockedNoBenchOnRoadsLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.findNearestNoBenchOnRoads(), playBreakSting);
   }
 
-  private triggerBlockedNoLogsOnRoadsLoop(): void {
-    this.beginImmediateSoftLoop(this.findNearestNoLogsOnRoads());
+  private triggerBlockedNoLogsOnRoadsLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.findNearestNoLogsOnRoads(), playBreakSting);
   }
 
-  private triggerBlockedNoWoodPlanksOnRoadsLoop(): void {
-    this.beginImmediateSoftLoop(this.findNearestNoWoodPlanksOnRoads());
+  private triggerBlockedNoWoodPlanksOnRoadsLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.findNearestNoWoodPlanksOnRoads(), playBreakSting);
   }
 
-  private triggerBlockedDontRemoveTheConesLoop(): void {
-    this.beginImmediateSoftLoop(this.findNearestDontRemoveTheCones());
+  private triggerBlockedDontRemoveTheConesLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.findNearestDontRemoveTheCones(), playBreakSting);
   }
 
-  private triggerBlockedNoScrapMetalsOnRoadsLoop(): void {
-    this.beginImmediateSoftLoop(this.findNearestNoScrapMetalsOnRoads());
+  private triggerBlockedNoScrapMetalsOnRoadsLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.findNearestNoScrapMetalsOnRoads(), playBreakSting);
   }
 
-  private triggerBlockedDontRemoveThisBushLoop(): void {
-    this.beginImmediateSoftLoop(this.findNearestDontRemoveThisBush());
+  private triggerBlockedDontRemoveThisBushLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.findNearestDontRemoveThisBush(), playBreakSting);
   }
 
-  private triggerBlockedDontRemoveThisKioskLoop(): void {
-    this.beginImmediateSoftLoop(this.findNearestDontRemoveThisKiosk());
+  private triggerBlockedDontRemoveThisKioskLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.findNearestDontRemoveThisKiosk(), playBreakSting);
   }
 
-  private triggerBlockedDontCutThisPoleLoop(): void {
-    this.beginImmediateSoftLoop(this.findNearestDontCutThisPole());
+  private triggerBlockedDontCutThisPoleLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.findNearestDontCutThisPole(), playBreakSting);
   }
 
-  private triggerBlockedDoNotDestroyThisSignLoop(): void {
-    this.beginImmediateSoftLoop(this.findNearestDoNotDestroyThisSign());
+  private triggerBlockedDoNotDestroyThisSignLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.findNearestDoNotDestroyThisSign(), playBreakSting);
   }
 
-  private triggerBlockedDontHitTheFireHydrantLoop(): void {
-    this.beginImmediateSoftLoop(this.findNearestDontHitTheFireHydrant());
+  private triggerBlockedDontHitTheFireHydrantLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.findNearestDontHitTheFireHydrant(), playBreakSting);
   }
 
-  private triggerBlockedHighVoltageLoop(): void {
-    this.beginImmediateSoftLoop(this.findNearestHighVoltage());
+  private triggerBlockedHighVoltageLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.findNearestHighVoltage(), playBreakSting);
   }
 
-  private triggerBlockedNoCuttingOfTreesLoop(): void {
-    this.beginImmediateSoftLoop(this.findNearestNoCuttingOfTrees());
+  private triggerBlockedNoCuttingOfTreesLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.findNearestNoCuttingOfTrees(), playBreakSting);
   }
 
-  private triggerBlockedNoClimbingOnTheTreeLoop(): void {
-    this.beginImmediateSoftLoop(this.findNearestNoClimbingOnTheTree());
+  private triggerBlockedNoClimbingOnTheTreeLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.findNearestNoClimbingOnTheTree(), playBreakSting);
   }
 
-  private triggerBlockedDoNotRemoveTheSignsLoop(): void {
-    this.beginImmediateSoftLoop(this.findNearestDoNotRemoveTheSigns());
+  private triggerBlockedDoNotRemoveTheSignsLoop(playBreakSting = true): void {
+    this.triggerBlockedSoftLoop(this.findNearestDoNotRemoveTheSigns(), playBreakSting);
   }
 
   /** Soft-loop: reset day state, then smoothly zoom from the player's last view onto the board. */
@@ -2998,7 +3064,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
     // First unbroken ordinance stepped today wins; later roads are ignored.
     if (!this.pendingOrdinance && !this.maintenanceOrdinanceActive) {
-      this.pendingOrdinance = 'maintenance';
+      this.assignPendingOrdinance('maintenance');
     }
   }
 
@@ -3025,7 +3091,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
 
     if (!this.pendingOrdinance && !this.jaywalkingOrdinanceActive) {
-      this.pendingOrdinance = 'jaywalking';
+      this.assignPendingOrdinance('jaywalking');
     }
   }
 
@@ -3279,7 +3345,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       || !this.pendingOrdinance
       || this.pendingOrdinance === 'noRocksOnRoads'
     ) {
-      this.pendingOrdinance = 'dontRemoveTheCones';
+      this.assignPendingOrdinance('dontRemoveTheCones');
     }
   }
 
@@ -3297,7 +3363,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
     // Fallen ordinance boards always belong to the Do not remove the SIGNS rule.
     // This takes precedence over No Scrap Metals both before and after the sign
-    // ordinance is active; street-lamp scrap still always uses No Scrap Metals.
+    // ordinance is active; street-lamp scrap on asphalt still uses No Scrap Metals.
     if (fromFallenOrdinanceSign) {
       this.onDontRemoveTheSignsContact('roadRest');
       return;
@@ -3314,7 +3380,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
 
     if (!this.pendingOrdinance && !this.noScrapMetalsOnRoadsOrdinanceActive) {
-      this.pendingOrdinance = 'noScrapMetalsOnRoads';
+      this.assignPendingOrdinance('noScrapMetalsOnRoads');
     }
   }
 
@@ -3336,7 +3402,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
 
     if (!this.pendingOrdinance) {
-      this.pendingOrdinance = 'dontRemoveThisBush';
+      this.assignPendingOrdinance('dontRemoveThisBush');
     }
   }
 
@@ -3387,6 +3453,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
     this.poleCutSoftLoopDelayRemaining = this.poleCutSoftLoopDelaySec;
+    this.stingLiveOrdinanceBreak();
   }
 
   private pollPoleCutSoftLoop(deltaTime: number): void {
@@ -3410,7 +3477,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
     this.poleCutSoftLoopDelayRemaining = 0;
     this.dontCutThisPoleLoopTriggered = true;
-    this.triggerBlockedDontCutThisPoleLoop();
+    this.triggerBlockedDontCutThisPoleLoop(false);
   }
 
   /**
@@ -3436,6 +3503,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     ) {
       if (this.kanjiSignSoftLoopDelayRemaining <= 0) {
         this.kanjiSignSoftLoopDelayRemaining = this.kanjiSignSoftLoopDelaySec;
+        this.stingLiveOrdinanceBreak();
       }
       return;
     }
@@ -3466,7 +3534,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
     this.kanjiSignSoftLoopDelayRemaining = 0;
     this.doNotDestroyThisSignLoopTriggered = true;
-    this.triggerBlockedDoNotDestroyThisSignLoop();
+    this.triggerBlockedDoNotDestroyThisSignLoop(false);
   }
 
   /**
@@ -3492,6 +3560,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     ) {
       if (this.fireHydrantSoftLoopDelayRemaining <= 0) {
         this.fireHydrantSoftLoopDelayRemaining = this.fireHydrantSoftLoopDelaySec;
+        this.stingLiveOrdinanceBreak();
       }
       return;
     }
@@ -3506,7 +3575,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         || this.pendingOrdinance === 'noRocksOnRoads'
       )
     ) {
-      this.pendingOrdinance = 'dontHitTheFireHydrant';
+      this.assignPendingOrdinance('dontHitTheFireHydrant');
     }
   }
 
@@ -3531,23 +3600,38 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
     this.fireHydrantSoftLoopDelayRemaining = 0;
     this.dontHitTheFireHydrantLoopTriggered = true;
-    this.triggerBlockedDontHitTheFireHydrantLoop();
+    this.triggerBlockedDontHitTheFireHydrantLoop(false);
   }
 
   /**
-   * After No cutting of trees is active: chopping a cherry tree → delay → soft loop.
+   * Chopping a cherry tree queues No cutting of trees for mail delivery (throw or carry
+   * logs off roads). After the ordinance is live, the next chop → delay → soft loop.
    */
   private onCherryTreeDismantled(): void {
-    if (this.playableGraceRemaining > 0 || !this.noCuttingOfTreesOrdinanceActive) {
+    if (this.playableGraceRemaining > 0) {
       return;
     }
-    if (this.phase !== FlowPhase.AwaitingDelivery || this.noCuttingOfTreesLoopTriggered) {
+    if (
+      this.phase !== FlowPhase.AwaitingDelivery
+      && this.phase !== FlowPhase.ZoomOutReveal
+      && this.phase !== FlowPhase.IntroSpeech
+    ) {
+      return;
+    }
+
+    if (!this.noCuttingOfTreesOrdinanceActive) {
+      this.markRouteCandidate('noCuttingOfTrees');
+      return;
+    }
+
+    if (this.noCuttingOfTreesLoopTriggered) {
       return;
     }
     if (this.treeCutSoftLoopDelayRemaining > 0) {
       return;
     }
     this.treeCutSoftLoopDelayRemaining = this.treeCutSoftLoopDelaySec;
+    this.stingLiveOrdinanceBreak();
   }
 
   private pollTreeCutSoftLoop(deltaTime: number): void {
@@ -3571,7 +3655,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
     this.treeCutSoftLoopDelayRemaining = 0;
     this.noCuttingOfTreesLoopTriggered = true;
-    this.triggerBlockedNoCuttingOfTreesLoop();
+    this.triggerBlockedNoCuttingOfTreesLoop(false);
   }
 
   /**
@@ -3588,6 +3672,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
     this.kioskDismantleSoftLoopDelayRemaining = this.kioskDismantleSoftLoopDelaySec;
+    this.stingLiveOrdinanceBreak();
   }
 
   private pollKioskDismantleSoftLoop(deltaTime: number): void {
@@ -3611,7 +3696,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
     this.kioskDismantleSoftLoopDelayRemaining = 0;
     this.dontRemoveThisKioskLoopTriggered = true;
-    this.triggerBlockedDontRemoveThisKioskLoop();
+    this.triggerBlockedDontRemoveThisKioskLoop(false);
   }
 
   /**
@@ -3656,7 +3741,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
 
     if (!this.pendingOrdinance) {
-      this.pendingOrdinance = 'doNotRemoveTheSigns';
+      this.assignPendingOrdinance('doNotRemoveTheSigns');
     }
   }
 
@@ -3683,6 +3768,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     ) {
       if (this.signsSoftLoopDelayRemaining <= 0) {
         this.signsSoftLoopDelayRemaining = this.signsSoftLoopDelaySec;
+        this.stingLiveOrdinanceBreak();
       }
       return;
     }
@@ -3713,7 +3799,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
     this.signsSoftLoopDelayRemaining = 0;
     this.doNotRemoveTheSignsLoopTriggered = true;
-    this.triggerBlockedDoNotRemoveTheSignsLoop();
+    this.triggerBlockedDoNotRemoveTheSignsLoop(false);
   }
 
   /**
@@ -3749,20 +3835,34 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   }
 
   /**
-   * After Dont destroy the street lights is active: axe finishes dismantling a lamp
-   * → delay → soft loop so scrap is visible first.
+   * Chopping a street lamp queues Dont destroy the street lights (scrap off roads or
+   * platform trick). After the ordinance is live, the next chop → delay → soft loop.
    */
   private onStreetLampDismantled(): void {
-    if (this.playableGraceRemaining > 0 || !this.dontDestroyTheStreetLightsOrdinanceActive) {
+    if (this.playableGraceRemaining > 0) {
       return;
     }
-    if (this.phase !== FlowPhase.AwaitingDelivery || this.dontDestroyTheStreetLightsLoopTriggered) {
+    if (
+      this.phase !== FlowPhase.AwaitingDelivery
+      && this.phase !== FlowPhase.ZoomOutReveal
+      && this.phase !== FlowPhase.IntroSpeech
+    ) {
+      return;
+    }
+
+    if (!this.dontDestroyTheStreetLightsOrdinanceActive) {
+      this.markRouteCandidate('dontDestroyTheStreetLights');
+      return;
+    }
+
+    if (this.dontDestroyTheStreetLightsLoopTriggered) {
       return;
     }
     if (this.streetLampDestroySoftLoopDelayRemaining > 0) {
       return;
     }
     this.streetLampDestroySoftLoopDelayRemaining = this.streetLampDestroySoftLoopDelaySec;
+    this.stingLiveOrdinanceBreak();
   }
 
   /**
@@ -3852,7 +3952,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
     this.streetLampDestroySoftLoopDelayRemaining = 0;
     this.dontDestroyTheStreetLightsLoopTriggered = true;
-    this.triggerBlockedDontDestroyTheStreetLightsLoop();
+    this.triggerBlockedDontDestroyTheStreetLightsLoop(false);
   }
 
   /**
@@ -3976,47 +4076,101 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (this.tramRoofTriggers.length === 0) {
       this.cacheCityTramsAndRoofTriggers();
     }
-    // The authored trigger is the preferred volume.  Keep a bounds-based roof
-    // fallback as well: City Tram has historically been re-imported with its
-    // child trigger missing or scaled differently, which made the player reach
-    // the wires without ever recording the tram route.
+    const hitTrigger = this.findPlayerFeetTrigger(this.tramRoofTriggers);
+    if (!hitTrigger) {
+      return;
+    }
     if (
-      !this.isPlayerFeetInsideTriggers(this.tramRoofTriggers)
-      && !this.isPlayerFeetOnCityTramRoof()
+      this.tramTrigger02
+      && this.shouldSuppressTramTrigger02Contact(this.tramTrigger02)
+      && (
+        TRAM_TRIGGER_SECONDARY_NAME.test(hitTrigger.name ?? '')
+        || this.isPlayerFeetInsideTriggers([this.tramTrigger02])
+      )
     ) {
       return;
     }
     this.onTramRoofContact();
   }
 
+  /** Logs / scrap / benches / crates / planks — TramTrigger 02 ignores these. */
+  private isTramTrigger02LitterBypassProp(node: ENGINE.ModelMeshNode): boolean {
+    return CARGO_CRATE_NAME.test(node.name ?? '')
+      || PARK_BENCH_NAME.test(node.name ?? '')
+      || this.isCarryableLogProp(node)
+      || this.isWoodPlanksRoadProp(node)
+      || this.isScrapMetalRoadProp(node);
+  }
+
   /**
-   * Conservative fallback for an authored TramTrigger.  It only accepts feet
-   * within the top slice of the tram's actual model bounds, so walking beside
-   * or underneath the tram cannot unlock the tram ordinance.
+   * Suppress TramTrigger 02 when road litter is touching the volume or the player
+   * is standing on that litter (low nose trigger overlaps debris piles).
    */
-  private isPlayerFeetOnCityTramRoof(): boolean {
-    if (!this.player || this.cityTrams.length === 0) {
+  private shouldSuppressTramTrigger02Contact(trigger: ENGINE.SceneNode): boolean {
+    return this.isPlayerStandingOnTramTrigger02LitterBypass()
+      || this.doesLitterPropOverlapTramTrigger(trigger);
+  }
+
+  private doesLitterPropOverlapTramTrigger(trigger: ENGINE.SceneNode): boolean {
+    const world = this.getWorld();
+    if (!world) {
       return false;
     }
-    this.player.getWorldPosition(this.tmpPlayerPos);
-    this.tmpPlayerPos.y -= this.pawnFeetBelowRoot;
-    for (const tram of this.cityTrams) {
-      tram.updateMatrixWorld(true);
-      this.tmpBounds.setFromObject(tram);
+
+    trigger.updateMatrixWorld(true);
+    this.tmpTriggerBounds.setFromCenterAndSize(new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 1, 1));
+    this.tmpTriggerBounds.applyMatrix4(trigger.matrixWorld);
+
+    for (const node of this.getModelMeshes(world)) {
+      if (!this.isTramTrigger02LitterBypassProp(node)) {
+        continue;
+      }
+      if (!node.visible || !node.parent) {
+        continue;
+      }
+      if (this.player?.isCarryingObject(node)) {
+        continue;
+      }
+      node.updateMatrixWorld(true);
+      this.tmpBounds.setFromObject(node);
       if (this.tmpBounds.isEmpty()) {
         continue;
       }
-      const onTopSlice =
-        this.tmpPlayerPos.y >= this.tmpBounds.max.y - 0.75
-        && this.tmpPlayerPos.y <= this.tmpBounds.max.y + 0.45;
-      const withinRoof =
-        this.tmpPlayerPos.x >= this.tmpBounds.min.x - 0.12
-        && this.tmpPlayerPos.x <= this.tmpBounds.max.x + 0.12
-        && this.tmpPlayerPos.z >= this.tmpBounds.min.z - 0.12
-        && this.tmpPlayerPos.z <= this.tmpBounds.max.z + 0.12;
-      if (onTopSlice && withinRoof) {
+      if (this.tmpTriggerBounds.intersectsBox(this.tmpBounds)) {
         return true;
       }
+    }
+    return false;
+  }
+
+  /**
+   * TramTrigger 02 sits low on the tram nose — feet can read "on tram" while the
+   * player is actually on logs / scrap / benches / crates / planks.
+   */
+  private isPlayerStandingOnTramTrigger02LitterBypass(): boolean {
+    if (
+      this.findLitterPropPlayerIsStandingOn(
+        (node) => CARGO_CRATE_NAME.test(node.name ?? ''),
+        this.cargoCratePlatformTopYPad,
+      )
+      || this.findLitterPropPlayerIsStandingOn(
+        (node) => PARK_BENCH_NAME.test(node.name ?? ''),
+        this.parkBenchPlatformTopYPad,
+      )
+      || this.findLitterPropPlayerIsStandingOn(
+        (node) => this.isCarryableLogProp(node),
+        this.carryableLogPlatformTopYPad,
+      )
+      || this.findLitterPropPlayerIsStandingOn(
+        (node) => this.isWoodPlanksRoadProp(node),
+        this.woodPlanksPlatformTopYPad,
+      )
+      || this.findLitterPropPlayerIsStandingOn(
+        (node) => this.isScrapMetalRoadProp(node),
+        this.streetLampScrapPlatformTopYPad,
+      )
+    ) {
+      return true;
     }
     return false;
   }
@@ -4034,6 +4188,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     if (this.lampTriggers.length === 0) {
       this.cacheLampTriggers();
+    }
+    this.ensureRestrictedRoadCaches();
+    // Tram track tiles beside lamps must not unlock Street Lights Climb.
+    if (this.isPlayerFeetOnRoadTiles(this.tramTrackNodes)) {
+      return;
     }
     const hitTrigger = this.findPlayerFeetTrigger(this.lampTriggers);
     if (!hitTrigger) {
@@ -4084,8 +4243,8 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   }
 
   /**
-   * Stand on Kiosk Wood that never rested on a road (e.g. hung on wires) → unlock
-   * Dont remove this kiosk on the next mail delivery.
+   * Stand on Kiosk Wood that never rested on asphalt roads (tram tracks / wires do not count)
+   * → unlock Dont remove this kiosk on the next mail delivery.
    */
   private pollKioskWoodPlatformUse(): void {
     if (this.playableGraceRemaining > 0 || !this.player) {
@@ -4177,6 +4336,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       || this.isPlayerFeetInsideTriggers(this.treeTriggers)
       || this.isPlayerStandingOnKanjiSign()
       || this.isPlayerStandingOnKioskWood()
+      || this.isPlayerStandingOnStreetLampScrap()
     ) {
       return;
     }
@@ -4255,9 +4415,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     this.markRoadLitterViolationSeen(ordinance);
     if (!this.pendingOrdinance) {
-      this.pendingOrdinance = ordinance;
+      this.assignPendingOrdinance(ordinance);
     } else if (this.pendingOrdinance === 'noRocksOnRoads') {
-      this.pendingOrdinance = ordinance;
+      this.assignPendingOrdinance(ordinance);
     }
   }
 
@@ -4547,6 +4707,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       node.getWorldPosition(this.noLogsFocusAnchor);
       this.hasNoLogsFocusAnchor = true;
       this.logsThatTouchedRoad.add(node);
+      this.clearNoCuttingOfTreesRouteCandidate();
       this.onLogOnRoadContact();
       return;
     }
@@ -4564,6 +4725,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         log.getWorldPosition(this.noLogsFocusAnchor);
         this.hasNoLogsFocusAnchor = true;
         this.logsThatTouchedRoad.add(log);
+        this.clearNoCuttingOfTreesRouteCandidate();
       },
     );
   }
@@ -4601,7 +4763,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         continue;
       }
 
-      if (!this.isPropRestingOnRestrictedRoadSurface(node)) {
+      const onRoad = this.isKioskWoodProp(node)
+        ? this.isPropRestingOnAsphaltRoadSurface(node)
+        : this.isPropRestingOnRestrictedRoadSurface(node);
+      if (!onRoad) {
         continue;
       }
 
@@ -4618,20 +4783,37 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
   /** Standing on kiosk wood / crate planks over a road/track without feet on asphalt. */
   private pollWoodPlanksPlatformRoadBypass(): void {
-    this.pollRoadLitterPlatformBypass(
-      () => this.findLitterPropPlayerIsStandingOn(
-        (node) => this.isWoodPlanksRoadProp(node),
-        this.woodPlanksPlatformTopYPad,
-      ),
-      () => this.onKioskWoodOnRoadContact(),
-      (prop) => {
-        if (this.isKioskWoodProp(prop)) {
-          this.kioskWoodThatTouchedRoad.add(prop);
-        }
-        prop.getWorldPosition(this.noWoodPlanksFocusAnchor);
-        this.hasNoWoodPlanksFocusAnchor = true;
-      },
+    if (this.playableGraceRemaining > 0 || !this.player) {
+      return;
+    }
+    if (
+      this.phase !== FlowPhase.AwaitingDelivery
+      && this.phase !== FlowPhase.ZoomOutReveal
+      && this.phase !== FlowPhase.IntroSpeech
+    ) {
+      return;
+    }
+
+    const prop = this.findLitterPropPlayerIsStandingOn(
+      (node) => this.isWoodPlanksRoadProp(node),
+      this.woodPlanksPlatformTopYPad,
     );
+    if (!prop || !this.isPlayerElevatedOverRestrictedRoad()) {
+      return;
+    }
+
+    // Kiosk wood over tram tracks / wires is Dont remove this kiosk — not wood-planks litter.
+    if (this.isKioskWoodProp(prop) && !this.isPropRestingOnAsphaltRoadSurface(prop)) {
+      return;
+    }
+
+    if (this.isKioskWoodProp(prop)) {
+      this.kioskWoodThatTouchedRoad.add(prop);
+    }
+
+    prop.getWorldPosition(this.noWoodPlanksFocusAnchor);
+    this.hasNoWoodPlanksFocusAnchor = true;
+    this.onKioskWoodOnRoadContact();
   }
 
   /** Kiosk Wood or Crate Planks Drop — both queue No Wood Planks on Roads. */
@@ -4677,13 +4859,21 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         continue;
       }
 
-      if (!this.isPropRestingOnRestrictedRoadSurface(node)) {
+      const fromFallenOrdinanceSign = this.isFallenOrdinanceSignScrapProp(node);
+      const onRestrictedRoad = fromFallenOrdinanceSign
+        ? this.isPropRestingOnRestrictedRoadSurface(node)
+        : this.isPropRestingOnAsphaltRoadSurface(node);
+      if (!onRestrictedRoad) {
         continue;
+      }
+
+      if (STREET_LAMP_SCRAP_PLATFORM_NAME.test(node.name ?? '')) {
+        this.clearDontDestroyTheStreetLightsRouteCandidate();
       }
 
       node.getWorldPosition(this.noScrapMetalsFocusAnchor);
       this.hasNoScrapMetalsFocusAnchor = true;
-      this.onScrapMetalOnRoadContact(this.isFallenOrdinanceSignScrapProp(node));
+      this.onScrapMetalOnRoadContact(fromFallenOrdinanceSign);
       return;
     }
   }
@@ -4891,7 +5081,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   /**
    * Standing on street-lamp Metal Scrapt over a road without the scrap itself
    * resting on asphalt — unlock / soft-loop Dont destroy the street lights.
-   * If the scrap is on the road, pollScrapMetalOnRoadContact always handles
+   * If the scrap is on asphalt/side roads, pollScrapMetalOnRoadContact handles
    * No Scrap Metals instead (never divert lamp scrap away from that ordinance).
    */
   private pollStreetLampScrapPlatformRoadBypass(): void {
@@ -4914,28 +5104,21 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!scrap) {
       return;
     }
-    // Scrap touching the road → No Scrap Metals only (not this ordinance).
-    if (this.isPropRestingOnRestrictedRoadSurface(scrap)) {
+    // Scrap touching asphalt/side roads → No Scrap Metals only (not this ordinance).
+    // Tram track tiles are excluded — scrap over tracks can still queue destroy.
+    if (this.isPropRestingOnAsphaltRoadSurface(scrap)) {
       return;
     }
 
     this.player.getWorldPosition(this.tmpPlayerPos);
     this.tmpPlayerPos.y -= this.pawnFeetBelowRoot;
 
-    const overRoad = this.isPointXZOnRoadTiles(this.tmpPlayerPos, this.mainRoadNodes)
-      || this.isPointXZOnRoadTiles(this.tmpPlayerPos, this.leftSideRoadNodes)
-      || this.isPointXZOnRoadTiles(this.tmpPlayerPos, this.rightSideRoadNodes)
-      || this.isPointXZOnRoadTiles(this.tmpPlayerPos, this.tramTrackNodes);
+    const overRoad = this.isPointXZOnAsphaltRoadTiles(this.tmpPlayerPos);
     if (!overRoad) {
       return;
     }
 
-    if (
-      this.isPlayerFeetOnRoadTiles(this.mainRoadNodes)
-      || this.isPlayerFeetOnRoadTiles(this.leftSideRoadNodes)
-      || this.isPlayerFeetOnRoadTiles(this.rightSideRoadNodes)
-      || this.isPlayerFeetOnRoadTiles(this.tramTrackNodes)
-    ) {
+    if (this.isPlayerFeetOnAsphaltRoadTiles()) {
       return;
     }
 
@@ -4974,7 +5157,13 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
     if (!carryingCone) {
       this.conePickupCarryElapsed = 0;
+      this.conePickupBreakStung = false;
       return;
+    }
+
+    if (!this.conePickupBreakStung) {
+      this.conePickupBreakStung = true;
+      this.stingLiveOrdinanceBreak();
     }
 
     this.conePickupCarryElapsed += deltaTime;
@@ -4983,8 +5172,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
 
     this.conePickupCarryElapsed = 0;
+    this.conePickupBreakStung = false;
     this.dontRemoveTheConesLoopTriggered = true;
-    this.triggerBlockedDontRemoveTheConesLoop();
+    this.triggerBlockedDontRemoveTheConesLoop(false);
   }
 
   /**
@@ -5007,7 +5197,13 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
     if (!this.player.isWearingBush()) {
       this.bushWearCarryElapsed = 0;
+      this.bushWearBreakStung = false;
       return;
+    }
+
+    if (!this.bushWearBreakStung) {
+      this.bushWearBreakStung = true;
+      this.stingLiveOrdinanceBreak();
     }
 
     this.bushWearCarryElapsed += deltaTime;
@@ -5016,8 +5212,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
 
     this.bushWearCarryElapsed = 0;
+    this.bushWearBreakStung = false;
     this.dontRemoveThisBushLoopTriggered = true;
-    this.triggerBlockedDontRemoveThisBushLoop();
+    this.triggerBlockedDontRemoveThisBushLoop(false);
   }
 
   /**
@@ -5205,7 +5402,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     return this.findStoodOnKioskWood() !== null;
   }
 
-  /** Kiosk Wood underfoot that has never rested on a restricted road. */
+  /** Kiosk Wood underfoot that has never rested on asphalt roads (tram tracks excluded). */
   private isPlayerStandingOnCleanKioskWood(): boolean {
     const wood = this.findStoodOnKioskWood();
     return wood !== null && !this.kioskWoodThatTouchedRoad.has(wood);
@@ -5311,43 +5508,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
    * sliding/settling log still counts. Road tile XZ size is unchanged.
    */
   private isPropRestingOnRestrictedRoadSurface(prop: ENGINE.ModelMeshNode): boolean {
-    prop.updateMatrixWorld(true);
-    this.tmpBounds.setFromObject(prop);
-    if (this.tmpBounds.isEmpty()) {
-      return false;
-    }
-
-    const minX = this.tmpBounds.min.x;
-    const maxX = this.tmpBounds.max.x;
-    const minZ = this.tmpBounds.min.z;
-    const maxZ = this.tmpBounds.max.z;
-    const bottomY = this.tmpBounds.min.y;
-
-    // Estimate vertical speed from AABB bottom motion — do not read Rapier linvel here.
-    const prevBottomY = this.propPrevBottomY.get(prop.uuid);
-    this.propPrevBottomY.set(prop.uuid, bottomY);
-    if (prevBottomY === undefined) {
-      return false;
-    }
-    const verticalSpeed = Math.abs((bottomY - prevBottomY) / this.lastPrePhysicsDeltaTime);
-    if (verticalSpeed > this.propRoadMaxVerticalSpeed) {
-      return false;
-    }
-
-    // Denser grid so long thin props (logs) still register from a single piece.
-    for (let ix = 0; ix < 5; ix += 1) {
-      for (let iz = 0; iz < 5; iz += 1) {
-        this.tmpHitPoint.set(
-          THREE.MathUtils.lerp(minX, maxX, ix / 4),
-          bottomY,
-          THREE.MathUtils.lerp(minZ, maxZ, iz / 4),
-        );
-        if (this.isPropSampleOnRestrictedRoads(this.tmpHitPoint)) {
-          return true;
-        }
-      }
-    }
-    return false;
+    return this.isPropRestingOnRoadSamples(
+      prop,
+      (worldPoint) => this.isPropSampleOnRestrictedRoads(worldPoint),
+    );
   }
 
   private isPropSampleOnRestrictedRoads(worldPoint: THREE.Vector3): boolean {
@@ -5375,6 +5539,88 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         this.crateRoadContactYSlop,
         this.crateRoadContactYSlop,
       );
+  }
+
+  /** Main / side roads only — tram track tiles are not restricted for scrap or street-lamp rules. */
+  private isPropSampleOnAsphaltRoads(worldPoint: THREE.Vector3): boolean {
+    return this.isPointOnRoadTiles(
+      worldPoint,
+      this.mainRoadNodes,
+      this.crateRoadContactYSlop,
+      this.crateRoadContactYSlop,
+    )
+      || this.isPointOnRoadTiles(
+        worldPoint,
+        this.leftSideRoadNodes,
+        this.crateRoadContactYSlop,
+        this.crateRoadContactYSlop,
+      )
+      || this.isPointOnRoadTiles(
+        worldPoint,
+        this.rightSideRoadNodes,
+        this.crateRoadContactYSlop,
+        this.crateRoadContactYSlop,
+      );
+  }
+
+  private isPropRestingOnRoadSamples(
+    prop: ENGINE.ModelMeshNode,
+    sampleRoad: (worldPoint: THREE.Vector3) => boolean,
+  ): boolean {
+    prop.updateMatrixWorld(true);
+    this.tmpBounds.setFromObject(prop);
+    if (this.tmpBounds.isEmpty()) {
+      return false;
+    }
+
+    const minX = this.tmpBounds.min.x;
+    const maxX = this.tmpBounds.max.x;
+    const minZ = this.tmpBounds.min.z;
+    const maxZ = this.tmpBounds.max.z;
+    const bottomY = this.tmpBounds.min.y;
+
+    const prevBottomY = this.propPrevBottomY.get(prop.uuid);
+    this.propPrevBottomY.set(prop.uuid, bottomY);
+    if (prevBottomY === undefined) {
+      return false;
+    }
+    const verticalSpeed = Math.abs((bottomY - prevBottomY) / this.lastPrePhysicsDeltaTime);
+    if (verticalSpeed > this.propRoadMaxVerticalSpeed) {
+      return false;
+    }
+
+    for (let ix = 0; ix < 5; ix += 1) {
+      for (let iz = 0; iz < 5; iz += 1) {
+        this.tmpHitPoint.set(
+          THREE.MathUtils.lerp(minX, maxX, ix / 4),
+          bottomY,
+          THREE.MathUtils.lerp(minZ, maxZ, iz / 4),
+        );
+        if (sampleRoad(this.tmpHitPoint)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private isPropRestingOnAsphaltRoadSurface(prop: ENGINE.ModelMeshNode): boolean {
+    return this.isPropRestingOnRoadSamples(
+      prop,
+      (worldPoint) => this.isPropSampleOnAsphaltRoads(worldPoint),
+    );
+  }
+
+  private isPointXZOnAsphaltRoadTiles(worldPoint: THREE.Vector3): boolean {
+    return this.isPointXZOnRoadTiles(worldPoint, this.mainRoadNodes)
+      || this.isPointXZOnRoadTiles(worldPoint, this.leftSideRoadNodes)
+      || this.isPointXZOnRoadTiles(worldPoint, this.rightSideRoadNodes);
+  }
+
+  private isPlayerFeetOnAsphaltRoadTiles(): boolean {
+    return this.isPlayerFeetOnRoadTiles(this.mainRoadNodes)
+      || this.isPlayerFeetOnRoadTiles(this.leftSideRoadNodes)
+      || this.isPlayerFeetOnRoadTiles(this.rightSideRoadNodes);
   }
 
   private isPointOnRoadTiles(
@@ -5521,6 +5767,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private cacheCityTramsAndRoofTriggers(): void {
     this.cityTrams.length = 0;
     this.tramRoofTriggers.length = 0;
+    this.tramTrigger02 = null;
     const world = this.getWorld();
     if (!world) {
       return;
@@ -5530,20 +5777,25 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         continue;
       }
       this.cityTrams.push(node);
-      // Author-scaled TramTrigger mesh only — never rewrite position/scale.
-      const authored = this.findChildTriggerNode(node, TRAM_TRIGGER_NAME);
-      if (!authored) {
-        continue;
-      }
-      // Visibility / collision only — leave transform entirely to the editor.
-      authored.visible = false;
-      if (authored instanceof ENGINE.PrimitiveNode) {
-        const physics = authored.getPhysicsOptions();
-        if (physics.enabled !== false) {
-          authored.overridePhysicsOptions({ enabled: false });
+      for (const child of node.children) {
+        if (!(child instanceof ENGINE.SceneNode) || !TRAM_TRIGGER_NAME.test(child.name ?? '')) {
+          continue;
         }
+        // Author-scaled TramTrigger mesh only — never rewrite position/scale.
+        if (!child.isHiddenInGame()) {
+          child.visible = false;
+        }
+        if (child instanceof ENGINE.PrimitiveNode) {
+          const physics = child.getPhysicsOptions();
+          if (physics.enabled !== false) {
+            child.overridePhysicsOptions({ enabled: false });
+          }
+        }
+        if (TRAM_TRIGGER_SECONDARY_NAME.test(child.name ?? '')) {
+          this.tramTrigger02 = child;
+        }
+        this.tramRoofTriggers.push(child);
       }
-      this.tramRoofTriggers.push(authored);
     }
   }
 
@@ -8610,7 +8862,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.envelopeMesh.scale.set(scale, scale, scale);
     if (t >= 1) {
       if (this.envelopeMesh.visible) {
-        playSound(this.getWorld(), GameSound.MailboxLatch, 3.6);
+        playSound(this.getWorld(), GameSound.MailboxLatch, MAILBOX_LATCH_VOLUME);
         this.mailDeliverSoundDelayRemaining = MAIL_DELIVER_SOUND_DELAY_SEC;
         this.showDeliveryReactionSpeech();
       }
@@ -8729,10 +8981,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.resolveOrdinanceCinematicLookAt(target, this.cinematicLookAt);
     this.matchCinematicFovToGameplay();
 
-    // Pick the board side nearest the current gameplay view.  Several ordinance
-    // models have opposite local axes, so assuming local +Z can make the shot
-    // orbit around the board to its back.  Choosing between the two board-face
-    // directions preserves the readable side already facing the player.
+    // Pick which board face to stand in front of.
+    // Dual-sided cards: choose the face nearer the current gameplay view.
+    // One-sided boards (Trees Climbing): the blank back faces the tree/climber, so
+    // never pick by player/camera/climb side — frame the street-facing art instead.
+    const isOneSidedTreeClimbBoard = NO_CLIMBING_ON_THE_TREE_ANY_NAME.test(target.name ?? '');
     const localForwardZ = 1;
     target.getWorldQuaternion(this.tmpQuat);
     this.tmpForward.set(0, 0, localForwardZ).applyQuaternion(this.tmpQuat);
@@ -8742,29 +8995,57 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     } else {
       this.tmpForward.normalize();
     }
-    const activeCamera = world.getActiveCamera();
-    // Jaywalking is revealed after the player has been reset home. Always use
-    // Player Start as its side reference so the camera frames the board face
-    // visible from the reset position, even if the previously active camera is
-    // still sitting on the opposite side during the covered transition.
-    const jaywalkingSideReference = JAYWALKING_ANY_NAME.test(target.name ?? '')
-      ? world.getNodes(ENGINE.PlayerStart)[0] ?? null
-      : null;
-    if (jaywalkingSideReference) {
-      jaywalkingSideReference.updateMatrixWorld(true);
-      jaywalkingSideReference.getWorldPosition(this.tmpDir);
-      this.tmpDir.sub(this.cinematicLookAt);
-      this.tmpDir.y = 0;
-      if (this.tmpDir.lengthSq() > 1e-6 && this.tmpForward.dot(this.tmpDir) < 0) {
-        this.tmpForward.negate();
+    if (isOneSidedTreeClimbBoard) {
+      // Blank back faces the tree. Prefer the side opposite the climb trigger.
+      let lockedFront = false;
+      if (this.hasTreeClimbFocusAnchor) {
+        this.tmpForward.copy(this.cinematicLookAt).sub(this.treeClimbFocusAnchor);
+        this.tmpForward.y = 0;
+        if (this.tmpForward.lengthSq() > 1e-6) {
+          this.tmpForward.normalize();
+          lockedFront = true;
+        }
       }
-    } else if (activeCamera) {
-      activeCamera.updateMatrixWorld(true);
-      activeCamera.getWorldPosition(this.tmpDir);
-      this.tmpDir.sub(this.cinematicLookAt);
-      this.tmpDir.y = 0;
-      if (this.tmpDir.lengthSq() > 1e-6 && this.tmpForward.dot(this.tmpDir) < 0) {
-        this.tmpForward.negate();
+      if (!lockedFront) {
+        // Wake / no climb anchor: stand on the street/home side (art faces town).
+        const playerStart = world.getNodes(ENGINE.PlayerStart)[0] ?? null;
+        if (playerStart) {
+          playerStart.updateMatrixWorld(true);
+          playerStart.getWorldPosition(this.tmpDir);
+          this.tmpDir.sub(this.cinematicLookAt);
+          this.tmpDir.y = 0;
+          if (this.tmpDir.lengthSq() > 1e-6) {
+            this.tmpDir.normalize();
+            this.tmpForward.copy(this.tmpDir);
+            lockedFront = true;
+          }
+        }
+      }
+      if (!lockedFront) {
+        this.tryResolveTexturedBoardFront(target, this.tmpForward);
+      }
+    } else {
+      const activeCamera = world.getActiveCamera();
+      // Jaywalking is revealed after reset home — frame the street-facing sign side.
+      const jaywalkingSideReference = JAYWALKING_ANY_NAME.test(target.name ?? '')
+        ? world.getNodes(ENGINE.PlayerStart)[0] ?? null
+        : null;
+      if (jaywalkingSideReference) {
+        jaywalkingSideReference.updateMatrixWorld(true);
+        jaywalkingSideReference.getWorldPosition(this.tmpDir);
+        this.tmpDir.sub(this.cinematicLookAt);
+        this.tmpDir.y = 0;
+        if (this.tmpDir.lengthSq() > 1e-6 && this.tmpForward.dot(this.tmpDir) < 0) {
+          this.tmpForward.negate();
+        }
+      } else if (activeCamera) {
+        activeCamera.updateMatrixWorld(true);
+        activeCamera.getWorldPosition(this.tmpDir);
+        this.tmpDir.sub(this.cinematicLookAt);
+        this.tmpDir.y = 0;
+        if (this.tmpDir.lengthSq() > 1e-6 && this.tmpForward.dot(this.tmpDir) < 0) {
+          this.tmpForward.negate();
+        }
       }
     }
 
@@ -8797,6 +9078,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.cinematicStartQuat.copy(this.cinematicEndQuat);
       this.cinematicBlend = 1;
     } else if (!useCapturedStart) {
+      const activeCamera = world.getActiveCamera();
       if (activeCamera) {
         activeCamera.updateMatrixWorld(true);
         activeCamera.getWorldPosition(this.cinematicStartPos);
@@ -8928,6 +9210,67 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       }
     }
     return found;
+  }
+
+  /**
+   * World-space front direction for a one-sided textured board (flattened to XZ).
+   * Uses the largest textured mesh's local +Z; if that axis is edge-on to the
+   * card plane, falls back to the thinnest AABB axis.
+   */
+  private tryResolveTexturedBoardFront(target: ENGINE.SceneNode, out: THREE.Vector3): boolean {
+    if (!(target instanceof ENGINE.ModelMeshNode)) {
+      return false;
+    }
+    let bestMesh: THREE.Mesh | null = null;
+    let bestArea = -1;
+    for (const mesh of target.getAllMeshes()) {
+      if (!mesh?.isMesh) {
+        continue;
+      }
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      const hasMap = materials.some((material) => {
+        const mapped = material as THREE.Material & { map?: THREE.Texture | null };
+        return Boolean(mapped?.map);
+      });
+      if (!hasMap) {
+        continue;
+      }
+      this.tmpBounds.setFromObject(mesh);
+      if (this.tmpBounds.isEmpty()) {
+        continue;
+      }
+      const size = this.tmpBounds.getSize(this.tmpDir);
+      const area = Math.max(size.x * size.y, size.y * size.z, size.z * size.x);
+      if (area > bestArea) {
+        bestArea = area;
+        bestMesh = mesh;
+      }
+    }
+    if (!bestMesh) {
+      return false;
+    }
+
+    bestMesh.updateMatrixWorld(true);
+    bestMesh.getWorldQuaternion(this.tmpQuat);
+    // Card art usually faces local +Z. If that axis is nearly vertical / edge-on,
+    // pick the world axis matching the thinnest board dimension instead.
+    out.set(0, 0, 1).applyQuaternion(this.tmpQuat);
+    out.y = 0;
+    if (out.lengthSq() < 0.25) {
+      this.tmpBounds.setFromObject(bestMesh);
+      const size = this.tmpBounds.getSize(this.tmpDir);
+      if (size.x <= size.z && size.x <= size.y) {
+        out.set(1, 0, 0).applyQuaternion(this.tmpQuat);
+      } else {
+        out.set(0, 0, 1).applyQuaternion(this.tmpQuat);
+      }
+      out.y = 0;
+    }
+    if (out.lengthSq() < 1e-6) {
+      return false;
+    }
+    out.normalize();
+    return true;
   }
 
   /** Blend the view-target cam from the current shot back onto the player. */

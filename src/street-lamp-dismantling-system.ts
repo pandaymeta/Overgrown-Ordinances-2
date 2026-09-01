@@ -101,6 +101,8 @@ const KANJI_SIGN_LAND_PHYSICS: ENGINE.NodePhysicsOptions = {
   motionType: ENGINE.PhysicsMotionType.Static,
 };
 const STREET_LAMP_SCRAP_PREFAB = '@project/assets/prefabs/street-lamp-metal-scraps.prefab.json';
+const STREET_LAMP_METAL_SCRAPT_2_NAME = /^Metal Scrapt 2$/i;
+const STREET_LAMP_METAL_SCRAPT_2_MODEL = /metal_scrapt2-centered\.glb$/i;
 const UTILITY_POLE_FALLEN_PREFAB = '@project/assets/prefabs/utility-pole-fallen.prefab.json';
 const UTILITY_POLE_20_PREFAB = '@project/assets/prefabs/utility-pole-20.prefab.json';
 const UTILITY_POLE_20_FALLEN_PREFAB = '@project/assets/prefabs/utility-pole-20-fallen.prefab.json';
@@ -177,6 +179,52 @@ function disableStreetLampOrdinanceCardPhysics(node: ENGINE.ModelMeshNode): void
     receivePosition: false,
     receiveRotation: false,
   });
+}
+
+function isStreetLampMetalScrapt2(piece: ENGINE.ModelMeshNode): boolean {
+  return STREET_LAMP_METAL_SCRAPT_2_NAME.test(piece.name ?? '')
+    || STREET_LAMP_METAL_SCRAPT_2_MODEL.test(piece.modelUrl ?? '');
+}
+
+function getStreetLampScrapCollisionMeshType(piece: ENGINE.ModelMeshNode): ENGINE.CollisionMeshType {
+  return isStreetLampMetalScrapt2(piece)
+    ? ENGINE.CollisionMeshType.Trimesh
+    : ENGINE.CollisionMeshType.BoundingBox;
+}
+
+function disableScrapPiecePhysicsSync(piece: ENGINE.ModelMeshNode): void {
+  piece.setPhysicsTransformUpdateFlags({
+    sendPosition: false,
+    sendRotation: false,
+    receivePosition: false,
+    receiveRotation: false,
+  });
+}
+
+function applyStreetLampScrapPiecePhysics(
+  piece: ENGINE.ModelMeshNode,
+  options: {
+    enabled: boolean;
+    collisionProfile: ENGINE.DefaultCollisionProfile;
+  },
+): void {
+  piece.overridePhysicsOptions({
+    ...piece.getPhysicsOptions(),
+    enabled: options.enabled,
+    motionType: ENGINE.PhysicsMotionType.Dynamic,
+    collisionProfile: options.collisionProfile,
+    collisionMeshType: getStreetLampScrapCollisionMeshType(piece),
+  });
+  if (options.enabled) {
+    piece.setPhysicsTransformUpdateFlags({
+      sendPosition: true,
+      sendRotation: true,
+      receivePosition: true,
+      receiveRotation: true,
+    });
+  } else {
+    disableScrapPiecePhysicsSync(piece);
+  }
 }
 
 /** Street-lamp ordinance display cards only — not other ordinance boards. */
@@ -259,6 +307,8 @@ interface BushAppearAnimation {
 export class StreetLampDismantlingSystem {
   constructor(private readonly hoverSilhouette: HoverSilhouette) {}
 
+  private scrapPieceCarriedChecker: ((piece: ENGINE.PrimitiveNode) => boolean) | null = null;
+
   private readonly playerPosition = new THREE.Vector3();
   private readonly targetBounds = new THREE.Box3();
   private readonly targetCenter = new THREE.Vector3();
@@ -311,6 +361,8 @@ export class StreetLampDismantlingSystem {
   /** Soft-loop parks scrap here (no MeshNode.destroy) so black stays short. */
   private readonly parkedScrapRoots: ENGINE.SceneNode[] = [];
   private readonly meshSwapRecords: Array<{ node: ENGINE.ModelMeshNode; modelUrl: string }> = [];
+  /** Linked utility poles upgraded when a downstream pole falls — restored on day reset. */
+  private readonly utilityPoleMeshUpgrades = new Map<ENGINE.ModelMeshNode, string>();
   /** Street lamps removed from the world on final hit; re-added on day reset. */
   private readonly yankedStreetLamps: ENGINE.ModelMeshNode[] = [];
   /**
@@ -379,10 +431,36 @@ export class StreetLampDismantlingSystem {
   private aimOutlineElapsed = 0;
   private static readonly AIM_OUTLINE_INTERVAL = 0.1;
 
+  public setScrapPieceCarriedChecker(
+    checker: ((piece: ENGINE.PrimitiveNode) => boolean) | null,
+  ): void {
+    this.scrapPieceCarriedChecker = checker;
+  }
+
+  private isScrapPieceCarried(piece: ENGINE.ModelMeshNode): boolean {
+    return this.scrapPieceCarriedChecker?.(piece) ?? false;
+  }
+
+  private applyScrapPiecePhysicsUnlessCarried(
+    piece: ENGINE.ModelMeshNode,
+    options: {
+      enabled: boolean;
+      collisionProfile: ENGINE.DefaultCollisionProfile;
+    },
+  ): void {
+    if (this.isScrapPieceCarried(piece)) {
+      applyStreetLampScrapPiecePhysics(piece, {
+        enabled: false,
+        collisionProfile: options.collisionProfile,
+      });
+      return;
+    }
+    applyStreetLampScrapPiecePhysics(piece, options);
+  }
+
   public initialize(world: ENGINE.World): void {
     this.destroyed = false;
     this.dismantleCandidateCacheDirty = true;
-    // Keep ObjectOutline off — hover uses a cheap AABB wireframe instead.
     world.postProcessManager.configureEffect(ENGINE.PostProcessPass.ObjectOutline, {
       enabled: false,
       edgeStrength: 2,
@@ -667,6 +745,14 @@ export class StreetLampDismantlingSystem {
     }
     this.poseFallHomePoses.clear();
 
+    // Gradually restore linked utility-pole mesh upgrades (pole 16 after 17 falls, etc.).
+    for (const [node, modelUrl] of this.utilityPoleMeshUpgrades) {
+      if (node.parent && modelUrl) {
+        this.meshSwapRecords.push({ node, modelUrl });
+      }
+    }
+    this.utilityPoleMeshUpgrades.clear();
+
     // Mesh reloads stay queued — processDeferredMeshSwaps loads one at a time
     // after GPU throttle lifts so we do not upload many GLBs in one frame.
 
@@ -775,6 +861,7 @@ export class StreetLampDismantlingSystem {
     this.flushPendingScrapDestroys(true);
     this.parkedScrapRoots.length = 0;
     this.meshSwapRecords.length = 0;
+    this.utilityPoleMeshUpgrades.clear();
     this.yankedStreetLamps.length = 0;
     for (const scraps of this.streetLampScrapPool.splice(0)) {
       scraps.destroy();
@@ -1068,12 +1155,9 @@ export class StreetLampDismantlingSystem {
     for (const piece of pieces) {
       piece.castShadow = false;
       piece.receiveShadow = false;
-      piece.overridePhysicsOptions({
-        ...piece.getPhysicsOptions(),
+      applyStreetLampScrapPiecePhysics(piece, {
         enabled: false,
-        motionType: ENGINE.PhysicsMotionType.Dynamic,
         collisionProfile: ENGINE.DefaultCollisionProfile.Ragdoll,
-        collisionMeshType: ENGINE.CollisionMeshType.BoundingBox,
       });
     }
   }
@@ -2483,13 +2567,10 @@ export class StreetLampDismantlingSystem {
     );
     for (const piece of pieces) {
       piece.visible = false;
-      if (piece instanceof ENGINE.PrimitiveNode) {
-        piece.overridePhysicsOptions({
-          ...piece.getPhysicsOptions(),
+      if (piece instanceof ENGINE.ModelMeshNode) {
+        applyStreetLampScrapPiecePhysics(piece, {
           enabled: false,
-          motionType: ENGINE.PhysicsMotionType.Dynamic,
           collisionProfile: ENGINE.DefaultCollisionProfile.Ragdoll,
-          collisionMeshType: ENGINE.CollisionMeshType.BoundingBox,
         });
       }
     }
@@ -2509,13 +2590,13 @@ export class StreetLampDismantlingSystem {
         return;
       }
       piece.visible = true;
-      if (piece instanceof ENGINE.PrimitiveNode) {
-        piece.overridePhysicsOptions({
-          ...piece.getPhysicsOptions(),
+      if (piece instanceof ENGINE.ModelMeshNode) {
+        if (isStreetLampMetalScrapt2(piece)) {
+          await piece.waitForLoad();
+        }
+        this.applyScrapPiecePhysicsUnlessCarried(piece, {
           enabled: true,
-          motionType: ENGINE.PhysicsMotionType.Dynamic,
           collisionProfile: ENGINE.DefaultCollisionProfile.Ragdoll,
-          collisionMeshType: ENGINE.CollisionMeshType.BoundingBox,
         });
       }
     }
@@ -2525,15 +2606,12 @@ export class StreetLampDismantlingSystem {
         return;
       }
       for (const piece of pieces) {
-        if (!(piece instanceof ENGINE.PrimitiveNode) || !piece.parent) {
+        if (!(piece instanceof ENGINE.ModelMeshNode) || !piece.parent) {
           continue;
         }
-        piece.overridePhysicsOptions({
-          ...piece.getPhysicsOptions(),
+        this.applyScrapPiecePhysicsUnlessCarried(piece, {
           enabled: true,
-          motionType: ENGINE.PhysicsMotionType.Dynamic,
           collisionProfile: ENGINE.DefaultCollisionProfile.BlockAllDynamic,
-          collisionMeshType: ENGINE.CollisionMeshType.BoundingBox,
         });
       }
     }, 1200);
@@ -2749,11 +2827,13 @@ export class StreetLampDismantlingSystem {
     const originalUrl = typeof pole.modelUrl === 'string'
       ? pole.modelUrl
       : String(pole.modelUrl ?? '');
-    if (originalUrl && !this.meshSwapRecords.some((record) => record.node === pole)) {
-      this.meshSwapRecords.push({ node: pole, modelUrl: originalUrl });
+    if (originalUrl && !this.utilityPoleMeshUpgrades.has(pole)) {
+      this.utilityPoleMeshUpgrades.set(pole, originalUrl);
     }
     // Visual-only swap for the linked standing pole — do NOT mark dismantled,
     // or that pole becomes untargetable (e.g. Pole 16 after chopping Pole 17).
+    // Do NOT queue meshSwapRecords here — that list is processed during play and
+    // would immediately reload the original mesh.
 
     try {
       await pole.loadModel(ENGINE.AssetPath.fromString(UTILITY_POLE_18_MODEL_URL));

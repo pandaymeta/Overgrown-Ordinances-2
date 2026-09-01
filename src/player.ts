@@ -266,6 +266,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     const world = this.getWorld();
     if (world) {
       this.streetLampDismantling.initialize(world);
+      this.streetLampDismantling.setScrapPieceCarriedChecker((piece) => this.isCarryingObject(piece));
       const container = world.gameContainer;
       if (container) {
         container.addEventListener('contextmenu', this.suppressBrowserContextMenu);
@@ -1091,6 +1092,24 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     return hidingBush ? this.pickUpCarryable(hidingBush) : false;
   }
 
+  private disableCarriedPhysicsSync(crate: ENGINE.PrimitiveNode): void {
+    crate.setPhysicsTransformUpdateFlags({
+      sendPosition: false,
+      sendRotation: false,
+      receivePosition: false,
+      receiveRotation: false,
+    });
+  }
+
+  private restoreCarriedPhysicsSync(crate: ENGINE.PrimitiveNode): void {
+    crate.setPhysicsTransformUpdateFlags({
+      sendPosition: true,
+      sendRotation: true,
+      receivePosition: true,
+      receiveRotation: true,
+    });
+  }
+
   private pickUpCarryable(crate: ENGINE.PrimitiveNode): boolean {
     if (crate === this.heldTool) {
       return false;
@@ -1103,6 +1122,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
       }
       this.heldToolPhysicsOptions = { ...crate.getPhysicsOptions() };
       crate.overridePhysicsOptions({ enabled: false });
+      this.disableCarriedPhysicsSync(crate);
       this.heldTool = crate;
       this.setHoveredCarryable(null);
       this.hideTrajectory();
@@ -1116,6 +1136,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     }
     this.carriedPhysicsOptions = { ...crate.getPhysicsOptions() };
     crate.overridePhysicsOptions({ enabled: false });
+    this.disableCarriedPhysicsSync(crate);
     this.carriedCrate = crate;
     this.setHoveredCarryable(null);
     this.updateCarriedCrate();
@@ -1164,6 +1185,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
       motionType: ENGINE.PhysicsMotionType.Dynamic,
       gravityScale: originalGravityScale,
     });
+    this.restoreCarriedPhysicsSync(crate);
     crate.setPhysicsVectorParam(ENGINE.PhysicsVectorParam.LinearVelocity, [
       linearVelocity?.x ?? 0,
       linearVelocity?.y ?? 0,
@@ -1206,6 +1228,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
       motionType: ENGINE.PhysicsMotionType.Dynamic,
       gravityScale: originalGravityScale,
     });
+    this.restoreCarriedPhysicsSync(tool);
     tool.setPhysicsVectorParam(ENGINE.PhysicsVectorParam.LinearVelocity, [0, 0, 0]);
     tool.setPhysicsVectorParam(ENGINE.PhysicsVectorParam.AngularVelocity, [0, 0, 0]);
     this.heldTool = null;

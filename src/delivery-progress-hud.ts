@@ -8,9 +8,10 @@ import * as ENGINE from '@gnsx/genesys.js';
 
 import {
   DELIVERY_WAY_GOAL,
+  FULL_ORDINANCE_GOAL,
   MailDeliveryFlowSystem,
 } from './mail-delivery-flow.js';
-import { GameSound, playSound } from './game-audio.js';
+import { ENVELOPE_PAPER_VOLUME, GameSound, playSound } from './game-audio.js';
 import { ensureOvergrownAveriaFont } from './overgrown-averia-font.js';
 import { ThirdPersonPlayer } from './player.js';
 import { isStartupLoadingFinished } from './startup-loading-screen.js';
@@ -28,6 +29,9 @@ const LIST_EMPTY = 'No ordinances broken yet. Keep exploring.';
 const COMPLETION_TITLE = 'The town noticed.';
 const COMPLETION_BODY =
   'Twelve signs went up overnight. That\'s only half the trouble you can cause. Keep going, or open the letter.';
+const FULL_COMPLETION_TITLE = 'Fully overgrown.';
+const FULL_COMPLETION_BODY =
+  'Twenty-four rules. Twenty-four workarounds. The sidewalks have more warnings than pavement. You earned this. Open the letter.';
 const MYSTERY_TITLE = 'No sign for that.';
 const MYSTERY_BODY =
   'You found a way the town has no ordinance for. Yet.';
@@ -36,6 +40,12 @@ const COMPLETION_VICTORY = 'Open the letter';
 const VICTORY_LETTER_BODY =
   'Dear Mayor,\n\n'
   + 'Your ordinances have overgrown this town.\n'
+  + 'Please catch whoever is making you post new ordinances.\n\n'
+  + 'Sincerely,\n'
+  + 'A concerned citizen';
+const FULL_VICTORY_LETTER_BODY =
+  'Dear Mayor,\n\n'
+  + 'Your ordinances have overgrown this town. I have lost count.\n'
   + 'Please catch whoever is making you post new ordinances.\n\n'
   + 'Sincerely,\n'
   + 'A concerned citizen';
@@ -56,10 +66,65 @@ const PAPER_CREAM = '#f7f3eb';
 /** Shared title / body / signature ink — never darker on headings. */
 const PAPER_TEXT = '#6b6560';
 /** Back sheet peek under the flat front (right + down). */
-const PAPER_BACK_OFFSET_X_PX = 8;
-const PAPER_BACK_OFFSET_Y_PX = 8;
+const PAPER_BACK_OFFSET_X_PX = 12;
+const PAPER_BACK_OFFSET_Y_PX = 11;
+/** Resting tilt after open — back sheet stays slightly CW vs flat front (Summer Afternoon). */
+const PAPER_BACK_REST_ROTATE_DEG = 2.5;
+const PAPER_FONT_FAMILY = '"Overgrown Averia","Segoe UI",sans-serif';
+const PAPER_CARD_WIDTH = 'min(600px,92vw)';
+const PAPER_CARD_PADDING = '34px 40px 36px';
+const PAPER_CARD_LARGE_PADDING = '40px 44px 44px';
+const PAPER_TITLE_FONT = `700 36px/1.2 ${PAPER_FONT_FAMILY}`;
+const PAPER_BODY_FONT = `700 22px/1.55 ${PAPER_FONT_FAMILY}`;
+const PAPER_VICTORY_TITLE_FONT = `700 30px/1.2 ${PAPER_FONT_FAMILY}`;
+const PAPER_VICTORY_BODY_FONT = `700 24px/1.55 ${PAPER_FONT_FAMILY}`;
 /** Dim scrim behind info / ordinances / choice / letter HUD (not loading). */
-const HUD_SCRIM = 'rgba(244,241,234,0.90)';
+const HUD_SCRIM = 'rgba(244,241,234,0.5)';
+const HUD_OVERLAY_STYLE_ID = 'overgrown-hud-overlay-anim';
+/** Summer Afternoon reference — slow, eased paper stack (~2s+ for sheets). */
+const HUD_ANIM_BACKDROP_MS = 700;
+const HUD_ANIM_BACKDROP_DELAY_MS = 0;
+const HUD_ANIM_BACK_ENTER_MS = 2000;
+const HUD_ANIM_BACK_DELAY_MS = 200;
+const HUD_ANIM_PANEL_ENTER_MS = 1100;
+/** Front sheet follows the back almost immediately — just a brief stagger. */
+const HUD_ANIM_PANEL_STAGGER_MS = 90;
+const HUD_ANIM_PANEL_DELAY_MS = HUD_ANIM_BACK_DELAY_MS + HUD_ANIM_PANEL_STAGGER_MS;
+/** Fade text in soon after the front sheet starts — not after the whole open finishes. */
+const HUD_ANIM_CONTENT_DELAY_MS = HUD_ANIM_PANEL_DELAY_MS + 160;
+const HUD_ANIM_CONTENT_MS = 320;
+const HUD_ANIM_CLOSE_MS = 480;
+const HUD_ANIM_EASE_SMOOTH = 'cubic-bezier(0.16, 1, 0.3, 1)';
+const HUD_ANIM_EASE_SOFT = 'cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+
+const HUD_OVERLAY_ANIM_CSS = `
+[data-hud-overlay] {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+[data-hud-backdrop] {
+  position: absolute;
+  inset: 0;
+  background: ${HUD_SCRIM};
+  opacity: 0;
+}
+[data-hud-stack-wrap] {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+[data-hud-stack-wrap] > [data-paper-stack] {
+  pointer-events: auto;
+}
+[data-paper-back],
+[data-paper-panel] {
+  transform-origin: center center;
+}
+`.trim();
 
 /** Summer Afternoon–inspired left HUD + tip / ordinance list panels. */
 @ENGINE.GameClass()
@@ -72,6 +137,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
   private choiceModal: HTMLDivElement | null = null;
   private lastCount = -1;
   private completionShown = false;
+  private fullCompletionShown = false;
   private mysteryWinShown = false;
   private victoryLetterScreen: HTMLDivElement | null = null;
   private victoryThanksScreen: HTMLDivElement | null = null;
@@ -79,6 +145,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
   private playerMovementFrozenBeforePause = false;
   /** Resolved `url("…")` for the paper grain overlay (or SVG fallback). */
   private paperGrainCssUrl = PAPER_FIBER_SVG;
+  private hudAnimStylesMounted = false;
 
   constructor() {
     super();
@@ -110,8 +177,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     }
     if (this.victoryLetterScreen) {
       playSound(this.getWorld(), GameSound.UiClose, 0.6);
-      this.closeVictoryLetterScreen();
-      this.showVictoryThanksScreen();
+      this.closeVictoryLetterScreen(true);
       return true;
     }
     if (this.victoryThanksScreen) {
@@ -119,13 +185,12 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       return true;
     }
     if (this.choiceModal) {
-      playSound(this.getWorld(), GameSound.UiClose, 0.6);
       this.onDismissChoiceModal();
       return true;
     }
     if (this.infoModal || this.listModal) {
       playSound(this.getWorld(), GameSound.UiClose, 0.6);
-      this.closeModals();
+      this.closeModals(true);
       return true;
     }
     if (!this.canOpenPauseMenu()) {
@@ -150,6 +215,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     }
     await ensureOvergrownAveriaFont();
     await this.resolvePaperGrainUrl();
+    this.ensureHudAnimStyles();
 
     const root = document.createElement('div');
     root.setAttribute('aria-label', 'Delivery progress');
@@ -195,6 +261,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     root.appendChild(infoBtn);
     root.appendChild(countBtn);
     container.appendChild(root);
+    this.ensureHudAnimStyles(container);
     this.root = root;
     this.countLabel = countLabel;
     this.refreshCount();
@@ -222,9 +289,10 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
   }): { stack: HTMLDivElement; panel: HTMLDivElement } {
     const large = options?.large === true;
     const stack = document.createElement('div');
+    stack.setAttribute('data-paper-stack', '');
     stack.style.cssText = [
       'position:relative',
-      `width:${options?.width ?? 'min(540px,90vw)'}`,
+      `width:${options?.width ?? PAPER_CARD_WIDTH}`,
       'pointer-events:auto',
     ].join(';');
 
@@ -242,16 +310,16 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     ].join(';');
 
     const panel = document.createElement('div');
+    panel.setAttribute('data-paper-panel', '');
     panel.style.cssText = [
       'position:relative',
       'z-index:1',
-      `padding:${options?.padding ?? '30px 34px 32px'}`,
+      `padding:${options?.padding ?? PAPER_CARD_PADDING}`,
       `background:${PAPER_CREAM}`,
       'border:none',
       'border-radius:2px',
       'outline:none',
       'box-shadow:none',
-      'transform:none',
     ].join(';');
     this.applyPaperFrontSurface(panel, { large });
 
@@ -342,7 +410,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     btn.style.cssText = [
       'position:absolute',
       'top:12px',
-      'right:12px',
+      'right:20px',
       'width:28px',
       'height:28px',
       'margin:0',
@@ -399,7 +467,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     body.style.cssText = [
       'margin:18px 0 0',
       `color:${PAPER_TEXT}`,
-      'font:700 20px/1.55 "Overgrown Averia","Segoe UI",sans-serif',
+      `font:${PAPER_BODY_FONT}`,
       'white-space:pre-wrap',
     ].join(';');
     const signature = document.createElement('p');
@@ -407,7 +475,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     signature.style.cssText = [
       'margin:1.7em 0 0',
       `color:${PAPER_TEXT}`,
-      'font:700 20px/1.55 "Overgrown Averia","Segoe UI",sans-serif',
+      `font:${PAPER_BODY_FONT}`,
     ].join(';');
     modal.panel.appendChild(body);
     modal.panel.appendChild(signature);
@@ -427,8 +495,8 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     body.style.cssText = [
       'margin:18px 0 0',
       `color:${PAPER_TEXT}`,
-      'font:700 20px/1.55 "Overgrown Averia","Segoe UI",sans-serif',
-      'max-height:min(52vh,420px)',
+      `font:${PAPER_BODY_FONT}`,
+      'max-height:min(52vh,460px)',
       'overflow:auto',
     ].join(';');
     modal.panel.appendChild(body);
@@ -465,6 +533,10 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     this.listBody.appendChild(list);
   }
 
+  private playChoiceEnvelopeSound(): void {
+    playSound(this.getWorld(), GameSound.EnvelopePaper, ENVELOPE_PAPER_VOLUME);
+  }
+
   private openChoiceModal(title: string, bodyText: string): void {
     if (this.choiceModal || this.pauseModal || this.victoryLetterScreen || this.victoryThanksScreen) {
       return;
@@ -475,6 +547,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     const modal = this.createModalShell(title, {
       dismissible: true,
       onDismiss: () => this.onDismissChoiceModal(),
+      dismissSound: 'none',
     });
     if (bodyText.length > 0) {
       const body = document.createElement('p');
@@ -482,7 +555,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       body.style.cssText = [
         'margin:18px 0 0',
         `color:${PAPER_TEXT}`,
-        'font:700 20px/1.55 "Overgrown Averia","Segoe UI",sans-serif',
+        `font:${PAPER_BODY_FONT}`,
       ].join(';');
       modal.panel.appendChild(body);
     }
@@ -502,7 +575,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       this.onContinuePlaying();
     });
 
-    const victoryBtn = this.createModalActionButton(COMPLETION_VICTORY, true);
+    const victoryBtn = this.createModalActionButton(COMPLETION_VICTORY);
     victoryBtn.addEventListener('click', (event) => {
       event.stopPropagation();
       this.onVictory();
@@ -514,6 +587,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     this.finalizePaperContent(modal.panel);
     this.attachModal(modal.root);
     this.choiceModal = modal.root;
+    this.playChoiceEnvelopeSound();
   }
 
   private createModalActionButton(label: string, primary = false): HTMLButtonElement {
@@ -538,8 +612,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
   }
 
   private onDismissChoiceModal(): void {
-    this.choiceModal?.remove();
-    this.choiceModal = null;
+    this.dismissChoiceModal(true);
     this.getFlow()?.dismissCompletionOverlay();
   }
 
@@ -562,10 +635,10 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     const actions = document.createElement('div');
     actions.style.cssText = [
       'display:flex',
-      'flex-direction:column',
-      'align-items:flex-start',
+      'flex-wrap:wrap',
       'gap:12px',
       'margin-top:28px',
+      'justify-content:flex-start',
     ].join(';');
 
     const continueBtn = this.createModalActionButton(COMPLETION_CONTINUE);
@@ -580,7 +653,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       this.onPauseRespawn();
     });
 
-    const exitBtn = this.createModalActionButton(VICTORY_EXIT, true);
+    const exitBtn = this.createModalActionButton(VICTORY_EXIT);
     exitBtn.addEventListener('click', (event) => {
       event.stopPropagation();
       this.onPauseExit();
@@ -595,28 +668,28 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     this.pauseModal = modal.root;
   }
 
-  private closePauseMenu(): void {
+  private closePauseMenu(animated = false): void {
     if (!this.pauseModal) {
       return;
     }
-    this.pauseModal.remove();
+    const overlay = this.pauseModal;
     this.pauseModal = null;
     const player = this.getPlayer();
     if (player) {
       player.setMovementFrozen(this.playerMovementFrozenBeforePause);
     }
+    this.removeHudOverlay(overlay, !animated);
   }
 
   private onPauseContinue(): void {
     playSound(this.getWorld(), GameSound.UiClose, 0.6);
-    this.closePauseMenu();
+    this.closePauseMenu(true);
   }
 
   private onPauseRespawn(): void {
     playSound(this.getWorld(), GameSound.UiClose, 0.6);
     this.getFlow()?.respawnPlayerWithoutDayReset();
-    this.pauseModal?.remove();
-    this.pauseModal = null;
+    this.closePauseMenu(true);
     this.playerMovementFrozenBeforePause = false;
   }
 
@@ -629,8 +702,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
   private onContinuePlaying(): void {
     const flow = this.getFlow();
     const mysteryContinue = flow?.isMysteryDeliveryWinReady() ?? false;
-    this.choiceModal?.remove();
-    this.choiceModal = null;
+    this.dismissChoiceModal(true);
     this.mysteryWinShown = false;
     if (mysteryContinue) {
       flow?.continueMysteryIntoNextDay();
@@ -642,9 +714,8 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
   private onVictory(): void {
     playSound(this.getWorld(), GameSound.Victory, 0.9);
     this.getFlow()?.setCompletionInteractionPaused(true);
-    this.choiceModal?.remove();
-    this.choiceModal = null;
-    this.closeModals();
+    this.dismissChoiceModal(false);
+    this.closeModals(false);
     this.showVictoryEndScreen();
   }
 
@@ -653,85 +724,53 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
   }
 
   private showVictoryLetterScreen(): void {
-    if (this.victoryLetterScreen) {
+    if (this.victoryLetterScreen || !this.getWorld()?.gameContainer) {
       return;
     }
-    const container = this.getWorld()?.gameContainer;
-    if (!container) {
-      return;
-    }
-    const end = document.createElement('div');
-    end.setAttribute('aria-label', 'Victory letter');
-    end.style.cssText = [
-      'position:absolute',
-      'inset:0',
-      'z-index:9000',
-      'display:flex',
-      'align-items:center',
-      'justify-content:center',
-      `background:${HUD_SCRIM}`,
-      'pointer-events:auto',
-      'font-family:"Overgrown Averia","Segoe UI Rounded","Segoe UI",sans-serif',
-    ].join(';');
+    const { root: end, stackWrap } = this.createHudOverlayShell(9000, 'Victory letter');
 
     const { stack, panel: card } = this.createPaperStack({
-      width: 'min(520px,90vw)',
       large: true,
-      padding: '36px 40px 40px',
+      padding: PAPER_CARD_LARGE_PADDING,
     });
 
     const close = this.createPaperCloseButton();
     close.addEventListener('click', (event) => {
       event.stopPropagation();
       playSound(this.getWorld(), GameSound.UiClose, 0.6);
-      this.closeVictoryLetterScreen();
-      this.showVictoryThanksScreen();
+      this.closeVictoryLetterScreen(true);
     });
     card.appendChild(close);
 
     const body = document.createElement('p');
-    body.textContent = VICTORY_LETTER_BODY;
+    const ordinanceCount = this.getFlow()?.getBrokenOrdinanceCount() ?? 0;
+    body.textContent = ordinanceCount >= FULL_ORDINANCE_GOAL
+      ? FULL_VICTORY_LETTER_BODY
+      : VICTORY_LETTER_BODY;
     body.style.cssText = [
       'margin:0',
       'padding-right:36px',
       `color:${PAPER_TEXT}`,
-      'font:700 22px/1.55 "Overgrown Averia","Segoe UI",sans-serif',
+      `font:${PAPER_VICTORY_BODY_FONT}`,
       'white-space:pre-wrap',
     ].join(';');
 
     card.appendChild(body);
     this.finalizePaperContent(card);
-    end.appendChild(stack);
-    container.appendChild(end);
+    stackWrap.appendChild(stack);
+    this.attachAnimatedOverlay(end);
     this.victoryLetterScreen = end;
   }
 
   private showVictoryThanksScreen(): void {
-    if (this.victoryThanksScreen) {
+    if (this.victoryThanksScreen || !this.getWorld()?.gameContainer) {
       return;
     }
-    const container = this.getWorld()?.gameContainer;
-    if (!container) {
-      return;
-    }
-    const end = document.createElement('div');
-    end.setAttribute('aria-label', 'Victory thanks');
-    end.style.cssText = [
-      'position:absolute',
-      'inset:0',
-      'z-index:9000',
-      'display:flex',
-      'align-items:center',
-      'justify-content:center',
-      `background:${HUD_SCRIM}`,
-      'pointer-events:auto',
-      'font-family:"Overgrown Averia","Segoe UI Rounded","Segoe UI",sans-serif',
-    ].join(';');
+    const { root: end, stackWrap } = this.createHudOverlayShell(9000, 'Victory thanks');
 
     const { stack, panel: card } = this.createPaperStack({
-      width: 'min(520px,90vw)',
       large: true,
-      padding: '36px 40px 40px',
+      padding: PAPER_CARD_LARGE_PADDING,
     });
 
     const title = document.createElement('h2');
@@ -739,7 +778,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     title.style.cssText = [
       'margin:0',
       `color:${PAPER_TEXT}`,
-      'font:700 28px/1.2 "Overgrown Averia","Segoe UI",sans-serif',
+      `font:${PAPER_VICTORY_TITLE_FONT}`,
     ].join(';');
 
     const actions = document.createElement('div');
@@ -757,7 +796,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       this.onVictoryContinuePlaying();
     });
 
-    const exitBtn = this.createModalActionButton(VICTORY_EXIT, true);
+    const exitBtn = this.createModalActionButton(VICTORY_EXIT);
     exitBtn.addEventListener('click', (event) => {
       event.stopPropagation();
       this.onVictoryExit();
@@ -768,23 +807,37 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     card.appendChild(title);
     card.appendChild(actions);
     this.finalizePaperContent(card);
-    end.appendChild(stack);
-    container.appendChild(end);
+    stackWrap.appendChild(stack);
+    this.attachAnimatedOverlay(end);
     this.victoryThanksScreen = end;
   }
 
-  private closeVictoryLetterScreen(): void {
-    this.victoryLetterScreen?.remove();
+  private closeVictoryLetterScreen(animated = false, showThanksAfter = true): void {
+    const overlay = this.victoryLetterScreen;
     this.victoryLetterScreen = null;
+    if (!overlay) {
+      return;
+    }
+    const afterClose = showThanksAfter ? () => this.showVictoryThanksScreen() : undefined;
+    if (animated) {
+      void this.animateHudOverlayClose(overlay).then(() => {
+        overlay.remove();
+        afterClose?.();
+      });
+      return;
+    }
+    overlay.remove();
+    afterClose?.();
   }
 
-  private closeVictoryThanksScreen(): void {
-    this.victoryThanksScreen?.remove();
+  private closeVictoryThanksScreen(animated = false): void {
+    const overlay = this.victoryThanksScreen;
     this.victoryThanksScreen = null;
+    this.removeHudOverlay(overlay, !animated);
   }
 
   private onVictoryContinuePlaying(): void {
-    this.closeVictoryThanksScreen();
+    this.closeVictoryThanksScreen(true);
     this.getFlow()?.dismissCompletionOverlay();
   }
 
@@ -799,28 +852,28 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
 
   private createModalShell(
     title: string,
-    options?: { dismissible?: boolean; onDismiss?: () => void },
+    options?: {
+      dismissible?: boolean;
+      onDismiss?: () => void;
+      /** Choice/completion HUD uses envelope-paper on dismiss via dismissChoiceModal. */
+      dismissSound?: 'ui-close' | 'none';
+    },
   ): {
     root: HTMLDivElement;
     panel: HTMLDivElement;
   } {
     const dismissible = options?.dismissible !== false;
-    const dismiss = options?.onDismiss ?? (() => this.closeModals());
-    const root = document.createElement('div');
-    root.style.cssText = [
-      'position:absolute',
-      'inset:0',
-      'z-index:3200',
-      'display:flex',
-      'align-items:center',
-      'justify-content:center',
-      `background:${HUD_SCRIM}`,
-      'pointer-events:auto',
-      'font-family:"Overgrown Averia","Segoe UI Rounded","Segoe UI",sans-serif',
-    ].join(';');
+    const dismiss = options?.onDismiss ?? (() => this.closeModals(true));
+    const dismissSound = options?.dismissSound ?? 'ui-close';
+    const playDismissSound = (): void => {
+      if (dismissSound === 'ui-close') {
+        playSound(this.getWorld(), GameSound.UiClose, 0.6);
+      }
+    };
+    const { root, stackWrap } = this.createHudOverlayShell(3200);
     if (dismissible) {
       root.addEventListener('click', () => {
-        playSound(this.getWorld(), GameSound.UiClose, 0.6);
+        playDismissSound();
         dismiss();
       });
     }
@@ -834,7 +887,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     heading.style.cssText = [
       dismissible ? 'margin:0 36px 0 0' : 'margin:0',
       `color:${PAPER_TEXT}`,
-      'font:700 32px/1.2 "Overgrown Averia","Segoe UI",sans-serif',
+      `font:${PAPER_TITLE_FONT}`,
     ].join(';');
     panel.appendChild(heading);
 
@@ -842,31 +895,270 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       const close = this.createPaperCloseButton();
       close.addEventListener('click', (event) => {
         event.stopPropagation();
-        playSound(this.getWorld(), GameSound.UiClose, 0.6);
+        playDismissSound();
         dismiss();
       });
       panel.appendChild(close);
     }
 
-    root.appendChild(stack);
+    stackWrap.appendChild(stack);
     this.finalizePaperContent(panel);
     return { root, panel };
   }
 
-  private attachModal(root: HTMLDivElement): void {
+  private ensureHudAnimStyles(container?: HTMLElement | null): void {
+    if (this.hudAnimStylesMounted || typeof document === 'undefined') {
+      return;
+    }
+    const mountTarget = container ?? this.getWorld()?.gameContainer ?? document.head;
+    if (mountTarget.querySelector(`#${HUD_OVERLAY_STYLE_ID}`)) {
+      this.hudAnimStylesMounted = true;
+      return;
+    }
+    const style = document.createElement('style');
+    style.id = HUD_OVERLAY_STYLE_ID;
+    style.textContent = HUD_OVERLAY_ANIM_CSS;
+    mountTarget.appendChild(style);
+    this.hudAnimStylesMounted = true;
+  }
+
+  private createHudOverlayShell(
+    zIndex: number,
+    ariaLabel?: string,
+  ): {
+    root: HTMLDivElement;
+    backdrop: HTMLDivElement;
+    stackWrap: HTMLDivElement;
+  } {
+    const container = this.getWorld()?.gameContainer ?? null;
+    this.ensureHudAnimStyles(container);
+    const root = document.createElement('div');
+    root.setAttribute('data-hud-overlay', '');
+    if (ariaLabel) {
+      root.setAttribute('aria-label', ariaLabel);
+    }
+    root.style.cssText = [
+      `z-index:${zIndex}`,
+      'font-family:"Overgrown Averia","Segoe UI Rounded","Segoe UI",sans-serif',
+    ].join(';');
+
+    const backdrop = document.createElement('div');
+    backdrop.setAttribute('data-hud-backdrop', '');
+
+    const stackWrap = document.createElement('div');
+    stackWrap.setAttribute('data-hud-stack-wrap', '');
+
+    root.appendChild(backdrop);
+    root.appendChild(stackWrap);
+    return { root, backdrop, stackWrap };
+  }
+
+  private attachAnimatedOverlay(root: HTMLDivElement): void {
     const container = this.getWorld()?.gameContainer;
     if (!container) {
       return;
     }
+    this.ensureHudAnimStyles(container);
+    this.prepareHudOverlayForOpen(root);
     container.appendChild(root);
+    requestAnimationFrame(() => {
+      const stack = root.querySelector('[data-paper-stack]');
+      const panel = root.querySelector('[data-paper-panel]');
+      const back = root.querySelector('[data-paper-back]');
+      if (
+        stack instanceof HTMLDivElement
+        && panel instanceof HTMLDivElement
+        && back instanceof HTMLDivElement
+      ) {
+        this.syncPaperBackToFront(stack, panel, back);
+      }
+      requestAnimationFrame(() => this.playHudOverlayOpen(root));
+    });
   }
 
-  private closeModals(): void {
-    this.infoModal?.remove();
-    this.listModal?.remove();
+  /** Match reference: dark back alone (CCW), then cream front (CW); back keeps a slight CW tilt. */
+  private prepareHudOverlayForOpen(root: HTMLDivElement): void {
+    const stackWrap = root.querySelector('[data-hud-stack-wrap]');
+    const back = root.querySelector('[data-paper-back]');
+    const panel = root.querySelector('[data-paper-panel]');
+    if (stackWrap instanceof HTMLElement) {
+      stackWrap.style.opacity = '1';
+      stackWrap.style.transform = 'none';
+    }
+    if (back instanceof HTMLElement) {
+      back.style.opacity = '0';
+      back.style.transform = 'scale(0.62) rotate(-38deg)';
+    }
+    if (panel instanceof HTMLElement) {
+      panel.style.opacity = '0';
+      panel.style.transform = 'scale(0.52) rotate(18deg)';
+      this.setHudPanelContentOpacity(panel, 0);
+    }
+  }
+
+  private setHudPanelContentOpacity(panel: HTMLElement | null, opacity: number): void {
+    if (!panel) {
+      return;
+    }
+    for (const child of Array.from(panel.children)) {
+      if (child instanceof HTMLElement && !child.hasAttribute('data-paper-grain')) {
+        child.style.opacity = String(opacity);
+      }
+    }
+  }
+
+  private fadeHudPanelContent(panel: HTMLElement | null, delayMs: number, durationMs: number): void {
+    if (!panel) {
+      return;
+    }
+    for (const child of Array.from(panel.children)) {
+      if (!(child instanceof HTMLElement) || child.hasAttribute('data-paper-grain')) {
+        continue;
+      }
+      child.style.opacity = '0';
+      child.animate(
+        [{ opacity: 0 }, { opacity: 1 }],
+        { duration: durationMs, delay: delayMs, easing: HUD_ANIM_EASE_SOFT, fill: 'forwards' },
+      );
+    }
+  }
+
+  private playHudOverlayOpen(root: HTMLDivElement): void {
+    const backdrop = root.querySelector('[data-hud-backdrop]');
+    const back = root.querySelector('[data-paper-back]');
+    const panel = root.querySelector('[data-paper-panel]');
+
+    if (backdrop instanceof HTMLElement) {
+      backdrop.animate(
+        [{ opacity: 0 }, { opacity: 1 }],
+        {
+          duration: HUD_ANIM_BACKDROP_MS,
+          delay: HUD_ANIM_BACKDROP_DELAY_MS,
+          easing: HUD_ANIM_EASE_SOFT,
+          fill: 'forwards',
+        },
+      );
+    }
+
+    if (back instanceof HTMLElement) {
+      back.animate(
+        [
+          { opacity: 0, transform: 'scale(0.62) rotate(-38deg)' },
+          { opacity: 0.85, transform: 'scale(0.88) rotate(-22deg)', offset: 0.28 },
+          { opacity: 1, transform: 'scale(0.96) rotate(-10deg)', offset: 0.58 },
+          { opacity: 1, transform: `scale(1) rotate(${PAPER_BACK_REST_ROTATE_DEG}deg)` },
+        ],
+        {
+          duration: HUD_ANIM_BACK_ENTER_MS,
+          delay: HUD_ANIM_BACK_DELAY_MS,
+          easing: HUD_ANIM_EASE_SMOOTH,
+          fill: 'forwards',
+        },
+      );
+    }
+
+    if (panel instanceof HTMLElement) {
+      panel.animate(
+        [
+          { opacity: 0, transform: 'scale(0.52) rotate(18deg)' },
+          { opacity: 0.7, transform: 'scale(0.82) rotate(10deg)', offset: 0.35 },
+          { opacity: 1, transform: 'scale(0.96) rotate(3deg)', offset: 0.72 },
+          { opacity: 1, transform: 'scale(1) rotate(0deg)' },
+        ],
+        {
+          duration: HUD_ANIM_PANEL_ENTER_MS,
+          delay: HUD_ANIM_PANEL_DELAY_MS,
+          easing: HUD_ANIM_EASE_SMOOTH,
+          fill: 'forwards',
+        },
+      );
+      this.fadeHudPanelContent(panel, HUD_ANIM_CONTENT_DELAY_MS, HUD_ANIM_CONTENT_MS);
+    }
+  }
+
+  private animateHudOverlayClose(root: HTMLDivElement): Promise<void> {
+    const backdrop = root.querySelector('[data-hud-backdrop]');
+    const back = root.querySelector('[data-paper-back]');
+    const panel = root.querySelector('[data-paper-panel]');
+    const animations: Animation[] = [];
+
+    if (panel instanceof HTMLElement) {
+      for (const child of Array.from(panel.children)) {
+        if (child instanceof HTMLElement && !child.hasAttribute('data-paper-grain')) {
+          animations.push(child.animate(
+            [{ opacity: 1 }, { opacity: 0 }],
+            { duration: 180, easing: HUD_ANIM_EASE_SOFT, fill: 'forwards' },
+          ));
+        }
+      }
+      animations.push(panel.animate(
+        [
+          { opacity: 1, transform: 'scale(1) rotate(0deg)' },
+          { opacity: 0, transform: 'scale(0.88) rotate(14deg)' },
+        ],
+        { duration: 380, delay: 60, easing: HUD_ANIM_EASE_SMOOTH, fill: 'forwards' },
+      ));
+    }
+
+    if (back instanceof HTMLElement) {
+      animations.push(back.animate(
+        [
+          { opacity: 1, transform: `scale(1) rotate(${PAPER_BACK_REST_ROTATE_DEG}deg)` },
+          { opacity: 0, transform: 'scale(0.68) rotate(-34deg)' },
+        ],
+        { duration: 400, delay: 100, easing: HUD_ANIM_EASE_SMOOTH, fill: 'forwards' },
+      ));
+    }
+
+    if (backdrop instanceof HTMLElement) {
+      animations.push(backdrop.animate(
+        [{ opacity: 1 }, { opacity: 0 }],
+        { duration: HUD_ANIM_CLOSE_MS, delay: 120, easing: HUD_ANIM_EASE_SOFT, fill: 'forwards' },
+      ));
+    }
+
+    if (animations.length === 0) {
+      return Promise.resolve();
+    }
+    return Promise.all(
+      animations.map((animation) => animation.finished.catch(() => undefined)),
+    ).then(() => undefined);
+  }
+
+  private removeHudOverlay(overlay: HTMLDivElement | null, instant: boolean): void {
+    if (!overlay) {
+      return;
+    }
+    if (instant) {
+      overlay.remove();
+      return;
+    }
+    void this.animateHudOverlayClose(overlay).then(() => {
+      if (overlay.parentElement) {
+        overlay.remove();
+      }
+    });
+  }
+
+  private attachModal(root: HTMLDivElement): void {
+    this.attachAnimatedOverlay(root);
+  }
+
+  private closeModals(animated = false): void {
+    this.removeHudOverlay(this.infoModal, !animated);
+    this.removeHudOverlay(this.listModal, !animated);
     this.infoModal = null;
     this.listModal = null;
     this.listBody = null;
+  }
+
+  private dismissChoiceModal(animated: boolean): void {
+    const overlay = this.choiceModal;
+    this.choiceModal = null;
+    if (overlay) {
+      this.playChoiceEnvelopeSound();
+    }
+    this.removeHudOverlay(overlay, !animated);
   }
 
   private refreshCount(): void {
@@ -877,7 +1169,8 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     const count = flow?.getBrokenOrdinanceCount() ?? 0;
     if (count !== this.lastCount) {
       this.lastCount = count;
-      this.countLabel.textContent = `${count}/${DELIVERY_WAY_GOAL}`;
+      const goal = count >= DELIVERY_WAY_GOAL ? FULL_ORDINANCE_GOAL : DELIVERY_WAY_GOAL;
+      this.countLabel.textContent = `${count}/${goal}`;
       if (this.listModal && this.listBody) {
         this.populateOrdinanceList();
       }
@@ -893,6 +1186,20 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     ) {
       this.mysteryWinShown = true;
       this.openChoiceModal(MYSTERY_TITLE, MYSTERY_BODY);
+      return;
+    }
+
+    if (
+      !this.fullCompletionShown
+      && !this.choiceModal
+      && !this.pauseModal
+      && !this.victoryLetterScreen
+      && !this.victoryThanksScreen
+      && count >= FULL_ORDINANCE_GOAL
+      && flow?.isAwaitingDelivery()
+    ) {
+      this.fullCompletionShown = true;
+      this.openChoiceModal(FULL_COMPLETION_TITLE, FULL_COMPLETION_BODY);
       return;
     }
 
@@ -930,17 +1237,17 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
   }
 
   private teardownUi(): void {
-    this.closeModals();
-    this.choiceModal?.remove();
-    this.choiceModal = null;
-    this.closePauseMenu();
-    this.closeVictoryLetterScreen();
-    this.closeVictoryThanksScreen();
+    this.closeModals(false);
+    this.dismissChoiceModal(false);
+    this.closePauseMenu(false);
+    this.closeVictoryLetterScreen(false, false);
+    this.closeVictoryThanksScreen(false);
     this.root?.remove();
     this.root = null;
     this.countLabel = null;
     this.lastCount = -1;
     this.completionShown = false;
+    this.fullCompletionShown = false;
     this.mysteryWinShown = false;
   }
 }
