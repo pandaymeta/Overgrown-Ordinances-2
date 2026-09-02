@@ -1,7 +1,7 @@
 {
   "$root": {
     "$bc": "ENGINE.Prefab",
-    "$uuid": "6341555e4d57fb05",
+    "$uuid": "24f5c1fc75840cbe",
     "rootNode": {
       "$bc": "ENGINE.SceneNode",
       "children": [
@@ -19,11 +19,10 @@
               "throwDistanceOverride": 5
             }
           ],
-      "modelUrl": "@project/assets/OrdinanceCards/Clean/Signs_Clean.glb",
+          "modelUrl": "@project/assets/OrdinanceCards/Clean/Signs_Clean.glb",
           "name": "Signs Fallen Mesh",
           "nodeId": 43635,
           "physicsOptions": {
-            "collisionMeshType": "convexHull",
             "density": 2000,
             "motionType": "dynamic"
           },
@@ -48,9 +47,9 @@
           "scale": {
             "$bc": "v3",
             "_": [
-              1,
-              1,
-              1
+              1.5,
+              1.5,
+              1.5
             ]
           }
         }

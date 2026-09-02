@@ -81,11 +81,28 @@ let busesConfigured = false;
 let loopsRequested = false;
 let loopsStarted = false;
 let unlockHooked = false;
+let unlockContext: AudioContext | null = null;
+let unlockGestureHandler: (() => void) | null = null;
+let unlockStateHandler: (() => void) | null = null;
 
 function getManager(
   world: ENGINE.World | null | undefined,
 ): ENGINE.World['globalAudioManager'] | null {
   return world?.globalAudioManager ?? null;
+}
+
+function clearAudioUnlockHooks(): void {
+  if (typeof window !== 'undefined' && unlockGestureHandler) {
+    window.removeEventListener('pointerdown', unlockGestureHandler);
+    window.removeEventListener('keydown', unlockGestureHandler);
+  }
+  if (unlockContext && unlockStateHandler) {
+    unlockContext.removeEventListener('statechange', unlockStateHandler);
+  }
+  unlockContext = null;
+  unlockGestureHandler = null;
+  unlockStateHandler = null;
+  unlockHooked = false;
 }
 
 /**
@@ -96,6 +113,7 @@ function syncWorld(world: ENGINE.World): void {
   if (activeWorld === world) {
     return;
   }
+  clearAudioUnlockHooks();
   activeWorld = world;
   busesConfigured = false;
   loopsRequested = false;
@@ -286,6 +304,48 @@ function startLoops(world: ENGINE.World): void {
   }
 }
 
+function armAudioUnlock(world: ENGINE.World, context: AudioContext): void {
+  if (unlockHooked) {
+    return;
+  }
+  unlockHooked = true;
+  unlockContext = context;
+
+  const startIfRunning = (): boolean => {
+    if (activeWorld !== world || context.state !== 'running') {
+      return false;
+    }
+    clearAudioUnlockHooks();
+    startLoops(world);
+    return true;
+  };
+
+  const tryUnlock = (): void => {
+    if (startIfRunning()) {
+      return;
+    }
+    void context.resume()
+      .then(() => {
+        startIfRunning();
+      })
+      .catch(() => {
+        // Autoplay is still locked; the gesture hooks remain armed.
+      });
+  };
+
+  unlockGestureHandler = tryUnlock;
+  unlockStateHandler = () => {
+    startIfRunning();
+  };
+  window.addEventListener('pointerdown', tryUnlock);
+  window.addEventListener('keydown', tryUnlock);
+  context.addEventListener('statechange', unlockStateHandler);
+
+  // Telegram/Studio may preserve the launch gesture or permit autoplay. Try
+  // immediately so music does not unnecessarily wait for another interaction.
+  tryUnlock();
+}
+
 /**
  * Starts music and ambience, deferring until the player's first gesture when the
  * browser has the AudioContext suspended (which is the normal cold-start case).
@@ -310,18 +370,7 @@ export function startGoldenHourAudio(world: ENGINE.World | null | undefined): vo
     startLoops(world);
     return;
   }
-  if (unlockHooked) {
-    return;
-  }
-  unlockHooked = true;
-
-  const unlock = (): void => {
-    void context.resume().then(() => startLoops(world));
-    window.removeEventListener('pointerdown', unlock);
-    window.removeEventListener('keydown', unlock);
-  };
-  window.addEventListener('pointerdown', unlock);
-  window.addEventListener('keydown', unlock);
+  armAudioUnlock(world, context);
 }
 
 /**

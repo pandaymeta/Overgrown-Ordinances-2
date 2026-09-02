@@ -69,7 +69,6 @@ import { GameSound, MAILBOX_LATCH_VOLUME, playOrdinanceBreakError, playOrdinance
 import { HoverSilhouette } from './hover-silhouette.js';
 import { ThirdPersonPlayer } from './player.js';
 import { ensureOvergrownAveriaFont } from './overgrown-averia-font.js';
-import { applyDirectionalShadowBudget } from './environment-art-direction.js';
 import {
   beginSpawnPhysicsGrace,
   isRapierSimulationPaused,
@@ -778,11 +777,6 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private fadeCoverScrapWaitElapsed = 0;
   /** After typewriter completes, keep the day card readable briefly. */
   private nextDayLabelHoldElapsed = -1;
-  /**
-   * Re-clamp sun CSM for the first seconds of play. Scene deserialize / isSunLight
-   * can reset csmMaxFar→1000 and auto-raise shadowFar→2000 after our first apply.
-   */
-  private shadowBudgetReinforceRemaining = 180;
   /** Defer movement unfreeze until post-release physics hold ticks drain. */
   private movementUnfreezeAfterPhysicsHold = false;
   /** Rapier stepped during the loading cover so intro speech does not re-wake physics. */
@@ -1044,8 +1038,6 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     const world = this.getWorld();
     if (world) {
-      applyDirectionalShadowBudget(world);
-      this.shadowBudgetReinforceRemaining = 180;
       this.setCameraOcclusionPaused(true);
     }
     void this.startFlow();
@@ -1088,10 +1080,6 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   public override tickPrePhysics(deltaTime: number): void {
     super.tickPrePhysics(deltaTime);
     this.lastPrePhysicsDeltaTime = Math.max(deltaTime, 1e-5);
-    if (this.shadowBudgetReinforceRemaining > 0) {
-      applyDirectionalShadowBudget(this.getWorld());
-      this.shadowBudgetReinforceRemaining -= 1;
-    }
     if (this.phase === FlowPhase.Boot) {
       return;
     }

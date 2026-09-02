@@ -316,15 +316,29 @@ export function applyDirectionalShadowBudget(world: ENGINE.World | null | undefi
   }
   for (const light of world.getNodes(ENGINE.DirectionalLightNode)) {
     if (!light.isSunLight) {
-      light.castShadow = false;
-      light.useCsmShadows = false;
+      if (light.castShadow) {
+        light.castShadow = false;
+      }
+      if (light.useCsmShadows) {
+        light.useCsmShadows = false;
+      }
       continue;
     }
-    light.castShadow = true;
-    light.useCsmShadows = true;
-    light.csmCascadeCount = SUN_CSM_CASCADE_COUNT;
-    light.csmMaxFar = SUN_CSM_MAX_FAR;
-    light.shadowMapSize = SUN_SHADOW_MAP_SIZE;
+    if (!light.castShadow) {
+      light.castShadow = true;
+    }
+    if (!light.useCsmShadows) {
+      light.useCsmShadows = true;
+    }
+    if (light.csmCascadeCount !== SUN_CSM_CASCADE_COUNT) {
+      light.csmCascadeCount = SUN_CSM_CASCADE_COUNT;
+    }
+    if (light.csmMaxFar !== SUN_CSM_MAX_FAR) {
+      light.csmMaxFar = SUN_CSM_MAX_FAR;
+    }
+    if (light.shadowMapSize !== SUN_SHADOW_MAP_SIZE) {
+      light.shadowMapSize = SUN_SHADOW_MAP_SIZE;
+    }
     if (light.shadowFar > SUN_SHADOW_FAR_CAP) {
       light.shadowFar = SUN_SHADOW_FAR_CAP;
     }
@@ -361,7 +375,9 @@ export async function refreshEnvironmentArtDirection(
 
 @ENGINE.GameClass()
 export class EnvironmentArtDirectionSystem extends ENGINE.SceneNode {
-  private shadowBudgetReinforceRemaining = 180;
+  /** Sparse checkpoints catch late engine sun setup without writing light state every frame. */
+  private shadowBudgetFrame = 0;
+  private refreshPromise: Promise<number> | null = null;
 
   constructor() {
     super();
@@ -379,7 +395,7 @@ export class EnvironmentArtDirectionSystem extends ENGINE.SceneNode {
     super.postLoad();
     guardSceneGeometryEarly(this.getWorld(), 'EnvironmentArtDirection.postLoad');
     applyDirectionalShadowBudget(this.getWorld());
-    void refreshEnvironmentArtDirection(this.getWorld());
+    void this.ensureEnvironmentRefresh();
   }
 
   public override beginPlay(): boolean {
@@ -387,17 +403,25 @@ export class EnvironmentArtDirectionSystem extends ENGINE.SceneNode {
       return false;
     }
     applyDirectionalShadowBudget(this.getWorld());
-    this.shadowBudgetReinforceRemaining = 180;
-    void refreshEnvironmentArtDirection(this.getWorld());
+    this.shadowBudgetFrame = 0;
+    void this.ensureEnvironmentRefresh();
     return true;
   }
 
   public override tickPostPhysics(_deltaTime: number): void {
     super.tickPostPhysics(_deltaTime);
-    if (this.shadowBudgetReinforceRemaining <= 0) {
-      return;
+    this.shadowBudgetFrame += 1;
+    if (
+      this.shadowBudgetFrame === 1
+      || this.shadowBudgetFrame === 30
+      || this.shadowBudgetFrame === 90
+    ) {
+      applyDirectionalShadowBudget(this.getWorld());
     }
-    applyDirectionalShadowBudget(this.getWorld());
-    this.shadowBudgetReinforceRemaining -= 1;
+  }
+
+  private ensureEnvironmentRefresh(): Promise<number> {
+    this.refreshPromise ??= refreshEnvironmentArtDirection(this.getWorld());
+    return this.refreshPromise;
   }
 }

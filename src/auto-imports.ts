@@ -6,7 +6,6 @@ import './carry-player-controller.js';
 import './carryable-crate-node.js';
 import './cat-mail-courier.js';
 import './climbable-ladder.js';
-import './consume-studio-link-preloads.js';
 import './delivery-progress-hud.js';
 import './environment-art-direction.js';
 import './face-movement-character-movement.js';

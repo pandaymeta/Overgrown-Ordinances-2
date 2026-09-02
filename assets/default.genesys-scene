@@ -177,6 +177,7 @@
     "children": [
       {
         "$bc": "ENGINE.DirectionalLightNode",
+        "canEverTick": false,
         "children": [
           {
             "$bc": "THREE.Object3D",
@@ -314,6 +315,7 @@
         "shadowNear": 0.5,
         "shadowNormalBias": 0.04,
         "shadowRadius": 6,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 6
         },
@@ -342,6 +344,7 @@
       },
       {
         "$bc": "ENGINE.MeshNode",
+        "canEverTick": false,
         "children": {
           "$length": 1
         },
@@ -393,6 +396,7 @@
             0.08
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 6
         },
@@ -401,6 +405,7 @@
       },
       {
         "$bc": "ENGINE.MeshNode",
+        "canEverTick": false,
         "children": {
           "$length": 1
         },
@@ -452,6 +457,7 @@
             0.08
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 6
         },
@@ -460,6 +466,7 @@
       },
       {
         "$bc": "ENGINE.MeshNode",
+        "canEverTick": false,
         "children": {
           "$length": 1
         },
@@ -512,6 +519,7 @@
             0.064
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 6
         },
@@ -520,6 +528,7 @@
       },
       {
         "$bc": "ENGINE.MeshNode",
+        "canEverTick": false,
         "children": {
           "$length": 1
         },
@@ -580,6 +589,7 @@
             0.05
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 6
         },
@@ -588,6 +598,7 @@
       },
       {
         "$bc": "ENGINE.MeshNode",
+        "canEverTick": false,
         "children": {
           "$length": 1
         },
@@ -648,6 +659,7 @@
             0.048
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 6
         },
@@ -1611,11 +1623,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/Tiles/asphalt-road-tile-straight-both.glb",
         "name": "LeftSideRoad Asphalt Road Tile Straight Both 07",
         "nodeId": 1892,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1642,6 +1656,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1649,11 +1664,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/Tiles/asphalt-road-tile-straight-both.glb",
         "name": "LeftSideRoad Asphalt Road Tile Straight Both 08",
         "nodeId": 34271,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1680,6 +1697,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1687,11 +1705,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/Tiles/asphalt-road-tile-straight-both.glb",
         "name": "LeftSideRoad Asphalt Road Tile Straight Both 06",
         "nodeId": 57762,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1718,6 +1738,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1725,11 +1746,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/Tiles/asphalt-road-tile-straight-both.glb",
         "name": "MainRoad Asphalt Road Tile Straight Both 03",
         "nodeId": 21979,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1756,6 +1779,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1763,11 +1787,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/Tiles/asphalt-road-tile-straight-both.glb",
         "name": "MainRoad Asphalt Road Tile Straight Both 04",
         "nodeId": 6451,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1794,6 +1820,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1801,11 +1828,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/Tiles/asphalt-road-tile-corner-none.glb",
         "name": "Asphalt Road Tile Corner None 19",
         "nodeId": 22391,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1832,6 +1861,7 @@
             0.28
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1839,11 +1869,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/Tiles/asphalt-road-tile-corner-none.glb",
         "name": "Asphalt Road Tile Corner None 21",
         "nodeId": 35095,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1870,6 +1902,7 @@
             0.28
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1877,11 +1910,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/Tiles/asphalt-road-tile-corner-none.glb",
         "name": "Asphalt Road Tile Corner None 22",
         "nodeId": 11378,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1908,6 +1943,7 @@
             0.28
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1915,11 +1951,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/Tiles/asphalt-road-tile-corner-none.glb",
         "name": "RightSideRoad Corner Both 01",
         "nodeId": 1452,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1946,6 +1984,7 @@
             0.15
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1953,11 +1992,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/Tiles/asphalt-road-tile-corner-none.glb",
         "name": "Asphalt Road Tile Corner None 23",
         "nodeId": 47437,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1984,6 +2025,7 @@
             0.28
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1991,11 +2033,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/Tiles/asphalt-road-tile-corner-none.glb",
         "name": "Asphalt Road Tile Corner None 20",
         "nodeId": 65109,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2022,6 +2066,7 @@
             0.281
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2033,7 +2078,7 @@
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/two-storey-shophouse-183790.glb",
         "name": "Two Storey Shophouse 183791",
-        "nodeId": 62067,
+        "nodeId": 39145,
         "physicsOptions": {
           "collisionMeshType": "trimesh",
           "generateCollisionEvents": false
@@ -2150,11 +2195,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/Tiles/asphalt-road-tile-t-junction-edges-zebra.glb",
         "name": "MainRoad Asphalt Road Tile",
         "nodeId": 42125,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2181,6 +2228,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2188,11 +2236,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/mailbox-8e36e8.glb",
         "name": "Mailbox 8 E 36 E 8",
         "nodeId": 10087,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2211,6 +2261,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2261,11 +2312,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-section-68c3c4.glb",
         "name": "Guardrail Section 68 C 3 C 05",
         "nodeId": 21575,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2283,6 +2336,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2290,11 +2344,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-section-68c3c4.glb",
         "name": "Guardrail Section 68 C 3 C 07",
         "nodeId": 19204,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2312,6 +2368,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2319,11 +2376,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-section-68c3c4.glb",
         "name": "Guardrail Section 68 C 3 C 11",
         "nodeId": 83,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2349,6 +2408,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2356,11 +2416,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-section-68c3c4.glb",
         "name": "Guardrail Section 68 C 3 C 12",
         "nodeId": 18930,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2386,6 +2448,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2393,11 +2456,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-section-68c3c4.glb",
         "name": "Guardrail Section 68 C 3 C 13",
         "nodeId": 55186,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2423,6 +2488,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2430,11 +2496,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-section-68c3c4.glb",
         "name": "Guardrail Section 68 C 3 C 08",
         "nodeId": 51500,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2452,6 +2520,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2459,11 +2528,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-section-68c3c4.glb",
         "name": "Guardrail Section 68 C 3 C 09",
         "nodeId": 59415,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2481,6 +2552,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2488,11 +2560,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-section-68c3c4.glb",
         "name": "Guardrail Section 68 C 3 C 06",
         "nodeId": 1004,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2510,6 +2584,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2517,11 +2592,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-section-68c3c4.glb",
         "name": "Guardrail Section 68 C 3 C 10",
         "nodeId": 24769,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2539,6 +2616,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2546,11 +2624,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-section-68c3c4.glb",
         "name": "Guardrail Section 68 C 3 C 14",
         "nodeId": 34618,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2568,6 +2648,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2575,11 +2656,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/dirt-ground-tile-da4a60-no-rocks.glb",
         "name": "Dirt Ground Tile Da 4 A 61",
         "nodeId": 59907,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2598,6 +2681,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2605,11 +2689,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/dirt-ground-tile-da4a60-no-rocks.glb",
         "name": "Dirt Ground Tile Da 4 A 65",
         "nodeId": 11237,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2628,6 +2714,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2635,11 +2722,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/dirt-ground-tile-da4a60-no-rocks.glb",
         "name": "Dirt Ground Tile Da 4 A 63",
         "nodeId": 39457,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2658,6 +2747,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2665,11 +2755,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/dirt-ground-tile-da4a60-no-rocks.glb",
         "name": "Dirt Ground Tile Da 4 A 64",
         "nodeId": 49192,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2688,6 +2780,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2695,11 +2788,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/dirt-ground-tile-da4a60.glb",
         "name": "Dirt Ground Tile Da 4 A 62",
         "nodeId": 3902,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2718,6 +2813,7 @@
             1.45
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2997,6 +3093,7 @@
       },
       {
         "$bc": "ENGINE.SpotLightNode",
+        "canEverTick": false,
         "children": [
           {
             "$ref": 3
@@ -3034,6 +3131,7 @@
         "shadowFar": 20,
         "shadowMapSize": 1024,
         "shadowNear": 0.2,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -3045,7 +3143,6 @@
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -3102,6 +3199,7 @@
           },
           {
             "$bc": "ENGINE.MeshNode",
+            "canEverTick": false,
             "children": {
               "$length": 1
             },
@@ -3143,6 +3241,7 @@
                 3.15
               ]
             },
+            "tickEnabled": false,
             "uuid": "1eb75b7dfb3ad3db",
             "visible": false
           }
@@ -3181,7 +3280,6 @@
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -3246,6 +3344,7 @@
           },
           {
             "$bc": "ENGINE.MeshNode",
+            "canEverTick": false,
             "children": {
               "$length": 1
             },
@@ -3279,6 +3378,7 @@
                 3.5
               ]
             },
+            "tickEnabled": false,
             "uuid": "ffa8ac66-a556-4f6a-a725-0d83892d82eb",
             "visible": false
           }
@@ -3321,6 +3421,7 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/grass-terrain-blob-389daa.glb",
         "name": "Grass Terrain Blob 389 Daa",
         "navigationGeometryRole": "none",
@@ -3345,6 +3446,7 @@
             10
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -3357,6 +3459,7 @@
         "children": [
           {
             "$bc": "ENGINE.MeshNode",
+            "canEverTick": false,
             "children": {
               "$length": 1
             },
@@ -3390,12 +3493,12 @@
                 1.76
               ]
             },
+            "tickEnabled": false,
             "uuid": "6e242a9ce5ec4cd8",
             "visible": false
           },
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -3457,7 +3560,6 @@
           },
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -3510,7 +3612,6 @@
           },
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -3572,7 +3673,6 @@
           },
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -3633,6 +3733,7 @@
           },
           {
             "$bc": "ENGINE.SpotLightNode",
+            "canEverTick": false,
             "children": [
               {
                 "$ref": 4
@@ -3662,6 +3763,7 @@
             "shadowFar": 20,
             "shadowMapSize": 1024,
             "shadowNear": 0.2,
+            "tickEnabled": false,
             "uuid": "652412a53c4d9132"
           }
         ],
@@ -3695,6 +3797,7 @@
       },
       {
         "$bc": "ENGINE.SpotLightNode",
+        "canEverTick": false,
         "children": [
           {
             "$ref": 5
@@ -3732,6 +3835,7 @@
         "shadowFar": 20,
         "shadowMapSize": 1024,
         "shadowNear": 0.2,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -3743,6 +3847,7 @@
         "children": [
           {
             "$bc": "ENGINE.MeshNode",
+            "canEverTick": false,
             "children": {
               "$length": 1
             },
@@ -3776,12 +3881,12 @@
                 1.76
               ]
             },
+            "tickEnabled": false,
             "uuid": "f147c8b15a3d93df",
             "visible": false
           },
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -3843,7 +3948,6 @@
           },
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -3896,7 +4000,6 @@
           },
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -3958,7 +4061,6 @@
           },
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -4052,6 +4154,7 @@
         "children": [
           {
             "$bc": "ENGINE.MeshNode",
+            "canEverTick": false,
             "children": {
               "$length": 1
             },
@@ -4077,12 +4180,12 @@
                 1.76
               ]
             },
+            "tickEnabled": false,
             "uuid": "283dfc56-4786-4d02-9ebc-621a0124eaf3",
             "visible": false
           },
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -4136,7 +4239,6 @@
           },
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -4197,7 +4299,6 @@
           },
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -4258,7 +4359,6 @@
           },
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -4357,6 +4457,7 @@
       },
       {
         "$bc": "ENGINE.SpotLightNode",
+        "canEverTick": false,
         "children": [
           {
             "$ref": 6
@@ -4394,6 +4495,7 @@
         "shadowFar": 20,
         "shadowMapSize": 1024,
         "shadowNear": 0.2,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -4405,6 +4507,7 @@
         "children": [
           {
             "$bc": "ENGINE.MeshNode",
+            "canEverTick": false,
             "children": {
               "$length": 1
             },
@@ -4430,12 +4533,12 @@
                 1.76
               ]
             },
+            "tickEnabled": false,
             "uuid": "fd2d602e1c98ad14",
             "visible": false
           },
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -4488,7 +4591,6 @@
           },
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -4550,7 +4652,6 @@
           },
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -4611,7 +4712,6 @@
           },
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -4710,6 +4810,7 @@
       },
       {
         "$bc": "ENGINE.SpotLightNode",
+        "canEverTick": false,
         "children": [
           {
             "$ref": 7
@@ -4747,6 +4848,7 @@
         "shadowFar": 20,
         "shadowMapSize": 1024,
         "shadowNear": 0.2,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -4758,6 +4860,7 @@
         "children": [
           {
             "$bc": "ENGINE.MeshNode",
+            "canEverTick": false,
             "children": {
               "$length": 1
             },
@@ -4783,12 +4886,12 @@
                 1.76
               ]
             },
+            "tickEnabled": false,
             "uuid": "1d07d74eb05d448d",
             "visible": false
           },
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -4842,7 +4945,6 @@
           },
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -4903,7 +5005,6 @@
           },
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -4964,7 +5065,6 @@
           },
           {
             "$bc": "ENGINE.ModelMeshNode",
-            "castShadow": true,
             "children": [
               {
                 "$bc": "ENGINE.ModelMeshNode",
@@ -5063,11 +5163,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/Tram/tram-track-tile-straight.glb",
         "name": "Tram Track Tile Straight",
         "nodeId": 8771,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -5094,6 +5196,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -5101,11 +5204,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/Tram/tram-track-tile-straight.glb",
         "name": "Tram Track Tile Straight 04",
         "nodeId": 15706,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -5132,6 +5237,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -5139,11 +5245,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/Tram/tram-track-tile-straight.glb",
         "name": "Tram Track Tile Straight 05",
         "nodeId": 40493,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -5170,6 +5278,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -5177,11 +5286,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/Tram/tram-track-tile-straight.glb",
         "name": "Tram Track Tile Straight 06",
         "nodeId": 20292,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -5208,6 +5319,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -5215,11 +5327,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/Tram/tram-track-tile-straight.glb",
         "name": "Tram Track Tile Straight 02",
         "nodeId": 59431,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -5246,6 +5360,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -5347,11 +5462,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/fire-hydrant-b68b17.glb",
         "name": "Fire Hydrant B 68 B 17",
         "nodeId": 45223,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -5370,6 +5487,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -5377,11 +5495,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/fire-hydrant-b68b17.glb",
         "name": "Fire Hydrant B 68 B 18",
         "nodeId": 54182,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -5400,6 +5520,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -5407,12 +5528,14 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/fuel-tank-3a0111.glb",
         "name": "Fuel Tank 3 A 0111",
         "nodeId": 29768,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -5431,6 +5554,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -5438,11 +5562,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-d3bd42.glb",
         "name": "Guardrail D 3 Bd 43",
         "nodeId": 348,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -5460,6 +5586,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -5467,11 +5594,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-d3bd42.glb",
         "name": "Guardrail D 3 Bd 44",
         "nodeId": 14526,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -5489,6 +5618,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -5496,11 +5626,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-d3bd42.glb",
         "name": "Guardrail D 3 Bd 45",
         "nodeId": 12776,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -5518,6 +5650,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -5525,11 +5658,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/guardrail-d3bd42.glb",
         "name": "Guardrail D 3 Bd 46",
         "nodeId": 64686,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -5547,6 +5682,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -5746,9 +5882,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/vending-machine-471c29.glb",
         "name": "Vending Machine 471 C 29",
         "nodeId": 6722,
+        "physicsOptions": {
+          "generateCollisionEvents": false
+        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -5774,6 +5914,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -5821,12 +5962,14 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/bush-8bb596.glb",
         "name": "Bush 8 Bb 597",
         "nodeId": 31522,
         "physicsOptions": {
           "collisionMeshType": "trimesh",
-          "collisionProfile": "IgnoreOnlyPawns"
+          "collisionProfile": "IgnoreOnlyPawns",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -5853,6 +5996,7 @@
             3
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -5860,12 +6004,14 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/bush-8bb596.glb",
         "name": "Bush 8 Bb 599",
         "nodeId": 37871,
         "physicsOptions": {
           "collisionMeshType": "trimesh",
-          "collisionProfile": "IgnoreOnlyPawns"
+          "collisionProfile": "IgnoreOnlyPawns",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -5892,6 +6038,7 @@
             3
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -5899,12 +6046,14 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/bush-8bb596.glb",
         "name": "Bush 8 Bb 601",
         "nodeId": 3741,
         "physicsOptions": {
           "collisionMeshType": "trimesh",
-          "collisionProfile": "IgnoreOnlyPawns"
+          "collisionProfile": "IgnoreOnlyPawns",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -5931,6 +6080,7 @@
             3
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -5938,12 +6088,14 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/bush-8bb596.glb",
         "name": "Bush 8 Bb 602",
         "nodeId": 31128,
         "physicsOptions": {
           "collisionMeshType": "trimesh",
-          "collisionProfile": "IgnoreOnlyPawns"
+          "collisionProfile": "IgnoreOnlyPawns",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -5970,6 +6122,7 @@
             3
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -5977,12 +6130,14 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/access-stair-fde618.glb",
         "name": "Access Stair Fde 618",
         "nodeId": 47802,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -6001,6 +6156,7 @@
             3.141592
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -6008,11 +6164,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/trail-map-kiosk-be8618.glb",
         "name": "Trail Map Kiosk Be 8618",
         "nodeId": 54698,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -6039,6 +6197,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -6046,11 +6205,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/road-gap-triangle-asphalt.glb",
         "name": "Asphalt Road Triangle Gap Filler",
         "nodeId": 34270,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -6062,6 +6223,7 @@
         },
         "receiveShadow": true,
         "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -6069,11 +6231,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/road-gap-triangle-asphalt.glb",
         "name": "Asphalt Road Triangle Gap Filler 02",
         "nodeId": 9587,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -6093,6 +6257,7 @@
           ]
         },
         "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -6100,11 +6265,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/road-gap-triangle-asphalt.glb",
         "name": "Asphalt Road Triangle Gap Filler 03",
         "nodeId": 56734,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -6124,6 +6291,7 @@
           ]
         },
         "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -6131,11 +6299,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/road-gap-triangle-asphalt.glb",
         "name": "Asphalt Road Triangle Gap Filler 04",
         "nodeId": 30097,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -6155,6 +6325,7 @@
           ]
         },
         "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -6162,11 +6333,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/road-gap-triangle-asphalt.glb",
         "name": "Asphalt Road Triangle Gap Filler 05",
         "nodeId": 42525,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -6186,6 +6359,7 @@
           ]
         },
         "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -6193,11 +6367,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/Tiles/corner_both.glb",
         "name": "RightSideRoad Corner Both",
         "nodeId": 35956,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -6224,6 +6400,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -6261,7 +6438,8 @@
         "name": "Yellow Cab 8 Df 4 A 0",
         "nodeId": 49622,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -6287,12 +6465,14 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/red-fox-5c3bc0.glb",
         "name": "Cat",
         "nodeId": 35440,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -6310,6 +6490,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -6317,11 +6498,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/grass-tuft-a40a08.glb",
         "name": "Grass Tuft A 40 A 08",
         "nodeId": 56432,
         "physicsOptions": {
-          "collisionProfile": "NoCollision"
+          "collisionProfile": "NoCollision",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -6340,6 +6523,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -6347,11 +6531,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/grass-tuft-a40a08.glb",
         "name": "Grass Tuft A 40 A 09",
         "nodeId": 33424,
         "physicsOptions": {
-          "collisionProfile": "NoCollision"
+          "collisionProfile": "NoCollision",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -6370,6 +6556,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -6377,11 +6564,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/grass-tuft-a40a08.glb",
         "name": "Grass Tuft A 40 A 10",
         "nodeId": 50006,
         "physicsOptions": {
-          "collisionProfile": "NoCollision"
+          "collisionProfile": "NoCollision",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -6400,6 +6589,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -6407,11 +6597,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/grass-tuft-a40a08.glb",
         "name": "Grass Tuft A 40 A 11",
         "nodeId": 2351,
         "physicsOptions": {
-          "collisionProfile": "NoCollision"
+          "collisionProfile": "NoCollision",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -6430,6 +6622,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -7348,12 +7541,14 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/stone-lantern-d56d0a.glb",
         "name": "Stone Lantern D 56 D 0 A",
         "nodeId": 62748,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -7372,6 +7567,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -7379,12 +7575,14 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/stone-lantern-d56d0a.glb",
         "name": "Stone Lantern D 56 D 0 A 02",
         "nodeId": 14651,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -7403,6 +7601,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -7470,6 +7669,7 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "castShadow": true,
         "hiddenInGame": true,
         "modelUrl": "@project/assets/PolyforkAssets/KanjiSign-unindexed.glb",
@@ -7503,6 +7703,7 @@
             3
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -8316,7 +8517,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -8371,7 +8571,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -8658,7 +8857,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -8714,7 +8912,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -8778,7 +8975,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -8834,7 +9030,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -8890,7 +9085,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -8946,7 +9140,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -8994,7 +9187,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -9026,7 +9218,7 @@
         ],
         "modelUrl": "@project/assets/OrdinanceCards/Clean/Cats_Clean.glb",
         "name": "Cats",
-        "nodeId": 41860,
+        "nodeId": 9048,
         "position": {
           "$bc": "v3",
           "_": [
@@ -9058,7 +9250,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -9122,7 +9313,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -9230,7 +9420,6 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "canEverTick": false,
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -9278,7 +9467,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -9326,7 +9514,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -9374,7 +9561,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -9430,7 +9616,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -9494,7 +9679,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -9542,7 +9726,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -9596,7 +9779,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -9642,7 +9824,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -9688,7 +9869,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -9737,7 +9917,6 @@
       {
         "$bc": "ENGINE.ModelMeshNode",
         "canEverTick": false,
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -9793,7 +9972,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -9849,7 +10027,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -9913,7 +10090,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -9961,7 +10137,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -10025,7 +10200,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -10089,7 +10263,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -10153,7 +10326,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -10217,7 +10389,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -10265,7 +10436,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -10313,7 +10483,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -10361,7 +10530,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -10409,7 +10577,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
         "children": [
           {
             "$bc": "ENGINE.ModelMeshNode",
@@ -10551,7 +10718,7 @@
         ],
         "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/DoNotStep_Board_v2.glb",
         "name": "Do Not Step Car",
-        "nodeId": 55096,
+        "nodeId": 35608,
         "position": {
           "$bc": "v3",
           "_": [
@@ -10567,6 +10734,7 @@
       },
       {
         "$bc": "ENGINE.MeshNode",
+        "canEverTick": false,
         "children": {
           "$length": 1
         },
@@ -10592,6 +10760,7 @@
             8
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -10600,6 +10769,7 @@
       },
       {
         "$bc": "ENGINE.MeshNode",
+        "canEverTick": false,
         "children": {
           "$length": 1
         },
@@ -10625,6 +10795,7 @@
             15.7
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -10633,6 +10804,7 @@
       },
       {
         "$bc": "ENGINE.MeshNode",
+        "canEverTick": false,
         "children": {
           "$length": 1
         },
@@ -10658,6 +10830,7 @@
             15.6
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -10666,10 +10839,14 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/tiled-roof-section-6f1121.glb",
         "name": "Tiled Roof Section 6 F 1121",
         "nodeId": 59571,
+        "physicsOptions": {
+          "generateCollisionEvents": false
+        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -10679,6 +10856,7 @@
           ]
         },
         "receiveShadow": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -10686,10 +10864,14 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/tiled-roof-section-6f1121.glb",
         "name": "Tiled Roof Section 6 F 1122",
         "nodeId": 40997,
+        "physicsOptions": {
+          "generateCollisionEvents": false
+        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -10699,6 +10881,7 @@
           ]
         },
         "receiveShadow": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -10706,10 +10889,14 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/tiled-roof-section-6f1121.glb",
         "name": "Tiled Roof Section 6 F 1123",
         "nodeId": 22401,
+        "physicsOptions": {
+          "generateCollisionEvents": false
+        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -10719,6 +10906,7 @@
           ]
         },
         "receiveShadow": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -10726,6 +10914,7 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/air-con-unit-9fadc2.glb",
         "name": "Air Con Unit 9 Fadc 05",
@@ -10759,6 +10948,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -10766,6 +10956,7 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/air-con-unit-9fadc2.glb",
         "name": "Air Con Unit 9 Fadc 04",
@@ -10799,6 +10990,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -10806,6 +10998,7 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/air-con-unit-9fadc2.glb",
         "name": "Air Con Unit 9 Fadc 03",
@@ -10840,6 +11033,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -10847,12 +11041,14 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/fabric-awning-4d6acc.glb",
         "name": "Fabric Awning 4 D 6 Acc",
         "nodeId": 10542,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -10879,6 +11075,7 @@
             1.5
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -10886,13 +11083,15 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/KanjiSign-unindexed.glb",
         "name": "Kanji Sign",
         "nodeId": 35654,
         "physicsOptions": {
           "collisionData": null,
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -10919,6 +11118,7 @@
             3
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -11013,6 +11213,7 @@
       },
       {
         "$bc": "ENGINE.HemisphereLightNode",
+        "canEverTick": false,
         "children": [
           {
             "$ref": 8
@@ -11023,6 +11224,7 @@
         },
         "name": "Anime Sky Fill",
         "nodeId": 20880,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -11030,6 +11232,7 @@
       },
       {
         "$bc": "ENGINE.AmbientLightNode",
+        "canEverTick": false,
         "children": [
           {
             "$ref": 9
@@ -11040,6 +11243,7 @@
         },
         "name": "Anime Ambient Fill",
         "nodeId": 47640,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -11047,11 +11251,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/Tiles/asphalt-road-tile-straight-edges.glb",
         "name": "RightSideRoad Asphalt Road Tile Straight Both 02",
         "nodeId": 25279,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -11078,6 +11284,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -11089,6 +11296,7 @@
         "children": [
           {
             "$bc": "ENGINE.MeshNode",
+            "canEverTick": false,
             "children": {
               "$length": 1
             },
@@ -11152,6 +11360,7 @@
                 2
               ]
             },
+            "tickEnabled": false,
             "userData": {
               "objectFlags": 1
             },
@@ -11160,6 +11369,7 @@
           },
           {
             "$bc": "ENGINE.MeshNode",
+            "canEverTick": false,
             "children": {
               "$length": 1
             },
@@ -11223,6 +11433,7 @@
                 2
               ]
             },
+            "tickEnabled": false,
             "userData": {
               "objectFlags": 1
             },
@@ -11231,6 +11442,7 @@
           },
           {
             "$bc": "ENGINE.MeshNode",
+            "canEverTick": false,
             "children": {
               "$length": 1
             },
@@ -11294,6 +11506,7 @@
                 2
               ]
             },
+            "tickEnabled": false,
             "userData": {
               "objectFlags": 1
             },
@@ -11302,6 +11515,7 @@
           },
           {
             "$bc": "ENGINE.MeshNode",
+            "canEverTick": false,
             "children": {
               "$length": 1
             },
@@ -11365,6 +11579,7 @@
                 2
               ]
             },
+            "tickEnabled": false,
             "userData": {
               "objectFlags": 1
             },
@@ -11373,6 +11588,7 @@
           },
           {
             "$bc": "ENGINE.MeshNode",
+            "canEverTick": false,
             "children": {
               "$length": 1
             },
@@ -11436,6 +11652,7 @@
                 2.45
               ]
             },
+            "tickEnabled": false,
             "userData": {
               "objectFlags": 1
             },
@@ -11444,6 +11661,7 @@
           },
           {
             "$bc": "ENGINE.MeshNode",
+            "canEverTick": false,
             "children": {
               "$length": 1
             },
@@ -11507,6 +11725,7 @@
                 2
               ]
             },
+            "tickEnabled": false,
             "userData": {
               "objectFlags": 1
             },
@@ -11623,9 +11842,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
         "name": "Mesh Fense Pane",
         "nodeId": 16542,
+        "physicsOptions": {
+          "generateCollisionEvents": false
+        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -11650,6 +11873,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -11657,9 +11881,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
         "name": "Mesh Fense Pane 07",
         "nodeId": 17064,
+        "physicsOptions": {
+          "generateCollisionEvents": false
+        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -11684,6 +11912,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -11691,9 +11920,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
         "name": "Mesh Fense Pane 08",
         "nodeId": 45911,
+        "physicsOptions": {
+          "generateCollisionEvents": false
+        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -11718,6 +11951,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -11725,9 +11959,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
         "name": "Mesh Fense Pane 09",
         "nodeId": 55816,
+        "physicsOptions": {
+          "generateCollisionEvents": false
+        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -11752,6 +11990,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -11759,9 +11998,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
         "name": "Mesh Fense Pane 10",
         "nodeId": 35858,
+        "physicsOptions": {
+          "generateCollisionEvents": false
+        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -11786,6 +12029,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -11793,9 +12037,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
         "name": "Mesh Fense Pane 02",
         "nodeId": 59256,
+        "physicsOptions": {
+          "generateCollisionEvents": false
+        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -11820,6 +12068,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -11827,9 +12076,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
         "name": "Mesh Fense Pane 03",
         "nodeId": 8634,
+        "physicsOptions": {
+          "generateCollisionEvents": false
+        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -11854,6 +12107,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -11861,9 +12115,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
         "name": "Mesh Fense Pane 04",
         "nodeId": 50566,
+        "physicsOptions": {
+          "generateCollisionEvents": false
+        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -11888,6 +12146,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -11895,9 +12154,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
         "name": "Mesh Fense Pane 05",
         "nodeId": 42169,
+        "physicsOptions": {
+          "generateCollisionEvents": false
+        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -11922,6 +12185,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -11929,9 +12193,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
         "name": "Mesh Fense Pane 06",
         "nodeId": 25833,
+        "physicsOptions": {
+          "generateCollisionEvents": false
+        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -11956,6 +12224,7 @@
             2
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -11967,6 +12236,7 @@
         "children": [
           {
             "$bc": "ENGINE.MeshNode",
+            "canEverTick": false,
             "children": {
               "$length": 1
             },
@@ -11993,10 +12263,12 @@
                 7.92
               ]
             },
+            "tickEnabled": false,
             "uuid": "ea1fc62726b6d936"
           },
           {
             "$bc": "ENGINE.MeshNode",
+            "canEverTick": false,
             "children": {
               "$length": 1
             },
@@ -12031,6 +12303,7 @@
                 1.59
               ]
             },
+            "tickEnabled": false,
             "uuid": "eb5f76417c3f8e1f"
           }
         ],
@@ -12072,9 +12345,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/branding/overgrown-logo.glb",
         "name": "Overgrown Logo",
         "nodeId": 17712,
+        "physicsOptions": {
+          "generateCollisionEvents": false
+        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -12099,6 +12376,7 @@
             220
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -12106,9 +12384,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/branding/by-entenium.glb",
         "name": "By Entenium Logo",
         "nodeId": 23623,
+        "physicsOptions": {
+          "generateCollisionEvents": false
+        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -12133,6 +12415,7 @@
             35
           ]
         },
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },

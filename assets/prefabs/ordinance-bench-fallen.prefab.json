@@ -1,7 +1,7 @@
 {
   "$root": {
     "$bc": "ENGINE.Prefab",
-    "$uuid": "6b0b386754f62e2d",
+    "$uuid": "6c1c14820f86a193",
     "rootNode": {
       "$bc": "ENGINE.SceneNode",
       "children": [
@@ -19,11 +19,10 @@
               "throwDistanceOverride": 5
             }
           ],
-      "modelUrl": "@project/assets/OrdinanceCards/Bench_CleanBoard.glb",
+          "modelUrl": "@project/assets/OrdinanceCards/Bench_CleanBoard.glb",
           "name": "Bench Fallen Mesh",
           "nodeId": 36189,
           "physicsOptions": {
-            "collisionMeshType": "convexHull",
             "density": 2000,
             "motionType": "dynamic"
           },
@@ -48,9 +47,9 @@
           "scale": {
             "$bc": "v3",
             "_": [
-              1,
-              1,
-              1
+              1.5,
+              1.5,
+              1.5
             ]
           }
         }

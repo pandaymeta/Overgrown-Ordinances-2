@@ -57,9 +57,11 @@ const FULL_VICTORY_LETTER_BODY =
   + 'Sincerely,\n'
   + 'A concerned citizen';
 const VICTORY_THANKS_TITLE = 'Thanks for Playing';
-const VICTORY_EXIT = 'Exit';
+const COMPLETION_END_GAME_ACTION = 'End Game';
+const VICTORY_ACTION = 'Victory';
 const PAUSE_TITLE = 'Game Paused';
 const PAUSE_RESPAWN = 'Respawn';
+const PAUSE_EXIT = 'Exit';
 
 /** Painterly grit — kept very light so cards stay clean, not muddy. */
 const PAPER_GRAIN_PATH = '@project/assets/textures/style/painterly-brush-detail-v1.png';
@@ -130,6 +132,25 @@ const HUD_OVERLAY_ANIM_CSS = `
 [data-paper-back],
 [data-paper-panel] {
   transform-origin: center center;
+}
+[data-hud-hover-button] {
+  transform-origin: center center;
+  transition: transform 150ms ${HUD_ANIM_EASE_SMOOTH};
+  will-change: transform;
+}
+@media (hover: hover) and (pointer: fine) {
+  [data-hud-hover-button]:hover:not(:disabled) {
+    transform: scale(1.1);
+  }
+}
+[data-hud-hover-button]:active:not(:disabled) {
+  transform: scale(0.96);
+  transition-duration: 70ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-hud-hover-button] {
+    transition-duration: 1ms;
+  }
 }
 `.trim();
 
@@ -422,6 +443,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
   private createPaperCloseButton(): HTMLButtonElement {
     const btn = document.createElement('button');
     btn.type = 'button';
+    btn.setAttribute('data-hud-hover-button', '');
     btn.setAttribute('aria-label', 'Close');
     btn.textContent = '×';
     btn.style.cssText = [
@@ -441,7 +463,6 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       'z-index:2',
       // Flat face with a small dark sheet peek (same language as the main stack).
       `box-shadow:${PAPER_BACK_OFFSET_X_PX / 2}px ${PAPER_BACK_OFFSET_Y_PX / 2}px 0 ${PAPER_BACK}`,
-      'transform:none',
     ].join(';');
     return btn;
   }
@@ -449,6 +470,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
   private createHudButton(label: string): HTMLButtonElement {
     const btn = document.createElement('button');
     btn.type = 'button';
+    btn.setAttribute('data-hud-hover-button', '');
     btn.textContent = label;
     btn.style.cssText = [
       'width:48px',
@@ -673,6 +695,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
   private createModalActionButton(label: string, primary = false): HTMLButtonElement {
     const btn = document.createElement('button');
     btn.type = 'button';
+    btn.setAttribute('data-hud-hover-button', '');
     btn.textContent = label;
     btn.style.cssText = [
       'margin:0',
@@ -686,7 +709,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       'pointer-events:auto',
       primary
         ? 'box-shadow:none'
-        : `box-shadow:${PAPER_BACK_OFFSET_X_PX / 2}px ${PAPER_BACK_OFFSET_Y_PX / 2}px 0 ${PAPER_BACK};transform:none`,
+        : `box-shadow:${PAPER_BACK_OFFSET_X_PX / 2}px ${PAPER_BACK_OFFSET_Y_PX / 2}px 0 ${PAPER_BACK}`,
     ].join(';');
     return btn;
   }
@@ -733,7 +756,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       this.onPauseRespawn();
     });
 
-    const exitBtn = this.createModalActionButton(VICTORY_EXIT);
+    const exitBtn = this.createModalActionButton(PAUSE_EXIT);
     exitBtn.addEventListener('click', (event) => {
       event.stopPropagation();
       this.onPauseExit();
@@ -875,7 +898,11 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       this.onVictoryContinuePlaying();
     });
 
-    const exitBtn = this.createModalActionButton(VICTORY_EXIT);
+    const ordinanceCount = this.getFlow()?.getBrokenOrdinanceCount() ?? 0;
+    const endActionLabel = ordinanceCount >= FULL_ORDINANCE_GOAL
+      ? VICTORY_ACTION
+      : COMPLETION_END_GAME_ACTION;
+    const exitBtn = this.createModalActionButton(endActionLabel);
     exitBtn.addEventListener('click', (event) => {
       event.stopPropagation();
       this.onVictoryExit();

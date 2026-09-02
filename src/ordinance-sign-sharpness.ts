@@ -412,6 +412,7 @@ export async function refreshOrdinanceSignSharpness(
 @ENGINE.GameClass()
 export class OrdinanceSignSharpnessSystem extends ENGINE.SceneNode {
   private emptyGeometryScanFrames = 0;
+  private refreshPromise: Promise<number> | null = null;
 
   constructor() {
     super();
@@ -425,7 +426,7 @@ export class OrdinanceSignSharpnessSystem extends ENGINE.SceneNode {
   public override postLoad(): void {
     super.postLoad();
     guardSceneGeometryEarly(this.getWorld(), 'OrdinanceSignSharpness.postLoad');
-    void refreshOrdinanceSignSharpness(this.getWorld());
+    void this.ensureSharpnessRefresh();
   }
 
   public override beginPlay(): boolean {
@@ -436,10 +437,8 @@ export class OrdinanceSignSharpnessSystem extends ENGINE.SceneNode {
     const world = this.getWorld();
     if (world) {
       installMissingPositionDiagnosticHook(world);
-      hideMissingPositionMeshesInWorld(world, 'beginPlay');
-      diagnoseVisibleMeshesMissingPosition(world, 'beginPlay');
     }
-    void refreshOrdinanceSignSharpness(world);
+    void this.ensureSharpnessRefresh();
     return true;
   }
 
@@ -455,5 +454,10 @@ export class OrdinanceSignSharpnessSystem extends ENGINE.SceneNode {
     if (world) {
       hideMissingPositionMeshesInWorld(world);
     }
+  }
+
+  private ensureSharpnessRefresh(): Promise<number> {
+    this.refreshPromise ??= refreshOrdinanceSignSharpness(this.getWorld());
+    return this.refreshPromise;
   }
 }

@@ -1,7 +1,7 @@
 {
   "$root": {
     "$bc": "ENGINE.Prefab",
-    "$uuid": "76174da804e0ee76",
+    "$uuid": "7da16830b89e92b7",
     "rootNode": {
       "$bc": "ENGINE.SceneNode",
       "children": [
@@ -19,11 +19,10 @@
               "throwDistanceOverride": 5
             }
           ],
-      "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/Maintenance_Board_v2.glb",
+          "modelUrl": "@project/assets/generated/OrdinanceCards/coloured/Maintenance_Board_v2.glb",
           "name": "Maintenance Fallen Mesh",
           "nodeId": 19891,
           "physicsOptions": {
-            "collisionMeshType": "convexHull",
             "density": 2000,
             "motionType": "dynamic"
           },
@@ -43,6 +42,14 @@
               0.35,
               0.1,
               0
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1.1,
+              1.1,
+              1.1
             ]
           }
         }

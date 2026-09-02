@@ -1,7 +1,7 @@
 {
   "$root": {
     "$bc": "ENGINE.Prefab",
-    "$uuid": "1936e8f852a9bd8e",
+    "$uuid": "5cfe610f675d6705",
     "rootNode": {
       "$bc": "ENGINE.SceneNode",
       "children": [
@@ -19,11 +19,10 @@
               "throwDistanceOverride": 5
             }
           ],
-      "modelUrl": "@project/assets/OrdinanceCards/Clean/TreesClimbing_Clean.glb",
+          "modelUrl": "@project/assets/OrdinanceCards/Clean/TreesClimbing_Clean.glb",
           "name": "Trees Climbing Fallen Mesh",
           "nodeId": 58412,
           "physicsOptions": {
-            "collisionMeshType": "convexHull",
             "density": 2000,
             "motionType": "dynamic"
           },
@@ -48,9 +47,9 @@
           "scale": {
             "$bc": "v3",
             "_": [
-              1,
-              1,
-              1
+              1.5,
+              1.5,
+              1.5
             ]
           }
         }

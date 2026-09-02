@@ -160,7 +160,6 @@ export class StartupBrushRevealSystem extends ENGINE.SceneNode {
     this.finishingReveal = false;
     this.onCoverReady = null;
     this.removeOverlay(true);
-    this.disposeAtlas();
     this.resolvePlayWaiters();
     return true;
   }
@@ -290,34 +289,23 @@ export class StartupBrushRevealSystem extends ENGINE.SceneNode {
     this.removeOverlay(true);
   }
 
-  /**
-   * Prefer engine texture loading (same path as trail arrows / materials).
-   * Fall back to resolved URL + fetch blob for HTML canvas drawing.
-   */
+  /** Load as a canvas source only, avoiding a needless GPU texture upload. */
   private async loadAtlas(): Promise<CanvasImageSource> {
-    try {
-      const texture = await ENGINE.resourceManager.loadTexture(
-        ENGINE.AssetPath.fromString(ATLAS_PATH),
-      );
-      if (texture) {
-        const image = texture.image as CanvasImageSource | undefined;
-        if (image) {
-          const size = sourceSize(image);
-          if (size.width >= FRAME_WIDTH && size.height >= FRAME_HEIGHT) {
-            return image;
-          }
-        }
-      }
-    } catch (error) {
-      console.warn('[StartupBrushReveal] loadTexture atlas failed; trying fetch.', error);
-    }
-
     const url = await resolveAssetUrl(ATLAS_PATH);
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Atlas fetch failed (${response.status}): ${url}`);
     }
     const blob = await response.blob();
+    if (typeof createImageBitmap === 'function') {
+      const bitmap = await createImageBitmap(blob);
+      const size = sourceSize(bitmap);
+      if (size.width >= FRAME_WIDTH && size.height >= FRAME_HEIGHT) {
+        return bitmap;
+      }
+      bitmap.close();
+      throw new Error(`Atlas dimensions are too small: ${size.width}x${size.height}`);
+    }
     const objectUrl = URL.createObjectURL(blob);
     this.atlasObjectUrl = objectUrl;
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -466,6 +454,11 @@ export class StartupBrushRevealSystem extends ENGINE.SceneNode {
   }
 
   private disposeAtlas(): void {
+    if (typeof ImageBitmap !== 'undefined' && this.atlas instanceof ImageBitmap) {
+      this.atlas.close();
+    } else if (this.atlas instanceof HTMLImageElement) {
+      this.atlas.src = '';
+    }
     this.atlas = null;
     if (this.atlasObjectUrl) {
       URL.revokeObjectURL(this.atlasObjectUrl);
@@ -484,6 +477,7 @@ export class StartupBrushRevealSystem extends ENGINE.SceneNode {
     this.canvas = null;
     this.overlay?.remove();
     this.overlay = null;
+    this.disposeAtlas();
     this.running = false;
     this.resolvePlayWaiters();
     if (completeReveal) {

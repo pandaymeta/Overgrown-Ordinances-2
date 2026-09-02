@@ -61,6 +61,10 @@ function isJsonPath(path: string): boolean {
   return /\.json$/i.test(path);
 }
 
+function isSoundPath(path: string): boolean {
+  return /\.(mp3|ogg|wav|flac|aiff?|aac|m4a)$/i.test(path);
+}
+
 function isTexturePath(path: string): boolean {
   return /\.(png|jpe?g|webp|ktx2|gif)$/i.test(path);
 }
@@ -74,6 +78,10 @@ async function preloadOne(path: string): Promise<void> {
     }
     if (isJsonPath(path)) {
       await ENGINE.resourceManager.loadJsonObject(asset);
+      return;
+    }
+    if (isSoundPath(path)) {
+      await ENGINE.resourceManager.loadSound(asset);
       return;
     }
     if (isTexturePath(path)) {
@@ -204,7 +212,7 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
 
   public override postLoad(): void {
     super.postLoad();
-    this.earlyPreloadPromise = this.runEarlyAssetWarmup();
+    void this.ensureEarlyAssetWarmup();
   }
 
   public override beginPlay(): boolean {
@@ -251,6 +259,11 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     await preloadPool(paths);
   }
 
+  private ensureEarlyAssetWarmup(): Promise<void> {
+    this.earlyPreloadPromise ??= this.runEarlyAssetWarmup();
+    return this.earlyPreloadPromise;
+  }
+
   private async runSequence(): Promise<void> {
     const generation = this.sequenceGeneration;
     const world = this.getWorld();
@@ -269,19 +282,8 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
       return;
     }
 
-    const paths = Array.from(
-      new Set([
-        ...STARTUP_PRELOAD_ASSETS,
-        ...(world ? collectSceneModelUrls(world) : []),
-      ]),
-    );
-
     const preloadPromise = (async (): Promise<void> => {
-      if (this.earlyPreloadPromise) {
-        await this.earlyPreloadPromise;
-        this.earlyPreloadPromise = null;
-      }
-      await preloadPool(paths);
+      await this.ensureEarlyAssetWarmup();
       try {
         await ENGINE.resourceManager.waitForResources(ENGINE.ResourceType.All);
       } catch (error) {

@@ -1,7 +1,7 @@
 {
   "$root": {
     "$bc": "ENGINE.Prefab",
-    "$uuid": "824a6562caf3e8fe",
+    "$uuid": "808f4a2db0c039ff",
     "rootNode": {
       "$bc": "ENGINE.SceneNode",
       "children": [
@@ -19,11 +19,10 @@
               "throwDistanceOverride": 5
             }
           ],
-      "modelUrl": "@project/assets/OrdinanceCards/Clean/Metals_Clean.glb",
+          "modelUrl": "@project/assets/OrdinanceCards/Clean/Metals_Clean.glb",
           "name": "Metals Fallen Mesh",
           "nodeId": 48713,
           "physicsOptions": {
-            "collisionMeshType": "convexHull",
             "density": 2000,
             "motionType": "dynamic"
           },
@@ -48,9 +47,9 @@
           "scale": {
             "$bc": "v3",
             "_": [
-              1,
-              1,
-              1
+              1.5,
+              1.5,
+              1.5
             ]
           }
         }

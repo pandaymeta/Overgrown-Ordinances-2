@@ -1,7 +1,7 @@
 {
   "$root": {
     "$bc": "ENGINE.Prefab",
-    "$uuid": "358305ced807a4d0",
+    "$uuid": "e9ef71e3ce090881",
     "rootNode": {
       "$bc": "ENGINE.SceneNode",
       "children": [
@@ -19,11 +19,10 @@
               "throwDistanceOverride": 5
             }
           ],
-      "modelUrl": "@project/assets/OrdinanceCards/Clean/Cats_Clean.glb",
+          "modelUrl": "@project/assets/OrdinanceCards/Clean/Cats_Clean.glb",
           "name": "Cats Fallen Mesh",
           "nodeId": 38460,
           "physicsOptions": {
-            "collisionMeshType": "convexHull",
             "density": 2000,
             "motionType": "dynamic"
           },
@@ -48,9 +47,9 @@
           "scale": {
             "$bc": "v3",
             "_": [
-              1,
-              1,
-              1
+              1.5,
+              1.5,
+              1.5
             ]
           }
         }

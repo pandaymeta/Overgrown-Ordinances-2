@@ -2,14 +2,14 @@
   "defaultScene": "@project/assets/default.genesys-scene",
   "engineVersion": "14.1.3-staging",
   "assetCompiler": {
-    "enabled": false,
+    "enabled": true,
     "compileOnPlay": false,
     "textureCompression": {
       "enabled": true,
       "quality": "medium",
       "maxSize": 2048,
       "formats": {
-        "png": true,
+        "png": false,
         "jpeg": true,
         "webp": false
       }

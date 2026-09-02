@@ -44,10 +44,40 @@ function hex16() {
   return crypto.randomBytes(8).toString('hex');
 }
 
+const DEFAULT_MODEL_SCALE = [1, 1, 1];
+
+function readExistingModelScale(filePath) {
+  if (!fs.existsSync(filePath)) {
+    return [...DEFAULT_MODEL_SCALE];
+  }
+
+  try {
+    const existingPrefab = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const modelNode = existingPrefab?.$root?.rootNode?.children?.find(
+      (child) => child?.$bc === 'ENGINE.ModelMeshNode',
+    );
+    const serializedScale = modelNode?.scale?._;
+    if (
+      Array.isArray(serializedScale)
+      && serializedScale.length >= 3
+      && serializedScale.slice(0, 3).every(Number.isFinite)
+    ) {
+      return serializedScale.slice(0, 3);
+    }
+  } catch (error) {
+    console.warn(`Could not preserve scale from ${path.basename(filePath)}:`, error);
+  }
+
+  // An omitted SceneNode scale is the engine's default [1, 1, 1].
+  return [...DEFAULT_MODEL_SCALE];
+}
+
 const tipRad = 0.35;
 for (const base of models) {
   const modelUrl = `@project/assets/PolyforkAssets/Ordinances/${base}.glb`;
   const fileSlug = `ordinance-${slug(base)}-fallen.prefab.json`;
+  const filePath = path.join(dir, fileSlug);
+  const modelScale = readExistingModelScale(filePath);
   const label = displayName(base);
   const prefab = {
     $root: {
@@ -90,7 +120,7 @@ for (const base of models) {
             },
             scale: {
               $bc: 'v3',
-              _: [1, 1, 1],
+              _: modelScale,
             },
           },
         ],
@@ -101,6 +131,6 @@ for (const base of models) {
     },
     $version: 3,
   };
-  fs.writeFileSync(path.join(dir, fileSlug), `${JSON.stringify(prefab, null, 2)}\n`);
+  fs.writeFileSync(filePath, `${JSON.stringify(prefab, null, 2)}\n`);
   console.log(`wrote ${fileSlug}`);
 }

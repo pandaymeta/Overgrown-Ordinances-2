@@ -5,7 +5,6 @@
 import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
-import './consume-studio-link-preloads.js';
 import { installAnimationOneShotHostPatch } from './animation-oneshot-host-patch.js';
 import { CarryPlayerController } from './carry-player-controller.js';
 import { ClimbableLadder } from './climbable-ladder.js';
@@ -27,7 +26,6 @@ import { GameCursorSystem } from './game-cursor.js';
 import { StartupLoadingScreenSystem } from './startup-loading-screen.js';
 import { TutorialKeysGuide } from './tutorial-keys-guide.js';
 import { StreetLampGroundLightsSystem } from './street-lamp-ground-lights.js';
-import { applyDirectionalShadowBudget } from './environment-art-direction.js';
 import { guardSceneGeometryEarly } from './ordinance-sign-sharpness.js';
 import { startGoldenHourAudio } from './game-audio.js';
 
@@ -66,8 +64,6 @@ class ThirdPersonGameMode extends ENGINE.GameMode {
     // Begin the background track under the loading copy. If browser autoplay is
     // locked, this arms the first input gesture instead of waiting for reveal.
     startGoldenHourAudio(this.getWorld());
-    // Keep sun shadows/CSM off after scene load (isSunLight can re-enable expensive cascades).
-    applyDirectionalShadowBudget(this.getWorld());
     this.ensureStartupBrushReveal();
     this.attachAccessStairWalkRamp();
     this.attachClimbableLadders();
