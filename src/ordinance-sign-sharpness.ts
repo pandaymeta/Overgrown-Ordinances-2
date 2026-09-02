@@ -12,8 +12,8 @@
 import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
-const ORDINANCE_MODEL_PATH =
-  /(?:PolyforkAssets\/Ordinances\/|(?:generated\/)?OrdinanceCards\/)/i;
+import { isSignBoardModelUrl } from './sign-board-model-paths.js';
+
 const MISSING_POSITION_KEY = 'missingPositionAttr';
 const MISSING_POSITION_LOGGED = 'missingPositionLogged';
 /** Runtime ribbons fill `position` on the next update — hide, do not dummy-patch. */
@@ -25,7 +25,7 @@ const meshLoadHooks = new WeakSet<ENGINE.ModelMeshNode>();
 const sharpnessAppliedNodes = new WeakSet<ENGINE.ModelMeshNode>();
 
 function isOrdinanceModelUrl(modelUrl: string | null | undefined): boolean {
-  return typeof modelUrl === 'string' && ORDINANCE_MODEL_PATH.test(modelUrl);
+  return isSignBoardModelUrl(modelUrl);
 }
 
 function resolveModelUrlForDiagnostics(object: THREE.Object3D): string {

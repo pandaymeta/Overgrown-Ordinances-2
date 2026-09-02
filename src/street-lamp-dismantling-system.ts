@@ -123,6 +123,12 @@ const STREET_LAMP_ORDINANCE_CARD_GLB =
   /\/OrdinanceCards\/streetlights\/StreetLights(?:Climb|Destroy)_Card_ShopSignStyle\.glb$/i;
 const STREET_LAMP_ORDINANCE_CARD_NAME = /^StreetLights(?:Climb|Destroy) Card \(ShopSign setup\)$/i;
 const TREES_CUTTING_BOARD_NAME = /^(?:NoCuttingOfTrees|No cutting of trees|Trees Cutting)(?:\s+\d+)?$/i;
+const TREES_CLIMBING_BOARD_NAME =
+  /^(?:NoClimbingOnTheTree|No climbing on the tree|Trees Climbing)(?:\s+\d+)?$/i;
+/** Scene boards sit near their cherry tree but are not always parented under it. */
+const TREE_ORDINANCE_BOARD_ASSOCIATION_RADIUS = 10;
+const TREE_ORDINANCE_BOARD_ASSOCIATION_RADIUS_SQ =
+  TREE_ORDINANCE_BOARD_ASSOCIATION_RADIUS * TREE_ORDINANCE_BOARD_ASSOCIATION_RADIUS;
 const GUARDRAIL_SCRAP_PREFAB = '@project/assets/prefabs/guardrail-d-dismantled-parts.prefab.json';
 const GUARDRAIL_SECTION_DROP_PREFAB = '@project/assets/prefabs/guardrail-section-dismantled-parts.prefab.json';
 const PARK_BENCH_SCRAP_PREFAB = '@project/assets/prefabs/park-bench-dismantled-parts.prefab.json';
@@ -1166,9 +1172,54 @@ export class StreetLampDismantlingSystem {
     return this.streetLampScrapPool.pop() ?? null;
   }
 
-  /** Tree-mounted Trees Cutting boards stay on the tree — hide when the tree is cut. */
-  private hideTreesCuttingBoards(tree: ENGINE.ModelMeshNode): void {
+  /** Hide live tree ordinance boards for this cherry tree (mounted or nearby root signs). */
+  private hideTreeOrdinanceBoards(tree: ENGINE.ModelMeshNode): void {
     this.hideMountedOrdinanceBoards(tree, TREES_CUTTING_BOARD_NAME);
+    this.hideMountedOrdinanceBoards(tree, TREES_CLIMBING_BOARD_NAME);
+
+    const world = tree.getWorld();
+    if (!world) {
+      return;
+    }
+    tree.getWorldPosition(this.targetCenter);
+    for (const board of world.getNodes(ENGINE.ModelMeshNode)) {
+      const name = board.name ?? '';
+      if (
+        !TREES_CUTTING_BOARD_NAME.test(name)
+        && !TREES_CLIMBING_BOARD_NAME.test(name)
+      ) {
+        continue;
+      }
+      if (!board.visible || this.dismantledTargets.has(board)) {
+        continue;
+      }
+      if (this.isNodeUnderRoot(board, tree)) {
+        continue;
+      }
+      board.getWorldPosition(this.dropPosition);
+      if (
+        this.targetCenter.distanceToSquared(this.dropPosition)
+        > TREE_ORDINANCE_BOARD_ASSOCIATION_RADIUS_SQ
+      ) {
+        continue;
+      }
+      this.hideOrdinanceBoard(board);
+    }
+  }
+
+  private hideOrdinanceBoard(board: ENGINE.ModelMeshNode): void {
+    this.markDismantled(board);
+    board.visible = false;
+    board.overridePhysicsOptions({
+      enabled: false,
+      motionType: ENGINE.PhysicsMotionType.Static,
+    });
+    board.setPhysicsTransformUpdateFlags({
+      sendPosition: false,
+      sendRotation: false,
+      receivePosition: false,
+      receiveRotation: false,
+    });
   }
 
   private hideMountedOrdinanceBoards(host: ENGINE.ModelMeshNode, namePattern: RegExp): void {
@@ -1179,20 +1230,12 @@ export class StreetLampDismantlingSystem {
       if (!namePattern.test(child.name ?? '')) {
         continue;
       }
+      if (!child.visible) {
+        continue;
+      }
       // Include mounted boards in the reset set so tree/lamp props return with
       // their host after the next-day transition.
-      this.markDismantled(child);
-      child.visible = false;
-      child.overridePhysicsOptions({
-        enabled: false,
-        motionType: ENGINE.PhysicsMotionType.Static,
-      });
-      child.setPhysicsTransformUpdateFlags({
-        sendPosition: false,
-        sendRotation: false,
-        receivePosition: false,
-        receiveRotation: false,
-      });
+      this.hideOrdinanceBoard(child);
     }
   }
 
@@ -2435,7 +2478,7 @@ export class StreetLampDismantlingSystem {
       this.beginStreetLampDismantle(target);
     } else {
       if (isCherryTree) {
-        this.hideTreesCuttingBoards(target);
+        this.hideTreeOrdinanceBoards(target);
       }
       this.hideDismantledOriginal(target);
     }

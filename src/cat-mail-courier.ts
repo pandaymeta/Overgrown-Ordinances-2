@@ -28,6 +28,10 @@ const PATROL_STAY_SEC = 10;
 /** Soft bob only — keep small so paws stay planted on sidewalk. */
 const WALK_BOB_AMPLITUDE = 0.012;
 const WALK_BOB_HZ = 5;
+/** Prior mail-handoff meow used 0.9 gain; keep 4× that level. */
+const CAT_MAIL_HANDOFF_MEOW_VOLUME = 3.6;
+/** Peach-eat hungry meow matches the same 4× boost. */
+const CAT_PEACH_EAT_MEOW_VOLUME = 3.6;
 /** Extra mid-air height above the start→end chord (scaled by jump length). */
 const JUMP_ARC_MIN = 0.4;
 const JUMP_ARC_PER_METER = 0.06;
@@ -827,6 +831,12 @@ export class CatMailCourier {
     this.hidePeach(this.targetPeach);
     this.targetPeach = null;
     this.cat.getWorldPosition(this.tmpCatPos);
+    playSoundAt(
+      this.cat.getWorld(),
+      GameSound.CatMeowHungry,
+      this.tmpCatPos,
+      CAT_PEACH_EAT_MEOW_VOLUME,
+    );
     this.restWorldY = this.traversalRootYAt(this.tmpCatPos.x, this.tmpCatPos.z);
     this.peachWaitRemaining = PATROL_STAY_SEC;
     this.peachFedPending = true;
@@ -867,14 +877,14 @@ export class CatMailCourier {
     if (!this.cat) {
       return;
     }
-    // A peach-fed cat sounds content; an unfed one sounds like it wants paying.
+    // Mail handoff meow — always the content cat-meow clip.
     const meowAt = new THREE.Vector3();
     this.cat.getWorldPosition(meowAt);
     playSoundAt(
       this.cat.getWorld(),
-      via === 'peach' ? GameSound.CatMeow : GameSound.CatMeowHungry,
+      GameSound.CatMeow,
       meowAt,
-      0.9,
+      CAT_MAIL_HANDOFF_MEOW_VOLUME,
     );
     this.deliveryVia = via;
     this.interactable = false;

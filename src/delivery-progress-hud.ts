@@ -712,7 +712,6 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
   }
 
   private onVictory(): void {
-    playSound(this.getWorld(), GameSound.Victory, 0.9);
     this.getFlow()?.setCompletionInteractionPaused(true);
     this.dismissChoiceModal(false);
     this.closeModals(false);

@@ -26,6 +26,7 @@ import './rapier-simulation-budget.js';
 import './rapier-trimesh-patch.js';
 import './sharp-sign-board-material.js';
 import './shophouse-camera-occlusion.js';
+import './sign-board-model-paths.js';
 import './stair-walk-ramp.js';
 import './startup-brush-reveal.js';
 import './startup-loading-screen.js';

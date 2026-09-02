@@ -5951,6 +5951,24 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     ) ?? this.streetLightsDestroyOrdinances[0] ?? null;
   }
 
+  /**
+   * Pole-mounted destroy boards stay in the tree when a lamp is yanked for scrap.
+   * Skip hidden hosts so the soft-loop camera frames a live sign, not the chop site.
+   */
+  private isStreetLightsDestroyBoardFocusable(board: ENGINE.ModelMeshNode): boolean {
+    if (!board.parent) {
+      return false;
+    }
+    let current: ENGINE.SceneNode | null = board;
+    while (current) {
+      if (!current.visible) {
+        return false;
+      }
+      current = current.parent as ENGINE.SceneNode | null;
+    }
+    return true;
+  }
+
   private findNearestStreetLightsDestroy(): ENGINE.ModelMeshNode | null {
     if (this.streetLightsDestroyOrdinances.length === 0) {
       this.cacheStreetLightsDestroyOrdinances();
@@ -5962,12 +5980,17 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (this.player) {
       this.player.getWorldPosition(this.tmpPlayerPos);
     } else {
-      return this.streetLightsDestroy;
+      return this.streetLightsDestroyOrdinances.find(
+        (node) => this.isStreetLightsDestroyBoardFocusable(node),
+      ) ?? this.streetLightsDestroy;
     }
 
     let best: ENGINE.ModelMeshNode | null = null;
     let bestDistSq = Infinity;
     for (const node of this.streetLightsDestroyOrdinances) {
+      if (!this.isStreetLightsDestroyBoardFocusable(node)) {
+        continue;
+      }
       node.getWorldPosition(this.tmpMailboxPos);
       const distSq = this.tmpPlayerPos.distanceToSquared(this.tmpMailboxPos);
       if (distSq < bestDistSq) {
@@ -5975,7 +5998,12 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         best = node;
       }
     }
-    return best ?? this.streetLightsDestroy;
+    if (best) {
+      return best;
+    }
+    return this.streetLightsDestroyOrdinances.find(
+      (node) => this.isStreetLightsDestroyBoardFocusable(node),
+    ) ?? this.streetLightsDestroy;
   }
 
   private cacheDontFeedTheCatOrdinances(): void {
@@ -6687,6 +6715,20 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     ) ?? this.noCuttingOfTreesOrdinances[0] ?? null;
   }
 
+  private isTreeOrdinanceBoardFocusable(board: ENGINE.ModelMeshNode): boolean {
+    if (!board.parent) {
+      return false;
+    }
+    let current: ENGINE.SceneNode | null = board;
+    while (current) {
+      if (!current.visible) {
+        return false;
+      }
+      current = current.parent as ENGINE.SceneNode | null;
+    }
+    return true;
+  }
+
   private findNearestNoCuttingOfTrees(): ENGINE.ModelMeshNode | null {
     if (this.noCuttingOfTreesOrdinances.length === 0) {
       this.cacheNoCuttingOfTreesOrdinances();
@@ -6698,12 +6740,17 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (this.player) {
       this.player.getWorldPosition(this.tmpPlayerPos);
     } else {
-      return this.noCuttingOfTrees;
+      return this.noCuttingOfTreesOrdinances.find(
+        (node) => this.isTreeOrdinanceBoardFocusable(node),
+      ) ?? this.noCuttingOfTrees;
     }
 
     let best: ENGINE.ModelMeshNode | null = null;
     let bestDistSq = Infinity;
     for (const node of this.noCuttingOfTreesOrdinances) {
+      if (!this.isTreeOrdinanceBoardFocusable(node)) {
+        continue;
+      }
       node.getWorldPosition(this.tmpMailboxPos);
       const distSq = this.tmpPlayerPos.distanceToSquared(this.tmpMailboxPos);
       if (distSq < bestDistSq) {
@@ -6711,7 +6758,12 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         best = node;
       }
     }
-    return best ?? this.noCuttingOfTrees;
+    if (best) {
+      return best;
+    }
+    return this.noCuttingOfTreesOrdinances.find(
+      (node) => this.isTreeOrdinanceBoardFocusable(node),
+    ) ?? this.noCuttingOfTrees;
   }
 
   private cacheNoClimbingOnTheTreeOrdinances(): void {
@@ -6745,12 +6797,17 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     } else if (this.player) {
       this.player.getWorldPosition(this.tmpPlayerPos);
     } else {
-      return this.noClimbingOnTheTree;
+      return this.noClimbingOnTheTreeOrdinances.find(
+        (node) => this.isTreeOrdinanceBoardFocusable(node),
+      ) ?? this.noClimbingOnTheTree;
     }
 
     let best: ENGINE.ModelMeshNode | null = null;
     let bestDistSq = Infinity;
     for (const node of this.noClimbingOnTheTreeOrdinances) {
+      if (!this.isTreeOrdinanceBoardFocusable(node)) {
+        continue;
+      }
       node.getWorldPosition(this.tmpMailboxPos);
       const distSq = this.tmpPlayerPos.distanceToSquared(this.tmpMailboxPos);
       if (distSq < bestDistSq) {
@@ -6758,7 +6815,12 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         best = node;
       }
     }
-    return best ?? this.noClimbingOnTheTree;
+    if (best) {
+      return best;
+    }
+    return this.noClimbingOnTheTreeOrdinances.find(
+      (node) => this.isTreeOrdinanceBoardFocusable(node),
+    ) ?? this.noClimbingOnTheTree;
   }
 
   private cacheDoNotRemoveTheSignsOrdinances(): void {

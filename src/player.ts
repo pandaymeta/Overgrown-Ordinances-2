@@ -2096,13 +2096,23 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     carriedObject.updateMatrixWorld(true);
   }
 
+  private getRightHandCarryAnchor(): THREE.Object3D | null {
+    const visual = this.visualNode;
+    if (!visual) {
+      return null;
+    }
+    // Right_Hand-Local is the authored grip point (github offsets were tuned from Global
+    // using the same translation as this node on the original avatar).
+    return visual.getObjectByName('Right_Hand-Local')
+      ?? visual.getObjectByName('Right_Hand-Global')
+      ?? null;
+  }
+
   private updateCarriedObjectTransform(
     carriedObject: ENGINE.PrimitiveNode,
     rightHandSettings: { position: THREE.Vector3; rotation: THREE.Euler } | null,
   ): void {
-    const rightHandAnchor = rightHandSettings
-      ? this.visualNode?.getObjectByName('Right_Hand-Global')
-      : null;
+    const rightHandAnchor = rightHandSettings ? this.getRightHandCarryAnchor() : null;
     const carryAnchor = rightHandAnchor ?? this.visualNode ?? this;
     if (rightHandSettings && rightHandAnchor) {
       this.carryPosition.copy(rightHandSettings.position);

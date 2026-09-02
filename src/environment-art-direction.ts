@@ -7,6 +7,7 @@ import {
   hideMissingPositionMeshesInWorld,
   isMissingPositionMesh,
 } from './ordinance-sign-sharpness.js';
+import { isSignBoardModelUrl } from './sign-board-model-paths.js';
 
 type SurfaceStyle = {
   tint: THREE.Color;
@@ -20,7 +21,6 @@ const TEXTURE_ANISOTROPY = 4;
 const STYLED_FLAG = 'civicAfternoonSurfaceStyleV3b';
 /** Spawned scrap that already received a source-prop material copy. */
 export const SKIP_ENVIRONMENT_ART_FLAG = 'skipEnvironmentArtDirection';
-const ORDINANCE_MODEL_PATH = /PolyforkAssets\/Ordinances\//i;
 const PAINTERLY_DETAIL_TEXTURE_PATH =
   '@project/assets/textures/style/painterly-brush-detail-v1.png';
 
@@ -274,7 +274,7 @@ function styleModel(node: ENGINE.ModelMeshNode, detailTexture: THREE.Texture | n
   if (node.userData[SKIP_ENVIRONMENT_ART_FLAG]) {
     return;
   }
-  if (ORDINANCE_MODEL_PATH.test(node.modelUrl ?? '')) {
+  if (isSignBoardModelUrl(node.modelUrl)) {
     return;
   }
   // Keep player beacons / authored accents out of the wash.

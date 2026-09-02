@@ -370,7 +370,7 @@
           "roughness": 0.95,
           "uuid": "4a175040-e4fc-42e6-b3e7-3e4fd5201916"
         },
-        "name": "Ground",
+        "name": "Ground Model",
         "navigationGeometryRole": "none",
         "nodeId": 18034,
         "physicsOptions": {
@@ -7231,17 +7231,17 @@
             "rightHandPositionOffset": {
               "$bc": "v3",
               "_": [
-                5,
-                0,
-                -0.5
+                -0.0943,
+                0.0379,
+                -0.0255
               ]
             },
             "rightHandRotationOffset": {
               "$bc": "e",
               "_": [
-                4.712389,
-                1.570796,
-                1.570796
+                1.22173,
+                -1.745329,
+                -1.48353
               ]
             },
             "throwEnabled": false,
@@ -7350,307 +7350,784 @@
         "uuid": "ddff96f480de6704"
       },
       {
-        "$bc": "ENGINE.ModelMeshNode",
-        "hiddenInGame": true,
-        "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_07.glb",
-        "name": "Sm Sb Env Cloud 07",
-        "nodeId": 10324,
-        "physicsOptions": {
-          "collisionProfile": "NoCollision",
-          "enabled": false
-        },
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
         "position": {
-          "$bc": "v3",
-          "_": [
-            -4.05,
-            -9.0515,
-            21.3
-          ]
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
         },
         "scale": {
           "$bc": "v3",
           "_": [
-            3.2,
-            1.856,
-            3.2
+            1,
+            1,
+            1
           ]
         },
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "5d3854b3-f2dc-4ccd-b7bd-500bb2717fb7",
-        "visible": false
-      },
-      {
-        "$bc": "ENGINE.ModelMeshNode",
-        "hiddenInGame": true,
-        "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_07.glb",
-        "name": "Sm Sb Env Cloud 11",
-        "nodeId": 31581,
-        "physicsOptions": {
-          "collisionProfile": "NoCollision",
-          "enabled": false
-        },
-        "position": {
+        "up": {
           "$bc": "v3",
           "_": [
-            -4.05,
-            -9.0515,
-            -30.05
-          ]
-        },
-        "rotation": {
-          "$bc": "e",
-          "_": [
             0,
-            0.78,
+            1,
             0
           ]
         },
+        "userData": {},
+        "uuid": "fcea9082-dcc3-4e24-bf13-851ce72c7e02"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
         "scale": {
           "$bc": "v3",
           "_": [
-            3.2,
-            1.856,
-            3.2
+            1,
+            1,
+            1
           ]
         },
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "7f41ffa41ec75397",
-        "visible": false
-      },
-      {
-        "$bc": "ENGINE.ModelMeshNode",
-        "hiddenInGame": true,
-        "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_07.glb",
-        "name": "Sm Sb Env Cloud 09",
-        "nodeId": 32148,
-        "physicsOptions": {
-          "collisionProfile": "NoCollision",
-          "enabled": false
-        },
-        "position": {
+        "up": {
           "$bc": "v3",
           "_": [
-            25.9,
-            -9.0515,
-            -5.875
-          ]
-        },
-        "rotation": {
-          "$bc": "e",
-          "_": [
             0,
-            1.56,
+            1,
             0
           ]
         },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            3.2,
-            1.856,
-            3.2
-          ]
-        },
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "c3f41816bfbc541f",
-        "visible": false
+        "userData": {},
+        "uuid": "216a70c9-3f1c-4a84-a0e1-19a0b931a43b"
       },
       {
-        "$bc": "ENGINE.ModelMeshNode",
-        "hiddenInGame": true,
-        "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_06.glb",
-        "name": "Sm Sb Env Cloud 06",
-        "nodeId": 24096,
-        "physicsOptions": {
-          "collisionProfile": "NoCollision",
-          "enabled": false
-        },
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
         "position": {
-          "$bc": "v3",
-          "_": [
-            -34,
-            -9.0515,
-            -5.875
-          ]
+          "$bc": "v3"
         },
         "rotation": {
-          "$bc": "e",
-          "_": [
-            -3.141593,
-            0.801593,
-            -3.141593
-          ]
+          "$bc": "e"
         },
         "scale": {
           "$bc": "v3",
           "_": [
-            3.2,
-            1.856,
-            3.2
+            1,
+            1,
+            1
           ]
         },
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "93a05724-7151-44e3-a2f5-13352577d20c",
-        "visible": false
-      },
-      {
-        "$bc": "ENGINE.ModelMeshNode",
-        "hiddenInGame": true,
-        "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_05.glb",
-        "name": "Sm Sb Env Cloud 05",
-        "nodeId": 21289,
-        "physicsOptions": {
-          "collisionProfile": "NoCollision",
-          "enabled": false
-        },
-        "position": {
+        "up": {
           "$bc": "v3",
-          "_": [
-            18.2,
-            -1.1,
-            2.2
-          ]
-        },
-        "rotation": {
-          "$bc": "e",
-          "_": [
-            3.141592,
-            -1.549204,
-            3.141592
-          ]
-        },
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "0bff071c-a0fc-4e7f-9a26-58d908e0d78b",
-        "visible": false
-      },
-      {
-        "$bc": "ENGINE.ModelMeshNode",
-        "hiddenInGame": true,
-        "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_05.glb",
-        "name": "Sm Sb Env Cloud 08",
-        "nodeId": 60696,
-        "physicsOptions": {
-          "collisionProfile": "NoCollision",
-          "enabled": false
-        },
-        "position": {
-          "$bc": "v3",
-          "_": [
-            -30.425,
-            -9.1475,
-            14.725
-          ]
-        },
-        "rotation": {
-          "$bc": "e",
-          "_": [
-            -3.141593,
-            -0.758407,
-            -3.141593
-          ]
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            3.2,
-            1.856,
-            3.2
-          ]
-        },
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "0e3ca3a8756bc955",
-        "visible": false
-      },
-      {
-        "$bc": "ENGINE.ModelMeshNode",
-        "hiddenInGame": true,
-        "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_04.glb",
-        "name": "Sm Sb Env Cloud 10",
-        "nodeId": 39350,
-        "physicsOptions": {
-          "collisionProfile": "NoCollision",
-          "enabled": false
-        },
-        "position": {
-          "$bc": "v3",
-          "_": [
-            22.325,
-            -9.1475,
-            -26.475
-          ]
-        },
-        "rotation": {
-          "$bc": "e",
-          "_": [
-            3.141593,
-            -1.538407,
-            3.141593
-          ]
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            3.2,
-            1.856,
-            3.2
-          ]
-        },
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "9d1a7e98943ab44b",
-        "visible": false
-      },
-      {
-        "$bc": "ENGINE.ModelMeshNode",
-        "hiddenInGame": true,
-        "modelUrl": "@engine/assets/models/demo/SandboxAsset/Clouds/SM_SB_Env_Cloud_02.glb",
-        "name": "Sm Sb Env Cloud 02",
-        "nodeId": 18978,
-        "physicsOptions": {
-          "collisionProfile": "NoCollision",
-          "enabled": false
-        },
-        "position": {
-          "$bc": "v3",
-          "_": [
-            -30.425,
-            -9.1475,
-            -26.475
-          ]
-        },
-        "rotation": {
-          "$bc": "e",
           "_": [
             0,
-            -0.823185,
+            1,
             0
           ]
         },
+        "userData": {},
+        "uuid": "ef0cc6e5-0f43-4a62-925b-070508316e1a"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
         "scale": {
           "$bc": "v3",
           "_": [
-            3.2,
-            1.856,
-            3.2
+            1,
+            1,
+            1
           ]
         },
-        "userData": {
-          "objectFlags": 4
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
         },
-        "uuid": "b54653f2-1952-4ac2-a9fc-706b1a9199b1",
+        "userData": {},
+        "uuid": "1c8eecc6-62fd-47c5-9b56-5b6c9585307c"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "bab7ed42-88ca-4a20-84bb-96c04340c5db"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "74b8124f-9100-4795-8c2c-8a0078d18a1f"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "5317d542-d3b9-4f00-a0f8-ce12adb8cd00"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "884db65d-0cb0-4648-822e-4ca4ec5ccb63"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "65c90ae8-1441-473b-ba6a-2f070f23fe3e"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "6f024b44-c678-49e7-9c30-045be349fad1"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "abba28f8-d16b-4d1a-bf09-1078dfc54d65"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "88c9c633-8db0-4fa7-b779-763e6a3059ce"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "c460728e-c3e3-4167-acef-f83345ebb7ea"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "e2fed6ca-8115-447b-a08d-ff3db400aa81"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "b24de5eb-9682-4dcc-895e-b4a6aba1b39f"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "21a6ea29-00f7-4d09-9a3c-8c828bbc75d9"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "e756417b-a169-485a-9ef4-eb68346140d8"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "d9a23288-1055-407c-9005-b389e68f6074"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "596d8b9d-592e-4200-bc81-37b05bb2315c"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "6dd8b16d-e2e6-4112-bb8d-654c0620eeaa"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "671b360f-9ac2-4ff3-9951-2e91bc1d577b"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "b58d3b85-5510-4689-8730-885fbc22f6e8"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "3d352888-960c-4fde-a0d5-7af9f260d7d3"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "e8d651c9-27bb-48d4-a2e3-7d0381cdeea2"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "fa7d975b-e7be-4219-b4d3-eabc96675337"
+      },
+      {
+        "$bc": "THREE.LineSegments",
+        "children": [],
+        "frustumCulled": false,
+        "name": "",
+        "position": {
+          "$bc": "v3"
+        },
+        "rotation": {
+          "$bc": "e"
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            1,
+            1,
+            1
+          ]
+        },
+        "up": {
+          "$bc": "v3",
+          "_": [
+            0,
+            1,
+            0
+          ]
+        },
+        "userData": {},
+        "uuid": "48c961c8-34ba-4bfb-a1ad-1777c33ca461",
         "visible": false
       },
       {
@@ -11101,66 +11578,6 @@
         "uuid": "5c4b93a2ee4f12de"
       },
       {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "fcea9082-dcc3-4e24-bf13-851ce72c7e02"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "216a70c9-3f1c-4a84-a0e1-19a0b931a43b"
-      },
-      {
         "$bc": "ENGINE.FogNode",
         "fogColor": "#d7e4f0",
         "fogDensity": 0.012,
@@ -11623,696 +12040,6 @@
         "uuid": "95dfdd37a9c14326"
       },
       {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "ef0cc6e5-0f43-4a62-925b-070508316e1a"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "1c8eecc6-62fd-47c5-9b56-5b6c9585307c"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "bab7ed42-88ca-4a20-84bb-96c04340c5db"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "74b8124f-9100-4795-8c2c-8a0078d18a1f"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "5317d542-d3b9-4f00-a0f8-ce12adb8cd00"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "884db65d-0cb0-4648-822e-4ca4ec5ccb63"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "65c90ae8-1441-473b-ba6a-2f070f23fe3e"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "6f024b44-c678-49e7-9c30-045be349fad1"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "abba28f8-d16b-4d1a-bf09-1078dfc54d65"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "88c9c633-8db0-4fa7-b779-763e6a3059ce"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "c460728e-c3e3-4167-acef-f83345ebb7ea"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "e2fed6ca-8115-447b-a08d-ff3db400aa81"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "b24de5eb-9682-4dcc-895e-b4a6aba1b39f"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "21a6ea29-00f7-4d09-9a3c-8c828bbc75d9"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "e756417b-a169-485a-9ef4-eb68346140d8"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "d9a23288-1055-407c-9005-b389e68f6074"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "596d8b9d-592e-4200-bc81-37b05bb2315c"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "6dd8b16d-e2e6-4112-bb8d-654c0620eeaa"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "671b360f-9ac2-4ff3-9951-2e91bc1d577b"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "b58d3b85-5510-4689-8730-885fbc22f6e8"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "3d352888-960c-4fde-a0d5-7af9f260d7d3"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "e8d651c9-27bb-48d4-a2e3-7d0381cdeea2"
-      },
-      {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
-        "position": {
-          "$bc": "v3"
-        },
-        "rotation": {
-          "$bc": "e"
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1,
-            1,
-            1
-          ]
-        },
-        "up": {
-          "$bc": "v3",
-          "_": [
-            0,
-            1,
-            0
-          ]
-        },
-        "userData": {},
-        "uuid": "fa7d975b-e7be-4219-b4d3-eabc96675337"
-      },
-      {
         "$bc": "GAME.IslandRimCloudSystem",
         "$initOptions": {},
         "name": "Island Rim Cloud System",
@@ -12323,35 +12050,72 @@
         "uuid": "68bac0f489f0113c"
       },
       {
-        "$bc": "THREE.LineSegments",
-        "children": [],
-        "frustumCulled": false,
-        "name": "",
+        "$bc": "ENGINE.ModelMeshNode",
+        "modelUrl": "@project/assets/branding/overgrown-logo.glb",
+        "name": "Overgrown Logo",
+        "nodeId": 17712,
         "position": {
-          "$bc": "v3"
+          "$bc": "v3",
+          "_": [
+            16,
+            -4.5,
+            -3.7
+          ]
         },
         "rotation": {
-          "$bc": "e"
+          "$bc": "e",
+          "_": [
+            3.141593,
+            0,
+            1.570796
+          ]
         },
         "scale": {
           "$bc": "v3",
           "_": [
-            1,
-            1,
-            1
+            1.54,
+            2.2,
+            220
           ]
         },
-        "up": {
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "2c3a69f8765d5fac"
+      },
+      {
+        "$bc": "ENGINE.ModelMeshNode",
+        "modelUrl": "@project/assets/branding/by-entenium.glb",
+        "name": "By Entenium Logo",
+        "nodeId": 23623,
+        "position": {
           "$bc": "v3",
           "_": [
-            0,
-            1,
-            0
+            16,
+            -6.9,
+            -14.8
           ]
         },
-        "userData": {},
-        "uuid": "48c961c8-34ba-4bfb-a1ad-1777c33ca461",
-        "visible": false
+        "rotation": {
+          "$bc": "e",
+          "_": [
+            3.141593,
+            0,
+            1.570796
+          ]
+        },
+        "scale": {
+          "$bc": "v3",
+          "_": [
+            0.84,
+            0.7,
+            35
+          ]
+        },
+        "userData": {
+          "objectFlags": 4
+        },
+        "uuid": "966daea72673dd35"
       }
     ],
     "editorData": {
@@ -13008,32 +12772,7 @@
             "nodeType": "actor"
           },
           {
-            "id": "5d3854b3-f2dc-4ccd-b7bd-500bb2717fb7",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
-            "id": "93a05724-7151-44e3-a2f5-13352577d20c",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
-            "id": "0bff071c-a0fc-4e7f-9a26-58d908e0d78b",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
-            "id": "b54653f2-1952-4ac2-a9fc-706b1a9199b1",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
             "id": "ae795adacd1af033",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
-            "id": "9d1a7e98943ab44b",
             "isExpanded": false,
             "nodeType": "actor"
           },
@@ -13231,18 +12970,6 @@
             "nodeType": "actor"
           },
           {
-            "id": "c3f41816bfbc541f",
-            "nodeType": "actor"
-          },
-          {
-            "id": "0e3ca3a8756bc955",
-            "nodeType": "actor"
-          },
-          {
-            "id": "7f41ffa41ec75397",
-            "nodeType": "actor"
-          },
-          {
             "id": "a5603e69-cd24-4667-afe8-ca8a913f3589",
             "nodeType": "actor"
           },
@@ -13388,6 +13115,14 @@
           },
           {
             "id": "e27e095e3c2beb0b",
+            "nodeType": "actor"
+          },
+          {
+            "id": "2c3a69f8765d5fac",
+            "nodeType": "actor"
+          },
+          {
+            "id": "966daea72673dd35",
             "nodeType": "actor"
           }
         ],
