@@ -17,6 +17,13 @@ import { ThirdPersonPlayer } from './player.js';
 import { isStartupLoadingFinished } from './startup-loading-screen.js';
 
 const INFO_TITLE = 'Overgrown Rules';
+const PLAYTHROUGH_TITLE = 'Disclaimer';
+const PLAYTHROUGH_BODY =
+  'This Playthrough is made available for the Game Jam. Only watch the video if you wish to know how to unlock the rest of the ordinances.';
+const PLAYTHROUGH_WATCH_VIDEO = 'Watch Video';
+const PLAYTHROUGH_VIDEO_URL = 'https://youtu.be/ZmUS98D4lng';
+const PLAYTHROUGH_ICON_PATH = '@project/assets/ui/playthrough-video-icon.png';
+const HUD_BUTTON_ICON_COLOR = '#4a463f';
 /** Before the first ordinance — no checklist spoiler. */
 const INFO_BODY_EARLY =
   'Just get this letter to the mailbox. The town looks quiet enough.';
@@ -132,6 +139,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
   private root: HTMLDivElement | null = null;
   private countLabel: HTMLSpanElement | null = null;
   private infoModal: HTMLDivElement | null = null;
+  private playthroughModal: HTMLDivElement | null = null;
   private listModal: HTMLDivElement | null = null;
   private listBody: HTMLDivElement | null = null;
   private choiceModal: HTMLDivElement | null = null;
@@ -188,7 +196,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       this.onDismissChoiceModal();
       return true;
     }
-    if (this.infoModal || this.listModal) {
+    if (this.infoModal || this.playthroughModal || this.listModal) {
       playSound(this.getWorld(), GameSound.UiClose, 0.6);
       this.closeModals(true);
       return true;
@@ -232,6 +240,14 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       'font-family:"Overgrown Averia","Segoe UI Rounded","Segoe UI",sans-serif',
     ].join(';');
 
+    const playthroughBtn = this.createHudButton('');
+    playthroughBtn.setAttribute('aria-label', 'Playthrough video');
+    playthroughBtn.appendChild(await this.createHudIcon(PLAYTHROUGH_ICON_PATH));
+    playthroughBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      this.openPlaythroughModal();
+    });
+
     const infoBtn = this.createHudButton('i');
     infoBtn.setAttribute('aria-label', 'Delivery tip');
     infoBtn.addEventListener('click', (event) => {
@@ -258,6 +274,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       this.openListModal();
     });
 
+    root.appendChild(playthroughBtn);
     root.appendChild(infoBtn);
     root.appendChild(countBtn);
     container.appendChild(root);
@@ -442,7 +459,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       'border-radius:12px',
       'background:rgba(248,246,240,0.88)',
       'box-shadow:0 2px 10px rgba(0,0,0,0.12)',
-      'color:#4a463f',
+      `color:${HUD_BUTTON_ICON_COLOR}`,
       'font:700 28px/1 "Overgrown Averia","Segoe UI",sans-serif',
       'cursor:pointer',
       'pointer-events:auto',
@@ -452,6 +469,31 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       'user-select:none',
     ].join(';');
     return btn;
+  }
+
+  private async createHudIcon(assetPath: string): Promise<HTMLSpanElement> {
+    let iconUrl = assetPath;
+    try {
+      const resolved = await ENGINE.resolveAssetPathsInText(`url("${assetPath}")`);
+      const match = resolved.match(/url\(["']?([^"')]+)["']?\)/);
+      if (match?.[1]) {
+        iconUrl = match[1];
+      }
+    } catch {
+      // Fall back to the logical asset path.
+    }
+
+    const icon = document.createElement('span');
+    icon.setAttribute('aria-hidden', 'true');
+    icon.style.cssText = [
+      'display:block',
+      'width:26px',
+      'height:26px',
+      `background-color:${HUD_BUTTON_ICON_COLOR}`,
+      `-webkit-mask:url("${iconUrl}") center/contain no-repeat`,
+      `mask:url("${iconUrl}") center/contain no-repeat`,
+    ].join(';');
+    return icon;
   }
 
   private openInfoModal(): void {
@@ -482,6 +524,44 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     this.finalizePaperContent(modal.panel);
     this.attachModal(modal.root);
     this.infoModal = modal.root;
+  }
+
+  private openPlaythroughModal(): void {
+    if (this.choiceModal || this.pauseModal || this.victoryLetterScreen || this.victoryThanksScreen) {
+      return;
+    }
+    playSound(this.getWorld(), GameSound.UiOpen, 0.6);
+    this.closeModals();
+    const modal = this.createModalShell(PLAYTHROUGH_TITLE);
+    const body = document.createElement('p');
+    body.textContent = PLAYTHROUGH_BODY;
+    body.style.cssText = [
+      'margin:18px 0 0',
+      `color:${PAPER_TEXT}`,
+      `font:${PAPER_BODY_FONT}`,
+      'white-space:pre-wrap',
+    ].join(';');
+    modal.panel.appendChild(body);
+
+    const actions = document.createElement('div');
+    actions.style.cssText = [
+      'display:flex',
+      'flex-wrap:wrap',
+      'gap:12px',
+      'margin-top:28px',
+      'justify-content:flex-start',
+    ].join(';');
+
+    const watchBtn = this.createModalActionButton(PLAYTHROUGH_WATCH_VIDEO, true);
+    watchBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      window.open(PLAYTHROUGH_VIDEO_URL, '_blank', 'noopener,noreferrer');
+    });
+    actions.appendChild(watchBtn);
+    modal.panel.appendChild(actions);
+    this.finalizePaperContent(modal.panel);
+    this.attachModal(modal.root);
+    this.playthroughModal = modal.root;
   }
 
   private openListModal(): void {
@@ -1145,8 +1225,10 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
 
   private closeModals(animated = false): void {
     this.removeHudOverlay(this.infoModal, !animated);
+    this.removeHudOverlay(this.playthroughModal, !animated);
     this.removeHudOverlay(this.listModal, !animated);
     this.infoModal = null;
+    this.playthroughModal = null;
     this.listModal = null;
     this.listBody = null;
   }

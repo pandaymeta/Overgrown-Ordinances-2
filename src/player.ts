@@ -14,6 +14,8 @@ installAnimationOneShotHostPatch(ENGINE);
 
 /** Avatar.glb faces the pawn's native forward axis without a yaw correction. */
 const MESH_YAW_OFFSET = 0;
+/** Only the main torso contributes to the avatar's cascaded sun shadow. */
+const AVATAR_SHADOW_CASTER_MESH_NAME = 'Chest_A-Mesh';
 
 /** Pitch from the horizon: -45 looks down at 45° from the floor. */
 const LOCKED_CAMERA_PITCH_DEGREES = -45;
@@ -219,7 +221,7 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
         this.applyShadowsToVisualObject(object);
       });
       mesh.modelUrl = '@project/assets/character/avatar.glb';
-      mesh.castShadow = true;
+      mesh.castShadow = false;
       mesh.receiveShadow = true;
       if (mesh.isModelLoaded()) {
         this.applyShadowsToVisualObject(mesh);
@@ -229,11 +231,11 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
   }
 
   private applyShadowsToVisualObject(root: THREE.Object3D): void {
-    root.castShadow = true;
+    root.castShadow = false;
     root.receiveShadow = true;
     root.traverse((child) => {
       if ((child as THREE.Mesh).isMesh || (child as THREE.SkinnedMesh).isSkinnedMesh) {
-        child.castShadow = true;
+        child.castShadow = child.name === AVATAR_SHADOW_CASTER_MESH_NAME;
         child.receiveShadow = true;
       }
     });
@@ -245,11 +247,11 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     if (!root) {
       return;
     }
-    root.castShadow = enabled;
+    root.castShadow = false;
     root.receiveShadow = enabled;
     root.traverse((child) => {
       if ((child as THREE.Mesh).isMesh || (child as THREE.SkinnedMesh).isSkinnedMesh) {
-        child.castShadow = enabled;
+        child.castShadow = enabled && child.name === AVATAR_SHADOW_CASTER_MESH_NAME;
         child.receiveShadow = enabled;
       }
     });
@@ -286,14 +288,6 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     if (visual instanceof ENGINE.ModelMeshNode) {
       void visual.waitForLoad().then(() => {
         this.applyShadowsToVisualObject(visual);
-        for (const mesh of visual.getAllMeshes()) {
-          mesh.castShadow = true;
-          mesh.receiveShadow = true;
-        }
-        for (const { skinnedMesh } of visual.getAllSkinnedMeshes()) {
-          skinnedMesh.castShadow = true;
-          skinnedMesh.receiveShadow = true;
-        }
       });
     }
     return true;

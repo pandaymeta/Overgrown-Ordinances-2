@@ -13,7 +13,6 @@ MODELS = {
     "TreesCutting": os.path.join(ROOT, "assets", "OrdinanceCards", "Clean", "TreesCutting_Clean.glb"),
     "TreesClimbing": os.path.join(ROOT, "assets", "OrdinanceCards", "Clean", "TreesClimbing_Clean.glb"),
     "ShopSign": os.path.join(ROOT, "assets", "OrdinanceCards", "Clean", "ShopSign_Clean.glb"),
-    "Birds": os.path.join(ROOT, "assets", "OrdinanceCards", "Clean", "Birds_Clean.glb"),
     "CatFeed": os.path.join(ROOT, "assets", "OrdinanceCards", "Clean", "CatFeed_Clean.glb"),
     "Cones": os.path.join(ROOT, "assets", "OrdinanceCards", "Clean", "Cones_Clean.glb"),
 }

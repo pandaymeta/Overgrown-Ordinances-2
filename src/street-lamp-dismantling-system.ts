@@ -61,7 +61,6 @@ const ORDINANCE_PRINTED_CARD_KEY_NAME = /^([A-Za-z]+)\s+Card\s+(?:Upright|Angled
  */
 const ORDINANCE_BOARD_FALLEN_PREFABS: Record<string, string> = {
   Bench: '@project/assets/prefabs/ordinance-bench-fallen.prefab.json',
-  Birds: '@project/assets/prefabs/ordinance-birds-fallen.prefab.json',
   Bushes: '@project/assets/prefabs/ordinance-bushes-fallen.prefab.json',
   Car: '@project/assets/prefabs/ordinance-car-fallen.prefab.json',
   CatFeed: '@project/assets/prefabs/ordinance-cat-feed-fallen.prefab.json',

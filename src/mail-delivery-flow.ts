@@ -3,8 +3,8 @@
  * (MainRoad → Maintenance, LeftSideRoad → JayWalking, Yellow Cab → Do Not Step Car,
  *  City Tram → Do Not Step City Tram, Street Lamp tops → Street Lights Climb,
  *  Cargo crates / Park Benches / Logs / Kiosk Wood / Crate Planks Drop on roads/tracks →
- *  No Crates / Bench / Logs / Wood Planks / Scrap Metals on Roads (scrap metals may rest
- *  on tram track tiles); cone / bush remove →
+ *  No Crates / Bench / Logs / Wood Planks / Scrap Metals on Roads (logs and scrap metals
+ *  may rest on tram track tiles); cone / bush remove →
  *  DontRemoveTheCones / DontRemoveThisBush / DontCutThisPole / Dont Destroy this Sign /
  *  Dont hit the fire hydrant / High Voltage / No cutting of trees).
  *  Wearing a bush across roads queues DontRemoveThisBush; while worn, person MainRoad/
@@ -164,6 +164,12 @@ const DAY_TRANSITION_RESTORE_BATCH_SIZE = 4;
 const DELIVER_MAX_DISTANCE = 2.5;
 /** Throttle mailbox aim/hover work — every-frame raycasts hitch the camera when close. */
 const MAILBOX_HOVER_INTERVAL = 0.1;
+/** Moving props and player-on-prop checks stay responsive without scanning every frame. */
+const DYNAMIC_PROP_POLL_INTERVAL_SEC = 1 / 30;
+/** Event-driven soft-loop timers need only coarse background updates. */
+const BACKGROUND_POLL_INTERVAL_SEC = 1 / 10;
+/** Discover runtime-spawned ModelMeshNodes without rebuilding the registry every frame. */
+const MODEL_MESH_CACHE_REFRESH_INTERVAL_SEC = 1 / 10;
 /** Sticky aim: require this many consecutive misses before clearing green hover. */
 const MAILBOX_HOVER_EXIT_MISSES = 3;
 /** Bounds pad while hover is already active (hysteresis vs enter pad). */
@@ -805,9 +811,12 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   private readonly raycaster = new THREE.Raycaster();
   private readonly upAxis = new THREE.Vector3(0, 1, 0);
   private pulseTime = 0;
-  private prePhysicsTickId = 0;
   private cachedModelMeshes: ENGINE.ModelMeshNode[] = [];
-  private modelMeshCacheTick = -1;
+  private modelMeshCacheWorld: ENGINE.World | null = null;
+  private modelMeshCacheValid = false;
+  private modelMeshCacheRefreshElapsed = MODEL_MESH_CACHE_REFRESH_INTERVAL_SEC;
+  private dynamicPropPollElapsed = 0;
+  private backgroundPollElapsed = 0;
   private readonly mailboxPulseTint = new THREE.Color();
   private readonly mailboxPulseSoft = new THREE.Color(0xff7777);
   private speechTypingText = '';
@@ -1079,7 +1088,6 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   public override tickPrePhysics(deltaTime: number): void {
     super.tickPrePhysics(deltaTime);
     this.lastPrePhysicsDeltaTime = Math.max(deltaTime, 1e-5);
-    this.prePhysicsTickId += 1;
     if (this.shadowBudgetReinforceRemaining > 0) {
       applyDirectionalShadowBudget(this.getWorld());
       this.shadowBudgetReinforceRemaining -= 1;
@@ -1108,8 +1116,39 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
 
     const world = this.getWorld();
-    if (world && this.shouldPollOrdinances()) {
-      this.refreshModelMeshCache(world);
+    const shouldPollOrdinances = this.shouldPollOrdinances();
+    let runDynamicPropPoll = false;
+    let runBackgroundPoll = false;
+    let backgroundPollDelta = 0;
+    if (shouldPollOrdinances) {
+      const pollDelta = Math.max(deltaTime, 0);
+      this.dynamicPropPollElapsed += pollDelta;
+      this.backgroundPollElapsed += pollDelta;
+      this.modelMeshCacheRefreshElapsed += pollDelta;
+
+      if (this.dynamicPropPollElapsed >= DYNAMIC_PROP_POLL_INTERVAL_SEC) {
+        runDynamicPropPoll = true;
+        this.dynamicPropPollElapsed %= DYNAMIC_PROP_POLL_INTERVAL_SEC;
+      }
+      if (this.backgroundPollElapsed >= BACKGROUND_POLL_INTERVAL_SEC) {
+        runBackgroundPoll = true;
+        backgroundPollDelta = this.backgroundPollElapsed;
+        this.backgroundPollElapsed %= BACKGROUND_POLL_INTERVAL_SEC;
+      }
+      if (
+        world
+        && (
+          !this.modelMeshCacheValid
+          || this.modelMeshCacheWorld !== world
+          || this.modelMeshCacheRefreshElapsed >= MODEL_MESH_CACHE_REFRESH_INTERVAL_SEC
+        )
+      ) {
+        this.refreshModelMeshCache(world);
+      }
+    } else {
+      this.dynamicPropPollElapsed = 0;
+      this.backgroundPollElapsed = 0;
+      this.modelMeshCacheValid = false;
     }
     if (world && !this.speechEl) {
       this.ensureUi(world);
@@ -1127,7 +1166,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (!this.isGpuCriticalPhase()) {
       this.mailboxHoverSilhouette.flushDeferredDestroys();
     }
-    if (this.shouldPollOrdinances()) {
+    if (shouldPollOrdinances) {
       this.pollMainRoadFeetContact();
       this.pollLeftSideRoadFeetContact();
       this.pollCarRoofFeetContact();
@@ -1136,31 +1175,35 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.pollTreeClimbFeetContact();
       this.pollKioskWoodPlatformUse();
       this.pollWireWalkFeetContact();
-      this.pollCargoCrateOnRoadContact();
-      this.pollCargoCratePlatformRoadBypass();
-      this.pollSmallRockOnRoadContact();
-      this.pollParkBenchOnRoadContact();
-      this.pollParkBenchPlatformRoadBypass();
-      this.pollLogOnRoadContact();
-      this.pollLogPlatformRoadBypass();
-      this.pollWoodPlanksPropOnRoadContact();
-      this.pollWoodPlanksPlatformRoadBypass();
-      this.pollScrapMetalOnRoadContact();
-      this.pollBushWearOnRoadContact();
-      this.pollConePlatformRoadBypass();
-      this.pollTrafficConeStepContact();
-      this.pollFallenPolePlatformRoadBypass();
-      this.pollFallenOrdinanceSignPlatformRoadBypass();
-      this.pollStreetLampScrapPlatformRoadBypass();
-      this.pollTrafficConePickupSoftLoop(deltaTime);
-      this.pollBushWearSoftLoop(deltaTime);
-      this.pollPoleCutSoftLoop(deltaTime);
-      this.pollKanjiSignSoftLoop(deltaTime);
-      this.pollFireHydrantSoftLoop(deltaTime);
-      this.pollTreeCutSoftLoop(deltaTime);
-      this.pollKioskDismantleSoftLoop(deltaTime);
-      this.pollSignsSoftLoop(deltaTime);
-      this.pollStreetLampDestroySoftLoop(deltaTime);
+      if (runDynamicPropPoll) {
+        this.pollCargoCrateOnRoadContact();
+        this.pollCargoCratePlatformRoadBypass();
+        this.pollSmallRockOnRoadContact();
+        this.pollParkBenchOnRoadContact();
+        this.pollParkBenchPlatformRoadBypass();
+        this.pollLogOnRoadContact();
+        this.pollLogPlatformRoadBypass();
+        this.pollWoodPlanksPropOnRoadContact();
+        this.pollWoodPlanksPlatformRoadBypass();
+        this.pollScrapMetalOnRoadContact();
+        this.pollBushWearOnRoadContact();
+        this.pollConePlatformRoadBypass();
+        this.pollTrafficConeStepContact();
+        this.pollFallenPolePlatformRoadBypass();
+        this.pollFallenOrdinanceSignPlatformRoadBypass();
+        this.pollStreetLampScrapPlatformRoadBypass();
+      }
+      if (runBackgroundPoll) {
+        this.pollTrafficConePickupSoftLoop(backgroundPollDelta);
+        this.pollBushWearSoftLoop(backgroundPollDelta);
+        this.pollPoleCutSoftLoop(backgroundPollDelta);
+        this.pollKanjiSignSoftLoop(backgroundPollDelta);
+        this.pollFireHydrantSoftLoop(backgroundPollDelta);
+        this.pollTreeCutSoftLoop(backgroundPollDelta);
+        this.pollKioskDismantleSoftLoop(backgroundPollDelta);
+        this.pollSignsSoftLoop(backgroundPollDelta);
+        this.pollStreetLampDestroySoftLoop(backgroundPollDelta);
+      }
     }
     if (!this.isGpuCriticalPhase()) {
       this.catMailCourier.tick(deltaTime);
@@ -4463,6 +4506,22 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     );
   }
 
+  /** Like elevated-over-restricted, but tram track tiles do not count. */
+  private isPlayerElevatedOverAsphaltRoad(): boolean {
+    if (!this.player) {
+      return false;
+    }
+    this.ensureRestrictedRoadCaches();
+    this.player.getWorldPosition(this.tmpPlayerPos);
+    this.tmpPlayerPos.y -= this.pawnFeetBelowRoot;
+
+    if (!this.isPointXZOnAsphaltRoadTiles(this.tmpPlayerPos)) {
+      return false;
+    }
+
+    return !this.isPlayerFeetOnAsphaltRoadTiles();
+  }
+
   private findLitterPropPlayerIsStandingOn(
     matches: (node: ENGINE.ModelMeshNode) => boolean,
     topYPad: number,
@@ -4700,7 +4759,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
         continue;
       }
 
-      if (!this.isPropRestingOnRestrictedRoadSurface(node)) {
+      if (!this.isPropRestingOnAsphaltRoadSurface(node)) {
         continue;
       }
 
@@ -4713,21 +4772,35 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
   }
 
-  /** Standing on a fallen log over a road/track without feet on asphalt. */
+  /** Standing on a fallen log over asphalt without feet on the road (tram tracks do not count). */
   private pollLogPlatformRoadBypass(): void {
-    this.pollRoadLitterPlatformBypass(
-      () => this.findLitterPropPlayerIsStandingOn(
-        (node) => this.isCarryableLogProp(node),
-        this.carryableLogPlatformTopYPad,
-      ),
-      () => this.onLogOnRoadContact(),
-      (log) => {
-        log.getWorldPosition(this.noLogsFocusAnchor);
-        this.hasNoLogsFocusAnchor = true;
-        this.logsThatTouchedRoad.add(log);
-        this.clearNoCuttingOfTreesRouteCandidate();
-      },
+    if (this.playableGraceRemaining > 0 || !this.player) {
+      return;
+    }
+    if (
+      this.phase !== FlowPhase.AwaitingDelivery
+      && this.phase !== FlowPhase.ZoomOutReveal
+      && this.phase !== FlowPhase.IntroSpeech
+    ) {
+      return;
+    }
+
+    const log = this.findLitterPropPlayerIsStandingOn(
+      (node) => this.isCarryableLogProp(node),
+      this.carryableLogPlatformTopYPad,
     );
+    if (!log || !this.isPlayerElevatedOverAsphaltRoad()) {
+      return;
+    }
+    if (!this.isPropRestingOnAsphaltRoadSurface(log)) {
+      return;
+    }
+
+    log.getWorldPosition(this.noLogsFocusAnchor);
+    this.hasNoLogsFocusAnchor = true;
+    this.logsThatTouchedRoad.add(log);
+    this.clearNoCuttingOfTreesRouteCandidate();
+    this.onLogOnRoadContact();
   }
 
   private isCarryableLogProp(node: ENGINE.ModelMeshNode): boolean {
@@ -5001,7 +5074,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
 
     this.ensureRestrictedRoadCaches();
-    // Fallen poles spawn mid-day — refresh every poll.
+    // Fallen poles spawn mid-day — refresh the derived list at the 30 Hz prop cadence.
     this.cachePlatformFallenUtilityPoles();
 
     if (!this.isPlayerStandingOnFallenUtilityPole()) {
@@ -5048,7 +5121,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
 
     this.ensureRestrictedRoadCaches();
-    // Fallen boards spawn mid-day — refresh every poll.
+    // Fallen boards spawn mid-day — refresh the derived list at the 30 Hz prop cadence.
     this.cachePlatformFallenOrdinanceSigns();
 
     if (!this.isPlayerStandingOnFallenOrdinanceSign()) {
@@ -5097,7 +5170,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
 
     this.ensureRestrictedRoadCaches();
-    // Lamp scrap spawns mid-day — refresh every poll.
+    // Lamp scrap spawns mid-day — refresh the derived list at the 30 Hz prop cadence.
     this.cachePlatformStreetLampScraps();
 
     const scrap = this.findStreetLampScrapPlayerIsStandingOn();
@@ -7329,14 +7402,16 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
   }
 
-  /** Refresh once per prePhysics tick so ordinance polls do not re-walk the world graph. */
+  /** Refresh the shared registry at 10 Hz so runtime-spawned props appear promptly. */
   private refreshModelMeshCache(world: ENGINE.World): void {
     this.cachedModelMeshes = world.getNodes(ENGINE.ModelMeshNode);
-    this.modelMeshCacheTick = this.prePhysicsTickId;
+    this.modelMeshCacheWorld = world;
+    this.modelMeshCacheValid = true;
+    this.modelMeshCacheRefreshElapsed = 0;
   }
 
   private getModelMeshes(world: ENGINE.World): ENGINE.ModelMeshNode[] {
-    if (this.modelMeshCacheTick !== this.prePhysicsTickId) {
+    if (!this.modelMeshCacheValid || this.modelMeshCacheWorld !== world) {
       this.refreshModelMeshCache(world);
     }
     return this.cachedModelMeshes;

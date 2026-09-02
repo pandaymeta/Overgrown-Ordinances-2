@@ -9,7 +9,7 @@ FACE_OFFSET = 0.137
 
 # These remain excluded until their distinct board artwork is handled separately.
 CARDS = {
-    "Birds": "Birds", "Bushes": "Bushes", "CatFeed": "CatFeed", "Cats": "Cats",
+    "Bushes": "Bushes", "CatFeed": "CatFeed", "Cats": "Cats",
     "Cones": "Cones", "Crates": "Crates", "TreesCutting": "TreesCutting",
     "FireHydrant": "FireHydrant", "Kiosk": "Kiosk", "Logs": "Logs",
     "Maintenance": "Maintenance", "Metals": "Metals", "Plastics": "Plastics",

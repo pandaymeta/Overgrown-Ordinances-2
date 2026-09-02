@@ -16,7 +16,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = [
     ROOT / "assets" / "generated" / "OrdinanceCards",
-    ROOT / "assets" / "OrdinanceCards" / "Cards",
+    ROOT / "assets" / "OrdinanceCards",
 ]
 MAX_LONG_EDGE = 1024
 PNG_COMPRESS_LEVEL = 6

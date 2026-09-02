@@ -3,9 +3,9 @@ import os
 
 IMAGE_DIR = r"C:\Users\Reyjhon Entenia\Documents\Overgrown\Ordinances\BenchStandardCardImages"
 OUTPUT_DIR = r"C:\Users\Reyjhon Entenia\Documents\LittleFish\Overgrown Rules\assets\generated\OrdinanceCards\v5"
-CARDS = ("TreesClimbing", "TreesCutting", "ShopSign", "Birds")
+CARDS = ("TreesClimbing", "TreesCutting", "ShopSign")
 
-# All four clean boards measure 1.64 x 2.05. Their board is offset left by
+# These clean boards measure 1.64 x 2.05. Their board is offset left by
 # 0.067272 in model space, while their backing face is at -0.012 depth.
 X_MIN, X_MAX = -0.887272, 0.752728
 HALF_HEIGHT = 1.025

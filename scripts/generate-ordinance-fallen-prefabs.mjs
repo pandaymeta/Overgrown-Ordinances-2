@@ -24,7 +24,6 @@ const models = [
   'Cones',
   'DoNotStep',
   'Kiosk',
-  'Birds',
   'Cats',
   'Wires',
   'Plastics',

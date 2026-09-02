@@ -701,11 +701,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9742",
         "nodeId": 23937,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -716,6 +718,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -723,11 +727,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9746",
         "nodeId": 39686,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -738,6 +744,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -745,11 +753,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9747",
         "nodeId": 50269,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -760,6 +770,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -767,11 +779,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9748",
         "nodeId": 64026,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -782,6 +796,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -789,11 +805,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9749",
         "nodeId": 42939,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -804,6 +822,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -811,11 +831,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9767",
         "nodeId": 4596,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -826,6 +848,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -833,11 +857,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9768",
         "nodeId": 57649,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -848,6 +874,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -855,11 +883,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9769",
         "nodeId": 36,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -870,6 +900,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -877,11 +909,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9778",
         "nodeId": 27408,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -892,6 +926,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -899,11 +935,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9770",
         "nodeId": 48757,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -914,6 +952,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -921,11 +961,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9777",
         "nodeId": 6760,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -936,6 +978,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -943,11 +987,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9771",
         "nodeId": 7702,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -958,6 +1004,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -965,11 +1013,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9776",
         "nodeId": 49200,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -980,6 +1030,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -987,11 +1039,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9772",
         "nodeId": 20917,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1002,6 +1056,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1009,11 +1065,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9775",
         "nodeId": 65515,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1024,6 +1082,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1031,11 +1091,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9773",
         "nodeId": 18962,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1046,6 +1108,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1053,11 +1117,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9774",
         "nodeId": 30260,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1068,6 +1134,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1075,11 +1143,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9750",
         "nodeId": 14412,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1090,6 +1160,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1097,11 +1169,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9751",
         "nodeId": 58602,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1112,6 +1186,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1119,11 +1195,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9753",
         "nodeId": 48768,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1134,6 +1212,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1141,11 +1221,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9766",
         "nodeId": 21665,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1156,6 +1238,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1163,11 +1247,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9754",
         "nodeId": 14132,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1178,6 +1264,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1185,11 +1273,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9765",
         "nodeId": 58172,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1200,6 +1290,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1207,11 +1299,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9755",
         "nodeId": 15820,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1222,6 +1316,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1229,11 +1325,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9764",
         "nodeId": 46744,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1244,6 +1342,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1251,11 +1351,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9756",
         "nodeId": 37849,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1266,6 +1368,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1273,11 +1377,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9763",
         "nodeId": 42667,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1288,6 +1394,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1295,11 +1403,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9757",
         "nodeId": 40045,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1310,6 +1420,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1317,11 +1429,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9762",
         "nodeId": 27816,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1332,6 +1446,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1339,11 +1455,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9758",
         "nodeId": 23790,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1354,6 +1472,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1361,11 +1481,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9761",
         "nodeId": 59885,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1376,6 +1498,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1383,11 +1507,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9759",
         "nodeId": 2041,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1398,6 +1524,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1405,11 +1533,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9760",
         "nodeId": 52687,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1420,6 +1550,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1427,11 +1559,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9752",
         "nodeId": 17871,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1442,6 +1576,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1449,11 +1585,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/models/pavement-tile-8a9740-asphalt-clean.glb",
         "name": "Pavement Tile 8 A 9779",
         "nodeId": 108,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1464,6 +1602,8 @@
           ]
         },
         "receiveShadow": true,
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1889,12 +2029,14 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/two-storey-shophouse-183790.glb",
         "name": "Two Storey Shophouse 183791",
         "nodeId": 62067,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1921,6 +2063,8 @@
             1.5
           ]
         },
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1928,12 +2072,14 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/wide-shophouse-089f20.glb",
         "name": "Wide Shophouse 089 F 20",
         "nodeId": 38870,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1952,6 +2098,8 @@
             1.5
           ]
         },
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -1959,12 +2107,14 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/corner-shophouse-ad15c2.glb",
         "name": "Corner Shophouse Ad 15 C 2",
         "nodeId": 11193,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -1991,6 +2141,8 @@
             1.5
           ]
         },
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2066,12 +2218,14 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "castShadow": true,
         "modelUrl": "@project/assets/PolyforkAssets/three-storey-shophouse-2f6378.glb",
         "name": "Three Storey Shophouse 2 F 6378",
         "nodeId": 48376,
         "physicsOptions": {
-          "collisionMeshType": "trimesh"
+          "collisionMeshType": "trimesh",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2098,6 +2252,8 @@
             1.5
           ]
         },
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2569,11 +2725,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/grass-ground-tile-131ec0.glb",
         "name": "Grass Ground Tile 131 Ec 0",
         "nodeId": 11055,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2592,6 +2750,8 @@
             2
           ]
         },
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2599,11 +2759,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/grass-ground-tile-131ec0.glb",
         "name": "Grass Ground Tile 131 Ec 01",
         "nodeId": 22977,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2622,6 +2784,8 @@
             2
           ]
         },
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2629,11 +2793,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/grass-ground-tile-131ec0.glb",
         "name": "Grass Ground Tile 131 Ec 02",
         "nodeId": 33530,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2652,6 +2818,8 @@
             2
           ]
         },
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2659,11 +2827,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/grass-ground-tile-131ec0.glb",
         "name": "Grass Ground Tile 131 Ec 07",
         "nodeId": 46279,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2682,6 +2852,8 @@
             2
           ]
         },
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2689,11 +2861,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/grass-ground-tile-131ec0.glb",
         "name": "Grass Ground Tile 131 Ec 03",
         "nodeId": 46524,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2712,6 +2886,8 @@
             2
           ]
         },
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2719,11 +2895,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/grass-ground-tile-131ec0.glb",
         "name": "Grass Ground Tile 131 Ec 06",
         "nodeId": 52256,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2742,6 +2920,8 @@
             2
           ]
         },
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2749,11 +2929,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/grass-ground-tile-131ec0.glb",
         "name": "Grass Ground Tile 131 Ec 04",
         "nodeId": 48660,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2772,6 +2954,8 @@
             2
           ]
         },
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -2779,11 +2963,13 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
+        "canEverTick": false,
         "modelUrl": "@project/assets/PolyforkAssets/grass-ground-tile-131ec0.glb",
         "name": "Grass Ground Tile 131 Ec 05",
         "nodeId": 54799,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox"
+          "collisionMeshType": "boundingBox",
+          "generateCollisionEvents": false
         },
         "position": {
           "$bc": "v3",
@@ -2802,6 +2988,8 @@
             2
           ]
         },
+        "static": true,
+        "tickEnabled": false,
         "userData": {
           "objectFlags": 4
         },
@@ -7282,35 +7470,6 @@
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
-        "modelUrl": "@project/assets/PolyforkAssets/rope.glb",
-        "name": "Rope",
-        "nodeId": 44324,
-        "physicsOptions": {
-          "collisionMeshType": "trimesh"
-        },
-        "position": {
-          "$bc": "v3",
-          "_": [
-            3.3,
-            -0.7,
-            12.7
-          ]
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1.3,
-            1.3,
-            1.3
-          ]
-        },
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "4a1c7c7d-34b5-455e-a867-b507ef4c170e"
-      },
-      {
-        "$bc": "ENGINE.ModelMeshNode",
         "castShadow": true,
         "hiddenInGame": true,
         "modelUrl": "@project/assets/PolyforkAssets/KanjiSign-unindexed.glb",
@@ -8496,134 +8655,6 @@
           "objectFlags": 4
         },
         "uuid": "fe40218b59fe29e5"
-      },
-      {
-        "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
-        "children": [
-          {
-            "$bc": "ENGINE.ModelMeshNode",
-            "canEverTick": false,
-            "frustumCulled": false,
-            "modelMaterials": [],
-            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Birds_Card_BackOnly_v5.glb",
-            "name": "Birds Card Upright v5",
-            "navigationGeometryRole": "none",
-            "nodeId": 19738,
-            "physicsOptions": {
-              "collisionMeshType": "none",
-              "collisionProfile": "NoCollision",
-              "enabled": false,
-              "generateCollisionEvents": false,
-              "ignoreForInputCollision": true
-            },
-            "position": {
-              "$bc": "v3",
-              "_": [
-                0,
-                1.025,
-                0
-              ]
-            },
-            "tickEnabled": false,
-            "uuid": "0182e9110b5fc6bd"
-          }
-        ],
-        "modelUrl": "@project/assets/OrdinanceCards/Clean/Birds_Clean.glb",
-        "name": "Birds",
-        "nodeId": 7257,
-        "position": {
-          "$bc": "v3",
-          "_": [
-            -17.3,
-            9.7,
-            -11.5
-          ]
-        },
-        "rotation": {
-          "$bc": "e",
-          "_": [
-            -0.698132,
-            0,
-            0
-          ]
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1.5,
-            1.5,
-            1.5
-          ]
-        },
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "816c4ee2-e91e-49da-a2b3-5935df2ae7d7"
-      },
-      {
-        "$bc": "ENGINE.ModelMeshNode",
-        "castShadow": true,
-        "children": [
-          {
-            "$bc": "ENGINE.ModelMeshNode",
-            "canEverTick": false,
-            "frustumCulled": false,
-            "modelMaterials": [],
-            "modelUrl": "@project/assets/generated/OrdinanceCards/v5/Birds_Card_BackOnly_v5.glb",
-            "name": "Birds Card Upright v5",
-            "navigationGeometryRole": "none",
-            "nodeId": 1798,
-            "physicsOptions": {
-              "collisionMeshType": "none",
-              "collisionProfile": "NoCollision",
-              "enabled": false,
-              "generateCollisionEvents": false,
-              "ignoreForInputCollision": true
-            },
-            "position": {
-              "$bc": "v3",
-              "_": [
-                0,
-                1.025,
-                0
-              ]
-            },
-            "tickEnabled": false,
-            "uuid": "e22ee8d70cc2a800"
-          }
-        ],
-        "modelUrl": "@project/assets/OrdinanceCards/Clean/Birds_Clean.glb",
-        "name": "Birds 02",
-        "nodeId": 42650,
-        "position": {
-          "$bc": "v3",
-          "_": [
-            11.6,
-            12.7,
-            -3.2
-          ]
-        },
-        "rotation": {
-          "$bc": "e",
-          "_": [
-            -1.570796,
-            0,
-            -0.698132
-          ]
-        },
-        "scale": {
-          "$bc": "v3",
-          "_": [
-            1.5,
-            1.5,
-            1.5
-          ]
-        },
-        "userData": {
-          "objectFlags": 4
-        },
-        "uuid": "35a09663439a81b5"
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
@@ -11900,7 +11931,7 @@
         "$bc": "ENGINE.ModelMeshNode",
         "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
         "name": "Mesh Fense Pane 06",
-        "nodeId": 62309,
+        "nodeId": 25833,
         "position": {
           "$bc": "v3",
           "_": [
@@ -12038,16 +12069,6 @@
           "objectFlags": 4
         },
         "uuid": "95dfdd37a9c14326"
-      },
-      {
-        "$bc": "GAME.IslandRimCloudSystem",
-        "$initOptions": {},
-        "name": "Island Rim Cloud System",
-        "nodeId": 36456,
-        "userData": {
-          "objectFlags": 6
-        },
-        "uuid": "68bac0f489f0113c"
       },
       {
         "$bc": "ENGINE.ModelMeshNode",
@@ -12737,11 +12758,6 @@
             "nodeType": "actor"
           },
           {
-            "id": "4a1c7c7d-34b5-455e-a867-b507ef4c170e",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
             "id": "6c1b8a737fea76ee",
             "isExpanded": false,
             "nodeType": "actor"
@@ -12783,346 +12799,417 @@
           },
           {
             "id": "39960616-3417-407a-875f-5f3f1f2ddb2a",
-            "nodeType": "actor"
-          },
-          {
-            "id": "816c4ee2-e91e-49da-a2b3-5935df2ae7d7",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "8eb8943a-80b2-4c71-acd3-39ef693d743f",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "e5afc7ad-100d-465d-a1fe-81c4d87c9cde",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "7f86a920-04fe-4d9a-82b2-8e398a70a210",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "2896ecd5-0c41-4a7c-a670-4c98ef22bea3",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "75369cfa-13b1-4129-99ee-dc07083a9c64",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "80860c32-1ad6-4ceb-9aa0-3ffaaa686414",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "79fd64bc-7d4e-4074-a9ec-31f318683442",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "ee73c778-834b-4cbc-9e50-ab4c7fc36d42",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "706c5a0f-7407-48fc-a82c-ef2407b7d073",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "6a87d5f9-4b9c-4c91-9549-87ee6b155273",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "9f75f50a-7022-4c74-9b6c-0db98175b69c",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "b3b9f949-39c8-42d5-b802-b33e986649c6",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "1263eee1-4356-4c8f-9f5f-bf17517a0d6a",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "c6717f4a-a3c2-49d8-81af-356a013686e0",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "2cc95a0bc68211a0",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "6b0d5ce6bbd83174",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "0aac7c6511cbcdc5",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "202f388b4fa0d0bc",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "d1709032-e813-4b33-821b-bc67f3252240",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "160d10b5841e8c6f",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "8ae9c986d04e3609",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "23023f87b7babca1",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "2c72e6a54f375b20",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "57daf860f591bafe",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "777674f6b61d8d5f",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "14240ee55796fe74",
-            "nodeType": "actor"
-          },
-          {
-            "id": "35a09663439a81b5",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "33af548e7c08dc31",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "d0b1f849766a75c2",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "96e41fc39a6871e7",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "abe3a04c897b3a91",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "67751830bb542134",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "e233a3512c12bb64",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "03f6ba43-e70d-48a2-8c65-c760a26841c9",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "5b20f2e645a136fb",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "6045598ba0ad74f9",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "53032353e2b6d3c4",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "d232be3441bd5153",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "523771a01a12d2da",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "9c32977b-bfb9-465f-af29-8cd2e04aef12",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "718e0afe-22e1-4566-a3f8-aa996b512fa5",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "ea417049db235966",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "b131f498e59604a8",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "6c62d3df98397240",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "e5947a1b6620404d",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "a5603e69-cd24-4667-afe8-ca8a913f3589",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "5c4b93a2ee4f12de",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "3360cf19b9d5c39e",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "38baaca05e7293b9",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "f2454236475d6374",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "5cc2ac8b4f5c4520",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "c907813aa6979555",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "c43e086763e41a40",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "402295aa1e6ecdd7",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "933e143d60313ca4",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "8773ef612261b44d",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "fe40218b59fe29e5",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "44f7553ffe74d4ac",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "62e8e7dc-25c0-4f94-b180-9e652ffe1802",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "84feb358068478d5",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "a292adc786b7029e",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "42271785865923ba",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "8bbffe17c43e5880",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "13b13581c69e6997",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "cf2241642034c734",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "cd079d004c094844",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "dd866f8c87a129ce",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "17a5a6a0315069d2",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "bfad7fb2fd355ad3",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "c1aef2934133e5e3",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "df05e7739dd98807",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "95dfdd37a9c14326",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "94d9390748e39195",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "f39ae99d3d13ec18",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "5600bd9ae213f290",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "5f50b8b151bfdb2a",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "282df5179812ecf1",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "5b7162b9c6612782",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "ccbbf8b7d7a30abf",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "2dcd6d3fbd07d7b2",
-            "nodeType": "actor"
-          },
-          {
-            "id": "68bac0f489f0113c",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "e27e095e3c2beb0b",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "2c3a69f8765d5fac",
+            "isExpanded": false,
             "nodeType": "actor"
           },
           {
             "id": "966daea72673dd35",
+            "isExpanded": false,
             "nodeType": "actor"
           }
         ],

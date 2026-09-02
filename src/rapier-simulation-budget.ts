@@ -1,16 +1,15 @@
 /**
- * Rapier hitch catch-up: a slow frame (spawn, next-day, scrap load) accumulates
- * more than 4 substeps (~0.0667s). The engine then warns "Physics substep budget
- * exceeded" and dumps that time — the pawn/crates jump, and late-game the extra
- * steps overlap WebGPU and lose the device.
+ * Rapier hitch catch-up: a slow frame (spawn, next-day, scrap load) can exceed
+ * the engine's default 8-substep budget (~0.1333s). The engine then warns
+ * "Physics substep budget exceeded" and dumps that time — the pawn/crates jump,
+ * and late-game the extra steps overlap WebGPU and lose the device.
  *
- * Pause stepping until the pawn is planted, discard hitch frames entirely, and
- * never feed more than one 60 Hz step after a hitch.
+ * Pause stepping until the pawn is planted, then keep every active render frame
+ * advancing physics by no more than one 60 Hz step. This avoids catch-up bursts
+ * without freezing physics whenever a frame takes longer than 20.8ms.
  */
 
 const MAX_PHYSICS_STEP_SEC = 1 / 60;
-/** Wall-clock longer than this → discard the physics tick (no substep catch-up). */
-const HITCH_DISCARD_SEC = MAX_PHYSICS_STEP_SEC * 1.25;
 /** Default hold after teleport / respawn / day reset. */
 export const SPAWN_PHYSICS_HOLD_TICKS = 24;
 
@@ -66,16 +65,11 @@ export function isRapierSimulationPaused(): boolean {
   return simulationPaused || holdTicksRemaining > 0;
 }
 
-function shouldSkipPhysicsTick(deltaTime: number): boolean {
+function shouldSkipPhysicsTick(): boolean {
   if (simulationPaused || holdTicksRemaining > 0) {
     if (holdTicksRemaining > 0) {
       holdTicksRemaining -= 1;
     }
-    return true;
-  }
-  if (typeof deltaTime === 'number' && deltaTime > HITCH_DISCARD_SEC) {
-    // Late-game GPU hitch: discard catch-up only — do not add extra hold ticks
-    // or freshly spawned scrap floats until the hold drains.
     return true;
   }
   return false;
@@ -93,7 +87,7 @@ function wrapTick(
     deltaTime: number,
     ...rest: unknown[]
   ) {
-    if (shouldSkipPhysicsTick(deltaTime)) {
+    if (shouldSkipPhysicsTick()) {
       return;
     }
     const dt = typeof deltaTime === 'number'

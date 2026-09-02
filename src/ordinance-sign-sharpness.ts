@@ -238,12 +238,6 @@ export function removeEmptySceneLineSegments(world: ENGINE.World): number {
     object.visible = false;
     object.removeFromParent();
   }
-  if (detach.length > 0) {
-    console.warn(
-      DIAGNOSTIC_LOG_PREFIX,
-      `Removed ${detach.length} empty THREE.LineSegments scene orphan(s)`,
-    );
-  }
   return detach.length;
 }
 
@@ -452,11 +446,9 @@ export class OrdinanceSignSharpnessSystem extends ENGINE.SceneNode {
   public override tickPostPhysics(_deltaTime: number): void {
     super.tickPostPhysics(_deltaTime);
     this.emptyGeometryScanFrames += 1;
-    if (
-      this.emptyGeometryScanFrames !== 1
-      && this.emptyGeometryScanFrames !== 45
-      && this.emptyGeometryScanFrames !== 120
-    ) {
+    // Model load hooks handle normal arrivals. Keep one delayed fallback for
+    // editor-created placeholders without rescanning the world three times.
+    if (this.emptyGeometryScanFrames !== 45) {
       return;
     }
     const world = this.getWorld();

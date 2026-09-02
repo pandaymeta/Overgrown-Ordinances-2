@@ -81,7 +81,6 @@ let busesConfigured = false;
 let loopsRequested = false;
 let loopsStarted = false;
 let unlockHooked = false;
-let ordinanceBreakErrorBuffer: AudioBuffer | null = null;
 
 function getManager(
   world: ENGINE.World | null | undefined,
@@ -121,50 +120,6 @@ function configureBuses(world: ENGINE.World): void {
   manager.getBus('Ambience')?.setVolume(AMBIENCE_ENABLED ? AMBIENCE_VOLUME : 0);
   manager.getBus('SFX')?.setVolume(SFX_BUS_VOLUME);
   busesConfigured = true;
-}
-
-function playBufferImmediateGainSound(
-  world: ENGINE.World,
-  buffer: AudioBuffer,
-  volume: number,
-): void {
-  const manager = getManager(world);
-  const listener = world.audioListener;
-  if (!manager || !listener) {
-    return;
-  }
-  configureBuses(world);
-
-  const context = listener.context;
-  const start = (): void => {
-    if (context.state !== 'running') {
-      return;
-    }
-    const destination = manager.getBus('SFX')?.getInput() ?? listener.getInput();
-    const source = context.createBufferSource();
-    source.buffer = buffer;
-
-    const gain = context.createGain();
-    gain.gain.value = volume;
-    source.connect(gain);
-    gain.connect(destination);
-
-    source.start(0);
-    source.onended = () => {
-      try {
-        source.disconnect();
-        gain.disconnect();
-      } catch {
-        // Already disconnected.
-      }
-    };
-  };
-
-  if (context.state !== 'running') {
-    void context.resume().then(start);
-    return;
-  }
-  start();
 }
 
 /**
@@ -283,13 +238,6 @@ export function playOrdinanceStamp(world: ENGINE.World | null | undefined): void
 
 /** Same-day rule break sting when a live ordinance is re-violated. */
 export function playOrdinanceBreakError(world: ENGINE.World | null | undefined): void {
-  if (!world) {
-    return;
-  }
-  if (ordinanceBreakErrorBuffer) {
-    playBufferImmediateGainSound(world, ordinanceBreakErrorBuffer, ORDINANCE_BREAK_ERROR_VOLUME);
-    return;
-  }
   playSound(world, GameSound.Error, ORDINANCE_BREAK_ERROR_VOLUME);
 }
 
@@ -374,21 +322,6 @@ export function startGoldenHourAudio(world: ENGINE.World | null | undefined): vo
   };
   window.addEventListener('pointerdown', unlock);
   window.addEventListener('keydown', unlock);
-}
-
-/** Warms the decode cache so the first stamp or chop is not silent. */
-export async function preloadGameAudio(): Promise<void> {
-  const urls = [...Object.values(GameSound), ...FOOTSTEPS];
-  await Promise.all(urls.map(async (url) => {
-    try {
-      const buffer = await ENGINE.resourceManager.loadSound(ENGINE.AssetPath.fromString(url));
-      if (url === GameSound.Error && buffer) {
-        ordinanceBreakErrorBuffer = buffer;
-      }
-    } catch {
-      // A missing clip should never block startup.
-    }
-  }));
 }
 
 /**

@@ -28,10 +28,8 @@ import { StartupLoadingScreenSystem } from './startup-loading-screen.js';
 import { TutorialKeysGuide } from './tutorial-keys-guide.js';
 import { StreetLampGroundLightsSystem } from './street-lamp-ground-lights.js';
 import { applyDirectionalShadowBudget } from './environment-art-direction.js';
-import { IslandRimCloudSystem } from './island-rim-clouds.js';
 import { guardSceneGeometryEarly } from './ordinance-sign-sharpness.js';
-import { preloadGameAudio, startGoldenHourAudio } from './game-audio.js';
-import { waitForStartupLoading } from './startup-loading-screen.js';
+import { startGoldenHourAudio } from './game-audio.js';
 
 installAnimationOneShotHostPatch(ENGINE);
 installEditorTrimeshPatch(ENGINE);
@@ -70,15 +68,12 @@ class ThirdPersonGameMode extends ENGINE.GameMode {
     startGoldenHourAudio(this.getWorld());
     // Keep sun shadows/CSM off after scene load (isSunLight can re-enable expensive cascades).
     applyDirectionalShadowBudget(this.getWorld());
-    // Warm audio after the cream screen — avoids parallel loadSound preloads at spawn.
-    void waitForStartupLoading().then(() => preloadGameAudio());
     this.ensureStartupBrushReveal();
     this.attachAccessStairWalkRamp();
     this.attachClimbableLadders();
     this.ensureStreetLampGroundLights();
     this.ensureMailDeliveryFlow();
     this.ensureShophouseCameraOcclusion();
-    this.ensureIslandRimClouds();
     this.ensureAxePickupRing();
     this.ensureTutorialKeysGuide();
     this.ensureDeliveryProgressHud();
@@ -166,14 +161,6 @@ class ThirdPersonGameMode extends ENGINE.GameMode {
       return;
     }
     world.add(DeliveryProgressHudSystem.create());
-  }
-
-  private ensureIslandRimClouds(): void {
-    const world = this.getWorld();
-    if (!world || world.getNodes(IslandRimCloudSystem).length > 0) {
-      return;
-    }
-    world.add(IslandRimCloudSystem.create());
   }
 
   private ensureShophouseCameraOcclusion(): void {
