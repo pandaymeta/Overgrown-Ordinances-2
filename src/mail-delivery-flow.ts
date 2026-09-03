@@ -49,7 +49,8 @@
  *    Sign, or releasing fire-hydrant water (axe/rock), or walking utility-pole wires without
  *    tram / kanji / street-lamp / scrap platforms, or delivering while carrying a tree log that never
  *    touched a road. Violation ordinances (roads / litter / hydrant / bush / cone axe) queue
- *    at most ONE new ordinance for the next day (first broken). Delivery-route ordinances
+ *    at most ONE new ordinance for the next day (first broken, except the hydrant and
+ *    loose-rock rules remain deferred fallbacks). Delivery-route ordinances
  *    (climbs, platforms, cat, clean log/kiosk/tree) are candidate-tracked and the successful
  *    delivery picker chooses which one unlocks — last enabling method wins, with a static
  *    priority tie-break (No cutting of trees beats High Voltage when both apply).
@@ -133,12 +134,12 @@ const INTRO_SPEECH_TEXT = 'Just get this to the box.\nHow hard can it be?';
 /** Morning after the first ordinance sign is posted. */
 const MORNING_SPEECH_FIRST_SIGN =
   'They closed the road overnight.\nFine. I\'ll find another way.';
-/** Second next-day — same morning the axe ring starts pulsing. */
+/** Third in-game day (second next-day). */
+const MORNING_SPEECH_ANOTHER_SIGN =
+  'Another sign?\nWas that there yesterday?';
+/** Fourth in-game day (third next-day) — same morning the axe ring starts pulsing. */
 const MORNING_SPEECH_AXE =
   'The axe might open\nanother path.';
-/** Third next-day. */
-const MORNING_SPEECH_THIRD_SIGN =
-  'They\'re posting signs faster\nthan I can walk.';
 /** Recurring morning line from the fourth next-day onward. */
 const MORNING_SPEECH_AGAIN = 'How do I deliver\nthis letter?';
 /** Read hold after the delivery-reaction typewriter finishes. */
@@ -459,7 +460,7 @@ const ORDINANCE_DISPLAY_TITLES: Record<PendingOrdinance, string> = {
   doNotRemoveTheSigns: "Don't remove the signs.",
 };
 
-const DELIVERY_SPEECH_FIRST = 'That was easy!';
+const DELIVERY_SPEECH_FIRST = 'Pssst. Easy!';
 const DELIVERY_SPEECH_MYSTERY = 'Delivered.\nNo rule for that. Yet.';
 const DELIVERY_SPEECH_CAT_PEACH = 'Outsourced.\nDon\'t tell the mailbox.';
 const DELIVERY_SPEECH_CAT_UNFED = 'Freelance delivery.\nNo benefits.';
@@ -722,6 +723,11 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
    * only becomes pendingOrdinance if nothing else claimed the day.
    */
   private rocksOnRoadViolationSeen = false;
+  /**
+   * A hydrant was activated today. Deferred so deliberate road and traversal
+   * discoveries can claim the day; it still wins over the loose-rock fallback.
+   */
+  private fireHydrantViolationSeen = false;
   /** Road litter seen this delivery day (prop or platform use). */
   private cratesOnRoadViolationSeen = false;
   private logsOnRoadViolationSeen = false;
@@ -1548,10 +1554,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return MORNING_SPEECH_FIRST_SIGN;
     }
     if (signs === 2) {
-      return MORNING_SPEECH_AXE;
+      return MORNING_SPEECH_ANOTHER_SIGN;
     }
     if (signs === 3) {
-      return MORNING_SPEECH_THIRD_SIGN;
+      return MORNING_SPEECH_AXE;
     }
     return MORNING_SPEECH_AGAIN;
   }
@@ -1618,6 +1624,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       this.noCratesOnRoadsLoopTriggered = false;
       this.noRocksOnRoadsLoopTriggered = false;
       this.rocksOnRoadViolationSeen = false;
+      this.fireHydrantViolationSeen = false;
       this.cratesOnRoadViolationSeen = false;
       this.logsOnRoadViolationSeen = false;
       this.woodPlanksOnRoadViolationSeen = false;
@@ -1940,11 +1947,13 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (this.deliveryVia === 'catPeach' && !this.dontFeedTheCatOrdinanceActive) {
       this.pendingOrdinance = 'dontFeedTheCat';
       this.rocksOnRoadViolationSeen = false;
+      this.fireHydrantViolationSeen = false;
       return;
     }
     if (this.deliveryVia === 'catUnfed' && !this.noCatsOnStreetsOrdinanceActive) {
       this.pendingOrdinance = 'noCatsOnStreets';
       this.rocksOnRoadViolationSeen = false;
+      this.fireHydrantViolationSeen = false;
       return;
     }
 
@@ -1987,6 +1996,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       filtered = filtered.filter((id) => id !== 'noClimbingOnTheTree');
     }
     if (filtered.length === 0) {
+      this.promoteDeferredFireHydrantOrdinanceIfAlone();
       this.promoteDeferredRocksOrdinanceIfAlone();
       return;
     }
@@ -2001,7 +2011,21 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
 
     this.pendingOrdinance = filtered[0];
     this.rocksOnRoadViolationSeen = false;
+    this.fireHydrantViolationSeen = false;
     this.promoteDeferredRocksOrdinanceIfAlone();
+  }
+
+  /** Hydrant is a fallback: every other new discovery wins, except loose rocks. */
+  private promoteDeferredFireHydrantOrdinanceIfAlone(): void {
+    if (
+      this.pendingOrdinance
+      || !this.fireHydrantViolationSeen
+      || this.dontHitTheFireHydrantOrdinanceActive
+    ) {
+      return;
+    }
+    this.pendingOrdinance = 'dontHitTheFireHydrant';
+    this.rocksOnRoadViolationSeen = false;
   }
 
   /**
@@ -3596,17 +3620,10 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
       return;
     }
 
-    // Rocks remain a valid standalone discovery, but the hydrant is the
-    // higher-priority same-day discovery.  If both happen before delivery,
-    // replace the provisional rocks queue with the hydrant ordinance.
-    if (
-      !this.dontHitTheFireHydrantOrdinanceActive
-      && (
-        !this.pendingOrdinance
-        || this.pendingOrdinance === 'noRocksOnRoads'
-      )
-    ) {
-      this.assignPendingOrdinance('dontHitTheFireHydrant');
+    // Defer this discovery until delivery. Traversal and road rules should win
+    // even when the hydrant happened first; hydrant still beats loose rocks.
+    if (!this.dontHitTheFireHydrantOrdinanceActive) {
+      this.fireHydrantViolationSeen = true;
     }
   }
 
@@ -8312,9 +8329,9 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.tryPlayAxeRingMorningHint();
   }
 
-  /** Second next-day axe line: pulse the pickup ring while the bubble is up. */
+  /** Fourth-day axe line: pulse the pickup ring while the bubble is up. */
   private tryPlayAxeRingMorningHint(): void {
-    if (this.brokenOrdinanceOrder.length !== 2) {
+    if (this.brokenOrdinanceOrder.length !== 3) {
       return;
     }
     const ring = this.getWorld()?.getNodes(AxePickupRingSystem)[0];
@@ -8325,7 +8342,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   }
 
   private endAxeRingPulseAfterMorningBubble(): void {
-    if (this.brokenOrdinanceOrder.length !== 2) {
+    if (this.brokenOrdinanceOrder.length !== 3) {
       return;
     }
     const ring = this.getWorld()?.getNodes(AxePickupRingSystem)[0];

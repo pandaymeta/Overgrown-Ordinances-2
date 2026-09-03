@@ -2,8 +2,13 @@
   "frameCount": 60,
   "durationSec": 2.0,
   "fps": 30,
-  "sourceVideo": "C:\\Users\\Reyjhon Entenia\\Documents\\Overgrown\\transitionplease.mp4",
+  "sourceVideo": "C:\\Users\\Reyjhon Entenia\\Documents\\Overgrown\\TransitionTear.mp4",
   "cream": "#f4f1ea",
+  "sheetRemovalOrder": [
+    "top",
+    "bottom"
+  ],
+  "tearCompleteFrame": 35,
   "frames": [
     {
       "file": "cream-00.png",
@@ -23,227 +28,227 @@
     },
     {
       "file": "cream-04.png",
-      "opaqueApprox": 0.9936
+      "opaqueApprox": 1.0
     },
     {
       "file": "cream-05.png",
-      "opaqueApprox": 0.9936
+      "opaqueApprox": 0.9732
     },
     {
       "file": "cream-06.png",
-      "opaqueApprox": 0.9678
+      "opaqueApprox": 0.9483
     },
     {
       "file": "cream-07.png",
-      "opaqueApprox": 0.9679
+      "opaqueApprox": 0.9483
     },
     {
       "file": "cream-08.png",
-      "opaqueApprox": 0.9229
+      "opaqueApprox": 0.8945
     },
     {
       "file": "cream-09.png",
-      "opaqueApprox": 0.9229
+      "opaqueApprox": 0.8679
     },
     {
       "file": "cream-10.png",
-      "opaqueApprox": 0.8529
+      "opaqueApprox": 0.8679
     },
     {
       "file": "cream-11.png",
-      "opaqueApprox": 0.8529
+      "opaqueApprox": 0.8123
     },
     {
       "file": "cream-12.png",
-      "opaqueApprox": 0.793
+      "opaqueApprox": 0.7858
     },
     {
       "file": "cream-13.png",
-      "opaqueApprox": 0.793
+      "opaqueApprox": 0.7858
     },
     {
       "file": "cream-14.png",
-      "opaqueApprox": 0.7414
+      "opaqueApprox": 0.7346
     },
     {
       "file": "cream-15.png",
-      "opaqueApprox": 0.7414
+      "opaqueApprox": 0.7095
     },
     {
       "file": "cream-16.png",
-      "opaqueApprox": 0.6649
+      "opaqueApprox": 0.7095
     },
     {
       "file": "cream-17.png",
-      "opaqueApprox": 0.665
+      "opaqueApprox": 0.6609
     },
     {
       "file": "cream-18.png",
-      "opaqueApprox": 0.5833
+      "opaqueApprox": 0.6379
     },
     {
       "file": "cream-19.png",
-      "opaqueApprox": 0.5833
+      "opaqueApprox": 0.6379
     },
     {
       "file": "cream-20.png",
-      "opaqueApprox": 0.5117
+      "opaqueApprox": 0.5953
     },
     {
       "file": "cream-21.png",
-      "opaqueApprox": 0.5117
+      "opaqueApprox": 0.5762
     },
     {
       "file": "cream-22.png",
-      "opaqueApprox": 0.4473
+      "opaqueApprox": 0.5762
     },
     {
       "file": "cream-23.png",
-      "opaqueApprox": 0.4473
+      "opaqueApprox": 0.542
     },
     {
       "file": "cream-24.png",
-      "opaqueApprox": 0.3889
+      "opaqueApprox": 0.527
     },
     {
       "file": "cream-25.png",
-      "opaqueApprox": 0.3889
+      "opaqueApprox": 0.527
     },
     {
       "file": "cream-26.png",
-      "opaqueApprox": 0.34
+      "opaqueApprox": 0.5003
     },
     {
       "file": "cream-27.png",
-      "opaqueApprox": 0.34
+      "opaqueApprox": 0.4886
     },
     {
       "file": "cream-28.png",
-      "opaqueApprox": 0.2919
+      "opaqueApprox": 0.4886
     },
     {
       "file": "cream-29.png",
-      "opaqueApprox": 0.2919
+      "opaqueApprox": 0.4676
     },
     {
       "file": "cream-30.png",
-      "opaqueApprox": 0.2445
+      "opaqueApprox": 0.4586
     },
     {
       "file": "cream-31.png",
-      "opaqueApprox": 0.2445
+      "opaqueApprox": 0.4586
     },
     {
       "file": "cream-32.png",
-      "opaqueApprox": 0.1902
+      "opaqueApprox": 0.444
     },
     {
       "file": "cream-33.png",
-      "opaqueApprox": 0.1902
+      "opaqueApprox": 0.4398
     },
     {
       "file": "cream-34.png",
-      "opaqueApprox": 0.1289
+      "opaqueApprox": 0.4398
     },
     {
       "file": "cream-35.png",
-      "opaqueApprox": 0.1289
+      "opaqueApprox": 0.4397
     },
     {
       "file": "cream-36.png",
-      "opaqueApprox": 0.0764
+      "opaqueApprox": 0.4346
     },
     {
       "file": "cream-37.png",
-      "opaqueApprox": 0.0764
+      "opaqueApprox": 0.405
     },
     {
       "file": "cream-38.png",
-      "opaqueApprox": 0.0477
+      "opaqueApprox": 0.3824
     },
     {
       "file": "cream-39.png",
-      "opaqueApprox": 0.0477
+      "opaqueApprox": 0.3713
     },
     {
       "file": "cream-40.png",
-      "opaqueApprox": 0.0078
+      "opaqueApprox": 0.339
     },
     {
       "file": "cream-41.png",
-      "opaqueApprox": 0.0078
+      "opaqueApprox": 0.3184
     },
     {
       "file": "cream-42.png",
-      "opaqueApprox": 0.0043
+      "opaqueApprox": 0.3082
     },
     {
       "file": "cream-43.png",
-      "opaqueApprox": 0.0043
+      "opaqueApprox": 0.3082
     },
     {
       "file": "cream-44.png",
-      "opaqueApprox": 0.0043
+      "opaqueApprox": 0.277
     },
     {
       "file": "cream-45.png",
-      "opaqueApprox": 0.0043
+      "opaqueApprox": 0.2551
     },
     {
       "file": "cream-46.png",
-      "opaqueApprox": 0.0043
+      "opaqueApprox": 0.2442
     },
     {
       "file": "cream-47.png",
-      "opaqueApprox": 0.0043
+      "opaqueApprox": 0.2117
     },
     {
       "file": "cream-48.png",
-      "opaqueApprox": 0.0043
+      "opaqueApprox": 0.1993
     },
     {
       "file": "cream-49.png",
-      "opaqueApprox": 0.0043
+      "opaqueApprox": 0.1968
     },
     {
       "file": "cream-50.png",
-      "opaqueApprox": 1.0
+      "opaqueApprox": 0.1726
     },
     {
       "file": "cream-51.png",
-      "opaqueApprox": 1.0
+      "opaqueApprox": 0.1482
     },
     {
       "file": "cream-52.png",
-      "opaqueApprox": 1.0
+      "opaqueApprox": 0.1271
     },
     {
       "file": "cream-53.png",
-      "opaqueApprox": 1.0
+      "opaqueApprox": 0.1202
     },
     {
       "file": "cream-54.png",
-      "opaqueApprox": 1.0
+      "opaqueApprox": 0.1062
     },
     {
       "file": "cream-55.png",
-      "opaqueApprox": 1.0
+      "opaqueApprox": 0.078
     },
     {
       "file": "cream-56.png",
-      "opaqueApprox": 1.0
+      "opaqueApprox": 0.0645
     },
     {
       "file": "cream-57.png",
-      "opaqueApprox": 1.0
+      "opaqueApprox": 0.0421
     },
     {
       "file": "cream-58.png",
-      "opaqueApprox": 1.0
+      "opaqueApprox": 0.0173
     },
     {
       "file": "cream-59.png",
-      "opaqueApprox": 1.0
+      "opaqueApprox": 0.0
     }
   ]
 }

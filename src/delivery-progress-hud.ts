@@ -63,8 +63,9 @@ const PAUSE_TITLE = 'Game Paused';
 const PAUSE_RESPAWN = 'Respawn';
 const PAUSE_EXIT = 'Exit';
 
-/** Painterly grit — kept very light so cards stay clean, not muddy. */
-const PAPER_GRAIN_PATH = '@project/assets/textures/style/painterly-brush-detail-v1.png';
+/** Same cream paper grain used by the startup title and tear transition. */
+const PAPER_GRAIN_PATH =
+  '@project/assets/textures/startup-splash/transition-cream-png/cream-00.png';
 /** Fine fiber fallback (low contrast). */
 const PAPER_FIBER_SVG =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.42 0 0 0 0 0.38 0 0 0 0 0.32 0 0 0 0.12 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
@@ -359,7 +360,7 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
       'outline:none',
       'box-shadow:none',
     ].join(';');
-    this.applyPaperFrontSurface(panel, { large });
+    this.applyPaperFrontSurface(panel);
 
     stack.appendChild(back);
     stack.appendChild(panel);
@@ -392,41 +393,21 @@ export class DeliveryProgressHudSystem extends ENGINE.SceneNode {
     back.style.top = `${PAPER_BACK_OFFSET_Y_PX}px`;
   }
 
-  /** Cream front only — grain, no outline stroke. */
-  private applyPaperFrontSurface(el: HTMLElement, options?: { large?: boolean }): void {
-    const large = options?.large === true;
+  /** Cream front only — use the startup paper as the card's actual surface. */
+  private applyPaperFrontSurface(el: HTMLElement): void {
     el.style.overflow = 'hidden';
-    el.style.background = PAPER_CREAM;
+    el.style.backgroundColor = PAPER_CREAM;
+    el.style.backgroundImage = this.paperGrainCssUrl;
+    el.style.backgroundPosition = 'center';
+    el.style.backgroundSize = 'cover';
+    el.style.backgroundRepeat = 'no-repeat';
     el.style.border = 'none';
     el.style.outline = 'none';
-
-    let grain = el.querySelector('[data-paper-grain]') as HTMLDivElement | null;
-    if (!grain) {
-      grain = document.createElement('div');
-      grain.setAttribute('data-paper-grain', '');
-      grain.setAttribute('aria-hidden', 'true');
-      el.insertBefore(grain, el.firstChild);
-    }
-    grain.style.cssText = [
-      'position:absolute',
-      'inset:0',
-      'pointer-events:none',
-      'z-index:0',
-      `background-image:${this.paperGrainCssUrl}`,
-      `background-size:${large ? '240px 240px' : '180px 180px'}`,
-      'background-repeat:repeat',
-      'opacity:0.14',
-      'mix-blend-mode:multiply',
-    ].join(';');
   }
 
-  /** Keep titles/body/buttons above the absolute grain layer. */
+  /** Keep titles/body/buttons in the card's foreground. */
   private finalizePaperContent(el: HTMLElement): void {
-    const grain = el.querySelector('[data-paper-grain]');
     Array.from(el.children).forEach((child) => {
-      if (child === grain) {
-        return;
-      }
       const node = child as HTMLElement;
       if (!node.style.position || node.style.position === 'static') {
         node.style.position = 'relative';

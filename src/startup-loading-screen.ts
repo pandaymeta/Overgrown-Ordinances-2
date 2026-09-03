@@ -5,20 +5,24 @@
 import * as ENGINE from '@gnsx/genesys.js';
 
 import { ensureOvergrownAveriaFont } from './overgrown-averia-font.js';
+import { startGoldenHourAudio } from './game-audio.js';
 import { waitForIntroPhysicsPrimed } from './intro-physics-gate.js';
 import { STARTUP_PRELOAD_ASSETS, STARTUP_WALKER_FRAME_PATHS } from './startup-preload-manifest.js';
 import { StartupBrushRevealSystem } from './startup-brush-reveal.js';
 
 const CREAM_CSS = '#f4f1ea';
 const TEXT_CSS = '#6b6560';
+const LOADING_PAPER_FRAME_PATH =
+  '@project/assets/textures/startup-splash/transition-cream-png/cream-00.png';
 const LOADING_TITLE = 'Overgrown Ordinances';
+const BEGIN_PROMPT_TEXT = '[ Click Anywhere ]';
 const LOADING_MESSAGE = 'One last letter.\nThe mailbox is still open.';
 const LOADING_MESSAGE_LINES = LOADING_MESSAGE.split('\n');
 const TYPEWRITER_CHAR_INTERVAL_MS = 55;
 /** Hold after the title finishes typing, before it disappears. */
-const POST_TITLE_HOLD_MS = 3500;
+const POST_TITLE_HOLD_MS = 2000;
 /** Hold after the message finishes typing, before the splash opens. */
-const POST_MESSAGE_HOLD_MS = 4500;
+const POST_MESSAGE_HOLD_MS = 2500;
 const LOADING_TITLE_FONT_PX = 56;
 const LOADING_MESSAGE_FONT_PX = 30;
 const LOADING_MESSAGE_LINE_HEIGHT = 1.45;
@@ -26,9 +30,9 @@ const LOADING_MESSAGE_LINE_HEIGHT = 1.45;
 const WALKER_CYCLE_SEC = 0.8;
 const WALKER_STAGE_HEIGHT_PX = 220;
 const PRELOAD_CONCURRENCY = 8;
-/** Slower cream splash so the open reads clearly after loading. */
+/** Match the complete 60-frame paper-tear source. */
 const STARTUP_REVEAL_HOLD_MS = 200;
-const STARTUP_REVEAL_MS = 1667;
+const STARTUP_REVEAL_MS = 2000;
 
 let loadingFinished = false;
 const loadingWaiters: Array<() => void> = [];
@@ -193,6 +197,7 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
   private overlay: HTMLDivElement | null = null;
   private styleEl: HTMLStyleElement | null = null;
   private titleEl: HTMLHeadingElement | null = null;
+  private beginPromptEl: HTMLParagraphElement | null = null;
   private messageStage: HTMLDivElement | null = null;
   private messageLineEls: HTMLParagraphElement[] = [];
   private typingGeneration = 0;
@@ -200,6 +205,7 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
   private sequenceGeneration = 0;
   private earlyPreloadPromise: Promise<void> | null = null;
   private walkerAnimCleanup: (() => void) | null = null;
+  private beginGestureCleanup: (() => void) | null = null;
 
   constructor() {
     super();
@@ -277,7 +283,10 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     }
 
     this.mountUi(container);
-    await ensureOvergrownAveriaFont();
+    await Promise.all([
+      ensureOvergrownAveriaFont(),
+      this.applyLoadingPaperBackground(),
+    ]);
     if (generation !== this.sequenceGeneration) {
       return;
     }
@@ -316,6 +325,29 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     finishLoading();
   }
 
+  /** Use the tear's first paper frame behind every loading-screen stage. */
+  private async applyLoadingPaperBackground(): Promise<void> {
+    try {
+      const url = await resolveProjectAssetUrl(LOADING_PAPER_FRAME_PATH);
+      await new Promise<void>((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve();
+        image.onerror = () => reject(new Error(`Failed to load paper background: ${url}`));
+        image.src = url;
+      });
+      if (!this.overlay) {
+        return;
+      }
+      this.overlay.style.backgroundColor = CREAM_CSS;
+      this.overlay.style.backgroundImage = `url(${JSON.stringify(url)})`;
+      this.overlay.style.backgroundPosition = 'center';
+      this.overlay.style.backgroundRepeat = 'no-repeat';
+      this.overlay.style.backgroundSize = 'cover';
+    } catch (error) {
+      console.warn('[StartupLoading] Paper background failed; using solid cream.', error);
+    }
+  }
+
   private async handOffToBrushReveal(world: ENGINE.World | null): Promise<void> {
     if (!world) {
       this.teardownUi();
@@ -347,6 +379,17 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
         '}',
         '#startup-loading-style-root .startup-walker-frames img {',
         '-webkit-user-drag:none;',
+        '}',
+        '@keyframes startup-begin-pulse {',
+        '0%,100% { opacity:0.55; transform:translateX(-50%) scale(0.97); }',
+        '50% { opacity:1; transform:translateX(-50%) scale(1.04); }',
+        '}',
+        '#startup-loading-style-root .startup-begin-prompt {',
+        'animation:startup-begin-pulse 1.35s ease-in-out infinite;',
+        'will-change:opacity,transform;',
+        '}',
+        '@media (prefers-reduced-motion: reduce) {',
+        '#startup-loading-style-root .startup-begin-prompt { animation:none; opacity:1; }',
         '}',
       ].join('');
       container.appendChild(style);
@@ -408,6 +451,25 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
       'padding:0 20px',
       'letter-spacing:-0.03em',
       'min-height:1.15em',
+    ].join(';');
+
+    const beginPrompt = document.createElement('p');
+    beginPrompt.className = 'startup-begin-prompt';
+    beginPrompt.textContent = '';
+    beginPrompt.style.cssText = [
+      'position:absolute',
+      'left:50%',
+      'top:calc(50% + 62px)',
+      'transform:translateX(-50%)',
+      'display:none',
+      'margin:0',
+      `color:${TEXT_CSS}`,
+      'font:700 20px/1.3 "Overgrown Averia","Segoe UI Rounded","Segoe UI",sans-serif',
+      'letter-spacing:0.04em',
+      'text-align:center',
+      'white-space:nowrap',
+      'cursor:pointer',
+      'user-select:none',
     ].join(';');
 
     const messageStage = document.createElement('div');
@@ -477,23 +539,32 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     messageStage.appendChild(messageCopy);
 
     contentShell.appendChild(title);
+    contentShell.appendChild(beginPrompt);
     contentShell.appendChild(messageStage);
     overlay.appendChild(contentShell);
     container.appendChild(overlay);
 
     this.overlay = overlay;
     this.titleEl = title;
+    this.beginPromptEl = beginPrompt;
     this.messageStage = messageStage;
     this.messageLineEls = messageLineEls;
   }
 
   private async runLoadingCopySequence(typingGeneration: number): Promise<void> {
-    if (!this.titleEl || !this.messageStage || this.messageLineEls.length === 0) {
+    if (
+      !this.titleEl
+      || !this.beginPromptEl
+      || !this.messageStage
+      || this.messageLineEls.length === 0
+    ) {
       return;
     }
 
     this.titleEl.textContent = '';
     this.titleEl.style.display = 'flex';
+    this.beginPromptEl.textContent = '';
+    this.beginPromptEl.style.display = 'none';
     this.messageStage.style.display = 'none';
     for (const lineEl of this.messageLineEls) {
       lineEl.textContent = '';
@@ -509,14 +580,26 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
       });
     }
 
-    await new Promise<void>((resolve) => {
-      window.setTimeout(resolve, POST_TITLE_HOLD_MS);
-    });
+    const titleCompletedAt = performance.now();
+    this.beginPromptEl.textContent = BEGIN_PROMPT_TEXT;
+    this.beginPromptEl.style.display = 'block';
+
+    await this.waitForBeginGesture();
+    const remainingTitleHold = Math.max(
+      0,
+      POST_TITLE_HOLD_MS - (performance.now() - titleCompletedAt),
+    );
+    if (remainingTitleHold > 0) {
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, remainingTitleHold);
+      });
+    }
     if (typingGeneration !== this.typingGeneration || !this.messageStage) {
       return;
     }
 
     this.titleEl.style.display = 'none';
+    this.beginPromptEl.style.display = 'none';
     this.messageStage.style.display = 'flex';
 
     for (let lineIndex = 0; lineIndex < LOADING_MESSAGE_LINES.length; lineIndex += 1) {
@@ -537,8 +620,58 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     }
   }
 
+  /** Wait for a trusted gesture; synthetic clicks cannot unlock browser audio. */
+  private waitForBeginGesture(): Promise<void> {
+    const overlay = this.overlay;
+    if (!overlay) {
+      return Promise.resolve();
+    }
+    const gestureTarget: HTMLDivElement = overlay;
+    this.beginGestureCleanup?.();
+
+    return new Promise<void>((resolve) => {
+      let finished = false;
+      const owner = this;
+
+      function removeListeners(): void {
+        gestureTarget.removeEventListener('pointerdown', onGesture);
+        window.removeEventListener('keydown', onGesture);
+        if (owner.beginGestureCleanup === cancel) {
+          owner.beginGestureCleanup = null;
+        }
+      }
+
+      function finish(): void {
+        if (finished) {
+          return;
+        }
+        finished = true;
+        removeListeners();
+        resolve();
+      }
+
+      function onGesture(event: Event): void {
+        if (!event.isTrusted) {
+          return;
+        }
+        startGoldenHourAudio(owner.getWorld());
+        finish();
+      }
+
+      function cancel(): void {
+        finish();
+      }
+
+      gestureTarget.addEventListener('pointerdown', onGesture);
+      window.addEventListener('keydown', onGesture);
+      this.beginGestureCleanup = cancel;
+    });
+  }
+
   private teardownUi(): void {
     this.typingGeneration += 1;
+    this.beginGestureCleanup?.();
+    this.beginGestureCleanup = null;
     this.walkerAnimCleanup?.();
     this.walkerAnimCleanup = null;
     this.styleEl?.remove();
@@ -546,6 +679,7 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     this.overlay?.remove();
     this.overlay = null;
     this.titleEl = null;
+    this.beginPromptEl = null;
     this.messageStage = null;
     this.messageLineEls = [];
   }

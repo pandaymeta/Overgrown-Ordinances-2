@@ -9061,7 +9061,7 @@
         ],
         "modelUrl": "@project/assets/OrdinanceCards/Clean/Crates_Clean.glb",
         "name": "Crates 03",
-        "nodeId": 54326,
+        "nodeId": 60486,
         "position": {
           "$bc": "v3",
           "_": [
@@ -10294,7 +10294,7 @@
         ],
         "modelUrl": "@project/assets/OrdinanceCards/Clean/TreesClimbing_Clean.glb",
         "name": "Trees Climbing",
-        "nodeId": 9927,
+        "nodeId": 21207,
         "position": {
           "$bc": "v3",
           "_": [

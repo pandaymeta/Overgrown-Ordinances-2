@@ -15,6 +15,9 @@ export const STARTUP_WALKER_FRAME_PATHS = [
 
 export const STARTUP_PRELOAD_ASSETS: readonly string[] = [
   '@project/assets/audio/music/sonican-sneaky-curious-jazzy-loop-no2.mp3',
-  '@project/assets/textures/startup-splash/transition-cream-atlas.png',
+  '@project/assets/audio/sfx/Error.mp3',
+  '@project/assets/audio/sfx/transition-tear.mp3',
+  '@project/assets/textures/startup-splash/transition-cream-png/cream-00.png',
+  '@project/assets/textures/startup-splash/transition-tear-cream-atlas.png',
   ...STARTUP_WALKER_FRAME_PATHS,
 ] as const;

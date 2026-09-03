@@ -1,0 +1,16 @@
+{
+  "frameCount": 60,
+  "cols": 6,
+  "rows": 10,
+  "frameWidth": 640,
+  "frameHeight": 360,
+  "durationSec": 2.0,
+  "fps": 30,
+  "cream": "#f4f1ea",
+  "sourceVideo": "C:\\Users\\Reyjhon Entenia\\Documents\\Overgrown\\TransitionTear.mp4",
+  "sheetRemovalOrder": [
+    "top",
+    "bottom"
+  ],
+  "tearCompleteFrame": 35
+}

@@ -1,21 +1,23 @@
 /**
- * Cream splash reveal (startup only):
- * Plays the authored transition as a spritesheet atlas (green keyed → cream).
- * Frame 0 is full cream cover; later frames open to the scene.
- * Next-day / soft-loop day resets use a solid black CSS fade — not this splash.
+ * Cream paper-tear reveal (startup only):
+ * Plays the authored transition as a spritesheet atlas (green keyed transparent,
+ * paper flattened to loading-screen cream). Frame 0 is full cream cover; later
+ * frames tear open to the scene. Next-day / soft-loop resets stay solid black.
  */
 
 import * as ENGINE from '@gnsx/genesys.js';
 
-const ATLAS_PATH = '@project/assets/textures/startup-splash/transition-cream-atlas.png';
-const FRAME_COUNT = 50;
+import { GameSound, playSound, TRANSITION_TEAR_VOLUME } from './game-audio.js';
+
+const ATLAS_PATH = '@project/assets/textures/startup-splash/transition-tear-cream-atlas.png';
+const FRAME_COUNT = 60;
 const ATLAS_COLS = 6;
 const FRAME_WIDTH = 640;
-const FRAME_HEIGHT = 357;
-const VIDEO_DURATION_MS = 1667;
+const FRAME_HEIGHT = 360;
+const VIDEO_DURATION_MS = 2000;
 const CREAM_CSS = '#f4f1ea';
-/** Default splash open length when callers omit revealMs. */
-const DEFAULT_REVEAL_MS = 1600;
+/** Match the complete 60-frame paper-tear source. */
+const DEFAULT_REVEAL_MS = VIDEO_DURATION_MS;
 const DEFAULT_HOLD_MS = 200;
 /** Brief hold on the last splash frame before fading the overlay out. */
 const END_FRAME_HOLD_MS = 80;
@@ -94,10 +96,13 @@ function sourceSize(source: CanvasImageSource): { width: number; height: number 
   if (source instanceof HTMLVideoElement) {
     return { width: source.videoWidth, height: source.videoHeight };
   }
-  return { width: FRAME_WIDTH * ATLAS_COLS, height: FRAME_HEIGHT * 6 };
+  return {
+    width: FRAME_WIDTH * ATLAS_COLS,
+    height: FRAME_HEIGHT * Math.ceil(FRAME_COUNT / ATLAS_COLS),
+  };
 }
 
-/** Startup cream splash atlas from transitionplease.mp4. */
+/** Startup cream paper-tear atlas from TransitionTear.mp4. */
 @ENGINE.GameClass()
 export class StartupBrushRevealSystem extends ENGINE.SceneNode {
   private overlay: HTMLDivElement | null = null;
@@ -114,6 +119,7 @@ export class StartupBrushRevealSystem extends ENGINE.SceneNode {
   private cachedLayoutWidth = 0;
   private cachedLayoutHeight = 0;
   private finishingReveal = false;
+  private tearAudioStarted = false;
 
   constructor() {
     super();
@@ -136,7 +142,7 @@ export class StartupBrushRevealSystem extends ENGINE.SceneNode {
     void this.playReveal();
   }
 
-  /** Play (or replay) the cream splash reveal; resolves when finished. */
+  /** Play (or replay) the cream paper-tear reveal; resolves when finished. */
   public playReveal(options?: BrushRevealOptions): Promise<void> {
     if (this.running || this.overlay) {
       return new Promise((resolve) => this.playWaiters.push(resolve));
@@ -145,6 +151,7 @@ export class StartupBrushRevealSystem extends ENGINE.SceneNode {
     this.activeRevealMs = options?.revealMs ?? DEFAULT_REVEAL_MS;
     this.onCoverReady = options?.onCoverReady ?? null;
     this.running = true;
+    this.tearAudioStarted = false;
     revealFinished = false;
     const done = new Promise<void>((resolve) => this.playWaiters.push(resolve));
     void this.beginRevealSequence(this.sequenceGeneration);
@@ -201,7 +208,6 @@ export class StartupBrushRevealSystem extends ENGINE.SceneNode {
     this.resizeAndPaintSolidCream();
     const coverReady = this.onCoverReady;
     this.onCoverReady = null;
-    coverReady?.();
 
     try {
       if (!this.atlas) {
@@ -212,6 +218,7 @@ export class StartupBrushRevealSystem extends ENGINE.SceneNode {
         return;
       }
       console.warn('[StartupBrushReveal] Atlas load failed; fading cream out.', error);
+      coverReady?.();
       await this.fadeSolidCreamOut();
       this.removeOverlay(true);
       return;
@@ -223,6 +230,7 @@ export class StartupBrushRevealSystem extends ENGINE.SceneNode {
 
     overlay.style.background = 'transparent';
     this.paintFrame(0);
+    coverReady?.();
 
     const start = performance.now();
     const holdMs = this.activeHoldMs;
@@ -240,6 +248,7 @@ export class StartupBrushRevealSystem extends ENGINE.SceneNode {
         return;
       }
 
+      this.startTearAudio();
       const raw = Math.min(1, Math.max(0, (elapsed - holdMs) / revealMs));
       const index = Math.min(lastIndex, Math.round(raw * lastIndex));
       this.paintFrame(index);
@@ -252,6 +261,14 @@ export class StartupBrushRevealSystem extends ENGINE.SceneNode {
       this.animationFrame = requestAnimationFrame(tick);
     };
     this.animationFrame = requestAnimationFrame(tick);
+  }
+
+  private startTearAudio(): void {
+    if (this.tearAudioStarted) {
+      return;
+    }
+    this.tearAudioStarted = true;
+    playSound(this.getWorld(), GameSound.TransitionTear, TRANSITION_TEAR_VOLUME);
   }
 
   private async finishRevealSmooth(generation: number): Promise<void> {
@@ -474,6 +491,7 @@ export class StartupBrushRevealSystem extends ENGINE.SceneNode {
     this.cachedLayoutWidth = 0;
     this.cachedLayoutHeight = 0;
     this.finishingReveal = false;
+    this.tearAudioStarted = false;
     this.canvas = null;
     this.overlay?.remove();
     this.overlay = null;

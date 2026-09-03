@@ -4,7 +4,8 @@ const fs = require('fs');
 // list only for assets required before the scene can be revealed; scanning the
 // entire assets directory made obsolete backups part of every startup preload.
 const out = [
-  '@project/assets/textures/startup-splash/transition-cream-atlas.png',
+  '@project/assets/textures/startup-splash/transition-cream-png/cream-00.png',
+  '@project/assets/textures/startup-splash/transition-tear-cream-atlas.png',
 ];
 const body = [
   '/**',

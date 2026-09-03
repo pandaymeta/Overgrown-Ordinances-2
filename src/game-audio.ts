@@ -40,6 +40,8 @@ export const GameSound = {
   Victory: '@project/assets/audio/sfx/victory.mp3',
   /** Player broke a live ordinance (soft-loop re-violation). */
   Error: '@project/assets/audio/sfx/Error.mp3',
+  /** Cream paper-tear splash, extracted from TransitionTear.mp4. */
+  TransitionTear: '@project/assets/audio/sfx/transition-tear.mp3',
 } as const;
 
 const FOOTSTEPS = [
@@ -151,6 +153,7 @@ function playImmediateGainSound(
   volume: number,
   position: THREE.Vector3 | null,
   positional: { maxDistance: number; rolloffFactor: number } | null = null,
+  startOffsetSec = 0,
 ): void {
   const manager = getManager(world);
   const listener = world.audioListener;
@@ -202,7 +205,12 @@ function playImmediateGainSound(
         gain.connect(destination);
       }
 
-      source.start(0);
+      const safeStartOffset = THREE.MathUtils.clamp(
+        startOffsetSec,
+        0,
+        Math.max(0, buffer.duration - 0.001),
+      );
+      source.start(0, safeStartOffset);
       source.onended = () => {
         try {
           source.disconnect();
@@ -243,6 +251,8 @@ export const ORDINANCE_BREAK_ERROR_VOLUME = 4;
 export const MAILBOX_LATCH_VOLUME = 7.2;
 /** Letter / paper UI and envelope interactions. */
 export const ENVELOPE_PAPER_VOLUME = 3.2;
+/** Startup cream paper-tear — quieter than source so it sits under the mix. */
+export const TRANSITION_TEAR_VOLUME = 0.5;
 
 export function playOrdinanceStamp(world: ENGINE.World | null | undefined): void {
   for (let index = 0; index < ORDINANCE_STAMP_LOOP_COUNT; index++) {
@@ -256,7 +266,19 @@ export function playOrdinanceStamp(world: ENGINE.World | null | undefined): void
 
 /** Same-day rule break sting when a live ordinance is re-violated. */
 export function playOrdinanceBreakError(world: ENGINE.World | null | undefined): void {
-  playSound(world, GameSound.Error, ORDINANCE_BREAK_ERROR_VOLUME);
+  if (!world) {
+    return;
+  }
+  // Error.mp3 has roughly 0.604s of leading silence; skip it so the sting
+  // lands on the violation frame instead of during the ordinance camera move.
+  playImmediateGainSound(
+    world,
+    GameSound.Error,
+    ORDINANCE_BREAK_ERROR_VOLUME,
+    null,
+    null,
+    0.6,
+  );
 }
 
 /** Plays a one-shot at a world position so it pans and falls off with distance. */

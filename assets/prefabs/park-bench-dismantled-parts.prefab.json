@@ -1,13 +1,12 @@
 {
   "$root": {
     "$bc": "ENGINE.Prefab",
-    "$uuid": "a07271444e8f7c02",
+    "$uuid": "9fd476cf6510c3cc",
     "rootNode": {
       "$bc": "ENGINE.SceneNode",
       "children": [
         {
           "$bc": "ENGINE.ModelMeshNode",
-          "castShadow": true,
           "children": [
             {
               "$bc": "GAME.CarryableCrateNode",
@@ -35,7 +34,6 @@
             ]
           },
           "prefabId": "26c74975032d4486",
-          "receiveShadow": true,
           "rotation": {
             "$bc": "e",
             "_": [
@@ -55,7 +53,6 @@
         },
         {
           "$bc": "ENGINE.ModelMeshNode",
-          "castShadow": true,
           "children": [
             {
               "$bc": "GAME.CarryableCrateNode",
@@ -83,7 +80,6 @@
             ]
           },
           "prefabId": "2f05358721ff95ad",
-          "receiveShadow": true,
           "rotation": {
             "$bc": "e",
             "_": [
@@ -103,7 +99,6 @@
         },
         {
           "$bc": "ENGINE.ModelMeshNode",
-          "castShadow": true,
           "children": [
             {
               "$bc": "GAME.CarryableCrateNode",
@@ -131,7 +126,6 @@
             ]
           },
           "prefabId": "42a4ca88a92c6f27",
-          "receiveShadow": true,
           "scale": {
             "$bc": "v3",
             "_": [
@@ -143,7 +137,6 @@
         },
         {
           "$bc": "ENGINE.ModelMeshNode",
-          "castShadow": true,
           "children": [
             {
               "$bc": "GAME.CarryableCrateNode",
@@ -171,7 +164,6 @@
             ]
           },
           "prefabId": "6f9fc0fec44b68ac",
-          "receiveShadow": true,
           "rotation": {
             "$bc": "e",
             "_": [
