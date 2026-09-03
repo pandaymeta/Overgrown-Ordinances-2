@@ -36,6 +36,10 @@ const INITIAL_CAMERA_DISTANCE = 3;
 const MIN_CAMERA_DISTANCE = 2;
 /** Maximum scroll-zoom spring-arm distance during gameplay (meters). */
 const MAX_CAMERA_DISTANCE = 30;
+/** Mobile world-drag camera yaw response in radians per CSS pixel. */
+const TOUCH_ORBIT_RADIANS_PER_PIXEL = 0.006;
+/** Pinch spread converted to spring-arm meters; spreading fingers zooms in. */
+const TOUCH_ZOOM_METERS_PER_PIXEL = 0.025;
 
 const AXE_ATTACK_CLIP = 'Attack 01';
 const AXE_ATTACK_PLAY_RATE = 2;
@@ -1054,6 +1058,54 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
     return this.throwCarriedCrate();
   }
 
+  /** Mobile world press: an axe strike occurs once on pointer-down. */
+  public handleTouchWorldPress(): boolean {
+    if (!this.heldTool) {
+      return false;
+    }
+    return this.streetLampDismantling.handlePrimaryAction(
+      this,
+      this.heldTool,
+      this.camera,
+      this.carryAimNdc,
+      this.playAxeAttackAnimation,
+    );
+  }
+
+  /** Mobile world release: throw at the final finger position, or perform a tap action. */
+  public handleTouchWorldRelease(): boolean {
+    if (this.carriedCrate) {
+      return this.throwCarriedCrate();
+    }
+    // Axe attacks are deliberately handled only by pointer-down, never by release.
+    if (this.heldTool) {
+      return false;
+    }
+    return this.handleCarryPrimaryAction();
+  }
+
+  public isTouchThrowAiming(): boolean {
+    return this.carriedCrate !== null;
+  }
+
+  public rotateCameraFromTouch(deltaX: number): void {
+    if (this.cinematicCameraLock || this.introFaceCamActive || !this.cameraYawPivot) {
+      return;
+    }
+    this.cameraYawPivot.rotation.y -= deltaX * TOUCH_ORBIT_RADIANS_PER_PIXEL;
+  }
+
+  public zoomCameraFromTouch(deltaDistance: number): void {
+    if (this.cinematicCameraLock) {
+      return;
+    }
+    this.cameraTargetDistance = THREE.MathUtils.clamp(
+      this.cameraTargetDistance - deltaDistance * TOUCH_ZOOM_METERS_PER_PIXEL,
+      this.cameraMinDistance,
+      this.cameraMaxDistance,
+    );
+  }
+
   public endFire(): boolean {
     return false;
   }
@@ -1148,6 +1200,10 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
   }
 
   public setCarryAimCursor(event: MouseEvent): void {
+    this.setCarryAimScreenPoint(event.clientX, event.clientY);
+  }
+
+  public setCarryAimScreenPoint(clientX: number, clientY: number): void {
     const container = this.getWorld()?.gameContainer;
     if (!container) {
       return;
@@ -1158,8 +1214,8 @@ export class ThirdPersonPlayer extends ENGINE.CharacterPawn {
       return;
     }
     this.carryAimNdc.set(
-      ((event.clientX - rect.left) / rect.width) * 2 - 1,
-      -(((event.clientY - rect.top) / rect.height) * 2 - 1),
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -(((clientY - rect.top) / rect.height) * 2 - 1),
     );
   }
 

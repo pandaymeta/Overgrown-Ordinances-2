@@ -232,9 +232,35 @@ class ThirdPersonGame extends ENGINE.BaseGameLoop {
 }
 
 export function main(container: HTMLElement, options?: Partial<ENGINE.BaseGameLoopOptions>): ENGINE.IGameLoop {
+  const mobile = ENGINE.isMobileBrowser();
+  if (mobile && ENGINE.CVarManager.getValue('r.ScreenPercentage', 100) === 100) {
+    // Mobile GPUs are usually fill-rate limited. An absolute 0.75 pixel ratio
+    // keeps the painterly presentation readable without rendering excess DPR pixels.
+    ENGINE.CVarManager.setValue('r.ScreenPercentage', 75);
+  }
+
   const mergedOptions: Partial<ENGINE.BaseGameLoopOptions> = {
     ...options,
     defaultGameModeClass: ThirdPersonGameMode,
+    virtualJoystickOptions: options?.virtualJoystickOptions ?? {
+      enabled: 'auto',
+      size: 112,
+      opacity: 0.62,
+      threshold: 0.08,
+      fadeTime: 140,
+      left: {
+        zone: {
+          left: 'max(16px, env(safe-area-inset-left))',
+          bottom: 'max(16px, env(safe-area-inset-bottom))',
+        },
+      },
+      right: {
+        zone: {
+          right: 'max(16px, env(safe-area-inset-right))',
+          bottom: 'max(16px, env(safe-area-inset-bottom))',
+        },
+      },
+    },
   };
   const game = new ThirdPersonGame(container, mergedOptions);
   return game;

@@ -67,13 +67,24 @@ interface ColliderDescLike {
 interface RapierWorldLike {
   createCollider?: (desc: unknown, parent?: unknown) => unknown;
   createRigidBody?: (desc: unknown) => unknown;
+  removeRigidBody?: (body: unknown) => void;
 }
 
 interface PhysicsEngineProto {
   scaleMeshColliderDesc?: (colliderDesc: unknown, scale: THREE.Vector3) => unknown;
   doCreateMeshBody?: (desc: unknown, scale: THREE.Vector3) => unknown;
+  doRemoveNode?: (record: unknown) => boolean;
+  world?: RapierWorldLike | null;
+  colliderToNode?: Map<number, unknown>;
   __overgrownTrimeshScalePatch?: boolean;
+  __overgrownSafeRemoveNodePatch?: boolean;
 }
+
+type RapierRecordLike = [
+  { numColliders?: () => number },
+  { handle?: number },
+  unknown,
+];
 
 function toFloat32(values: ArrayLike<number>): Float32Array {
   return new Float32Array(values);
@@ -367,6 +378,46 @@ function installDoCreateMeshBodyGuard(proto: PhysicsEngineProto): void {
   }
 }
 
+/**
+ * Rapier's RigidBody.numColliders() traps if Studio removes a node while the
+ * same WASM object is already borrowed during scene recovery. The engine only
+ * uses that enumeration to clear colliderToNode, so clear the JS map by owner
+ * and then remove the body directly without re-borrowing the RigidBody.
+ */
+function installSafeRemoveNodePatch(proto: PhysicsEngineProto): void {
+  if (proto.__overgrownSafeRemoveNodePatch || typeof proto.doRemoveNode !== 'function') {
+    return;
+  }
+
+  const original = proto.doRemoveNode;
+  proto.doRemoveNode = function safeRemoveNode(this: PhysicsEngineProto, record: unknown): boolean {
+    const [rigidBody, primaryCollider] = record as RapierRecordLike;
+    const world = this.world;
+    const colliderToNode = this.colliderToNode;
+    if (!rigidBody || typeof world?.removeRigidBody !== 'function' || !colliderToNode) {
+      return original.call(this, record);
+    }
+
+    const primaryHandle = primaryCollider?.handle;
+    const owner = typeof primaryHandle === 'number'
+      ? colliderToNode.get(primaryHandle)
+      : undefined;
+    if (owner !== undefined) {
+      for (const [handle, mappedNode] of colliderToNode) {
+        if (mappedNode === owner) {
+          colliderToNode.delete(handle);
+        }
+      }
+    } else if (typeof primaryHandle === 'number') {
+      colliderToNode.delete(primaryHandle);
+    }
+
+    world.removeRigidBody(rigidBody);
+    return true;
+  };
+  proto.__overgrownSafeRemoveNodePatch = true;
+}
+
 export function patchTrimeshColliderScale(physicsEngine: object | null | undefined): void {
   if (!physicsEngine) {
     return;
@@ -375,6 +426,7 @@ export function patchTrimeshColliderScale(physicsEngine: object | null | undefin
   const proto = Object.getPrototypeOf(physicsEngine) as PhysicsEngineProto;
   installScaleMeshColliderDescPatch(proto);
   installDoCreateMeshBodyGuard(proto);
+  installSafeRemoveNodePatch(proto);
   installCreateColliderPatch(physicsEngine);
 }
 
@@ -388,13 +440,16 @@ export function installEditorTrimeshPatch(engine: typeof import('@gnsx/genesys.j
     onEditorPropertyChanged?: (...args: unknown[]) => void;
     onEditorAddToWorld?: () => void;
     refreshPhysicsBody?: () => void;
+    unregisterPhysicsBody?: () => void;
     getPhysicsEngine?: () => object | null;
     __overgrownEditorTrimeshHook?: boolean;
   };
   if (!primitiveProto.__overgrownEditorTrimeshHook) {
     primitiveProto.__overgrownEditorTrimeshHook = true;
 
-    const wrapPrimitive = (methodName: 'onEditorPropertyChanged' | 'onEditorAddToWorld' | 'refreshPhysicsBody'): void => {
+    const wrapPrimitive = (
+      methodName: 'onEditorPropertyChanged' | 'onEditorAddToWorld' | 'refreshPhysicsBody' | 'unregisterPhysicsBody',
+    ): void => {
       const original = primitiveProto[methodName];
       if (typeof original !== 'function') {
         return;
@@ -408,6 +463,9 @@ export function installEditorTrimeshPatch(engine: typeof import('@gnsx/genesys.j
     wrapPrimitive('onEditorPropertyChanged');
     wrapPrimitive('onEditorAddToWorld');
     wrapPrimitive('refreshPhysicsBody');
+    // Scene recovery removes existing nodes before loading the startup scene.
+    // Install the safe Rapier removal path immediately before that first teardown.
+    wrapPrimitive('unregisterPhysicsBody');
   }
 
   const loopProto = engine.BaseGameLoop.prototype as unknown as {

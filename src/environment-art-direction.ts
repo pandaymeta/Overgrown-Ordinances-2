@@ -16,7 +16,9 @@ type SurfaceStyle = {
   exposure: number;
 };
 
-const TEXTURE_ANISOTROPY = 4;
+const MOBILE_RENDERING_PROFILE = ENGINE.isMobileBrowser();
+const TEXTURE_ANISOTROPY = MOBILE_RENDERING_PROFILE ? 2 : 4;
+const PAINTED_TEXTURE_MAX_SIZE = MOBILE_RENDERING_PROFILE ? 512 : 1024;
 /** Bump when retuning so already-styled materials get the lighter sharp-mesh pass. */
 const STYLED_FLAG = 'civicAfternoonSurfaceStyleV3b';
 /** Spawned scrap that already received a source-prop material copy. */
@@ -154,8 +156,8 @@ function createPaintedMap(
     height?: number;
   };
   const detailImage = detailTexture.image as CanvasImageSource;
-  const width = Math.min(baseImage?.width ?? 0, 1024);
-  const height = Math.min(baseImage?.height ?? 0, 1024);
+  const width = Math.min(baseImage?.width ?? 0, PAINTED_TEXTURE_MAX_SIZE);
+  const height = Math.min(baseImage?.height ?? 0, PAINTED_TEXTURE_MAX_SIZE);
   if (!width || !height || !detailImage) {
     return null;
   }
@@ -305,9 +307,9 @@ function styleModel(node: ENGINE.ModelMeshNode, detailTexture: THREE.Texture | n
  * Clamp sun CSM to scene-authored budget values. Scene load + isSunLight can
  * re-enable expensive cascades (shadowFar auto-raised to 2000) and tank FPS.
  */
-const SUN_SHADOW_MAP_SIZE = 1024;
-const SUN_CSM_CASCADE_COUNT = 2;
-const SUN_CSM_MAX_FAR = 100;
+const SUN_SHADOW_MAP_SIZE = MOBILE_RENDERING_PROFILE ? 512 : 1024;
+const SUN_CSM_CASCADE_COUNT = MOBILE_RENDERING_PROFILE ? 1 : 2;
+const SUN_CSM_MAX_FAR = MOBILE_RENDERING_PROFILE ? 75 : 100;
 const SUN_SHADOW_FAR_CAP = 250;
 
 export function applyDirectionalShadowBudget(world: ENGINE.World | null | undefined): void {

@@ -29,6 +29,8 @@ const PLAYER_TARGET_LIFT = 0.9;
 const RAYCAST_CLEARANCE = 0.1;
 /** Skip full mesh tests when the camera/player barely moved. */
 const MOVE_EPSILON_SQ = 0.0025;
+/** Moving-camera mesh raycasts run every other frame on touch/mobile GPUs. */
+const MOBILE_OCCLUSION_FRAME_INTERVAL = ENGINE.isMobileBrowser() ? 2 : 1;
 
 type MaterialSwap = {
   mesh: THREE.Mesh;
@@ -163,8 +165,10 @@ export class ShophouseCameraOcclusionSystem extends ENGINE.SceneNode {
     const moved = !this.hasSampledPose
       || this.cameraPosition.distanceToSquared(this.lastCameraPosition) > MOVE_EPSILON_SQ
       || this.playerPosition.distanceToSquared(this.lastPlayerPosition) > MOVE_EPSILON_SQ;
-    // When the view is still, only re-test every other frame.
-    if (!moved && (this.tickCounter & 1) === 1) {
+    // Desktop remains immediate while moving. Mobile samples at half rate;
+    // stationary views already need only the same every-other-frame cadence.
+    const sampleInterval = Math.max(MOBILE_OCCLUSION_FRAME_INTERVAL, moved ? 1 : 2);
+    if (this.hasSampledPose && this.tickCounter % sampleInterval !== 0) {
       return;
     }
     this.lastCameraPosition.copy(this.cameraPosition);
