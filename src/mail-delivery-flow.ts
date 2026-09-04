@@ -90,7 +90,9 @@ const MODEL_FOCUS_DISTANCE = 2.2;
 /** Ordinance close-up at authored scale 1; larger boards multiply this. */
 const ORDINANCE_FOCUS_DISTANCE_AT_SCALE_1 = 2.5;
 /** Read hold after the typewriter finishes (intro + morning bubbles). */
-const SPEECH_READ_HOLD_SEC = 3.5;
+const SPEECH_READ_HOLD_SEC = 2;
+/** Intro letter bubble — same hold as other speech bubbles. */
+const INTRO_SPEECH_READ_HOLD_SEC = SPEECH_READ_HOLD_SEC;
 const ORDINANCE_FOCUS_SEC = 2;
 /** Latch first, then deliver SFX — avoids overlap on envelope insert. */
 const MAIL_DELIVER_SOUND_DELAY_SEC = 0.38;
@@ -130,7 +132,7 @@ const FADE_COVER_SCRAP_MAX_WAIT_SEC = 5;
 const NEXT_DAY_LABEL_HOLD_SEC = 0.4;
 const TYPEWRITER_CHAR_INTERVAL_SEC = 0.055;
 /** Day-0 want — no ordinance spoiler. */
-const INTRO_SPEECH_TEXT = 'Just get this to the box.\nHow hard can it be?';
+const INTRO_SPEECH_TEXT = 'One last letter.\nThe mailbox is still open.';
 /** Morning after the first ordinance sign is posted. */
 const MORNING_SPEECH_FIRST_SIGN =
   'They closed the road overnight.\nFine. I\'ll find another way.';
@@ -143,7 +145,7 @@ const MORNING_SPEECH_AXE =
 /** Recurring morning line from the fourth next-day onward. */
 const MORNING_SPEECH_AGAIN = 'How do I deliver\nthis letter?';
 /** Read hold after the delivery-reaction typewriter finishes. */
-const DELIVERY_SPEECH_READ_HOLD_SEC = 2.5;
+const DELIVERY_SPEECH_READ_HOLD_SEC = 2;
 /** Goal shown on the left HUD counter (delivery / ordinance discovery ways). */
 export const DELIVERY_WAY_GOAL = 12;
 /** Every ordinance in the run — full collector completion. */
@@ -1147,7 +1149,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     if (world && !this.speechEl) {
       this.ensureUi(world);
       if (this.phase === FlowPhase.IntroSpeech) {
-        this.showSpeechBubble(INTRO_SPEECH_TEXT, SPEECH_READ_HOLD_SEC);
+        this.showSpeechBubble(INTRO_SPEECH_TEXT, INTRO_SPEECH_READ_HOLD_SEC);
       }
     }
 
@@ -1541,7 +1543,7 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     this.player?.setCinematicCameraLock(true);
     this.player?.resetGameplayCameraToDefault(DEFAULT_CAMERA_DISTANCE);
     this.setPhase(FlowPhase.IntroSpeech);
-    this.showSpeechBubble(INTRO_SPEECH_TEXT, SPEECH_READ_HOLD_SEC);
+    this.showSpeechBubble(INTRO_SPEECH_TEXT, INTRO_SPEECH_READ_HOLD_SEC);
   }
 
   /** Escalating morning thoughts — one bubble per next-day. */
@@ -8325,16 +8327,17 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
     }
     this.showPromptAfterNextDayTransition = false;
     this.pendingTutorialKeysAfterSpeech = true;
-    this.showSpeechBubble(this.getMorningSpeechText(), SPEECH_READ_HOLD_SEC);
-    this.tryPlayAxeRingMorningHint();
+    const morningSpeech = this.getMorningSpeechText();
+    this.showSpeechBubble(morningSpeech, SPEECH_READ_HOLD_SEC);
+    this.tryPlayAxeRingMorningHint(morningSpeech);
   }
 
-  /** Fourth-day axe line: pulse the pickup ring while the bubble is up. */
-  private tryPlayAxeRingMorningHint(): void {
-    if (this.brokenOrdinanceOrder.length !== 3) {
+  /** Axe morning line: pulse the pickup ring while the bubble is up. */
+  private tryPlayAxeRingMorningHint(morningSpeech = this.getMorningSpeechText()): void {
+    if (morningSpeech !== MORNING_SPEECH_AXE) {
       return;
     }
-    const ring = this.getWorld()?.getNodes(AxePickupRingSystem)[0];
+    const ring = this.findAxePickupRing();
     if (!ring || ring.hasEverPickedUp()) {
       return;
     }
@@ -8342,14 +8345,59 @@ export class MailDeliveryFlowSystem extends ENGINE.SceneNode {
   }
 
   private endAxeRingPulseAfterMorningBubble(): void {
-    if (this.brokenOrdinanceOrder.length !== 3) {
+    if (this.getMorningSpeechText() !== MORNING_SPEECH_AXE) {
       return;
     }
-    const ring = this.getWorld()?.getNodes(AxePickupRingSystem)[0];
+    const ring = this.findAxePickupRing();
     if (!ring || ring.hasEverPickedUp()) {
       return;
     }
     ring.endHintPulseAfter(5);
+  }
+
+  private findAxePickupRing(): AxePickupRingSystem | null {
+    const world = this.getWorld();
+    if (!world) {
+      return null;
+    }
+    const typed = world.getNodes(AxePickupRingSystem);
+    if (typed.length === 1) {
+      return typed[0];
+    }
+    if (typed.length > 1) {
+      const axe = world.getNodes(ENGINE.ModelMeshNode).find(
+        (node) => AUTHORED_AXE_NAME.test(node.name ?? ''),
+      );
+      if (axe) {
+        const axePos = new THREE.Vector3();
+        axe.getWorldPosition(axePos);
+        let best = typed[0];
+        let bestDist = Number.POSITIVE_INFINITY;
+        for (const ring of typed) {
+          const ringPos = new THREE.Vector3();
+          ring.getWorldPosition(ringPos);
+          const dist = ringPos.distanceToSquared(axePos);
+          if (dist < bestDist) {
+            bestDist = dist;
+            best = ring;
+          }
+        }
+        return best;
+      }
+      return typed[0];
+    }
+    for (const root of world.getRootNodes()) {
+      if (root instanceof AxePickupRingSystem) {
+        return root;
+      }
+      if (/Axe Pickup Ring/i.test(root.name ?? '')) {
+        const nested = root.getNodes(AxePickupRingSystem)[0];
+        if (nested) {
+          return nested;
+        }
+      }
+    }
+    return null;
   }
 
   private playTutorialKeysHint(): void {

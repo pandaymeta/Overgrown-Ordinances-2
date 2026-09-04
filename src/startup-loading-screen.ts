@@ -1,5 +1,5 @@
 /**
- * Cream startup loading screen: title + stick-figure mailman + letter message, then splash reveal.
+ * Cream startup title screen: type the title while preloading, wait for click, then paper-tear.
  */
 
 import * as ENGINE from '@gnsx/genesys.js';
@@ -7,7 +7,7 @@ import * as ENGINE from '@gnsx/genesys.js';
 import { ensureOvergrownAveriaFont } from './overgrown-averia-font.js';
 import { startGoldenHourAudio } from './game-audio.js';
 import { waitForIntroPhysicsPrimed } from './intro-physics-gate.js';
-import { STARTUP_PRELOAD_ASSETS, STARTUP_WALKER_FRAME_PATHS } from './startup-preload-manifest.js';
+import { STARTUP_PRELOAD_ASSETS } from './startup-preload-manifest.js';
 import { StartupBrushRevealSystem } from './startup-brush-reveal.js';
 
 const CREAM_CSS = '#f4f1ea';
@@ -16,19 +16,8 @@ const LOADING_PAPER_FRAME_PATH =
   '@project/assets/textures/startup-splash/transition-cream-png/cream-00.png';
 const LOADING_TITLE = 'Overgrown Ordinances';
 const BEGIN_PROMPT_TEXT = '[ Click Anywhere ]';
-const LOADING_MESSAGE = 'One last letter.\nThe mailbox is still open.';
-const LOADING_MESSAGE_LINES = LOADING_MESSAGE.split('\n');
 const TYPEWRITER_CHAR_INTERVAL_MS = 55;
-/** Hold after the title finishes typing, before it disappears. */
-const POST_TITLE_HOLD_MS = 2000;
-/** Hold after the message finishes typing, before the splash opens. */
-const POST_MESSAGE_HOLD_MS = 2500;
 const LOADING_TITLE_FONT_PX = 56;
-const LOADING_MESSAGE_FONT_PX = 30;
-const LOADING_MESSAGE_LINE_HEIGHT = 1.45;
-/** Walk cycle length for the SVG frame sequence. */
-const WALKER_CYCLE_SEC = 0.8;
-const WALKER_STAGE_HEIGHT_PX = 220;
 const PRELOAD_CONCURRENCY = 8;
 /** Match the complete 60-frame paper-tear source. */
 const STARTUP_REVEAL_HOLD_MS = 200;
@@ -140,71 +129,16 @@ async function resolveProjectAssetUrl(logicalPath: string): Promise<string> {
   return url;
 }
 
-async function preloadWalkerFrames(): Promise<string[]> {
-  const urls = await Promise.all(STARTUP_WALKER_FRAME_PATHS.map(resolveProjectAssetUrl));
-  await Promise.all(urls.map((url) => new Promise<void>((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve();
-    image.onerror = () => reject(new Error(`Failed to preload walker frame: ${url}`));
-    image.src = url;
-  })));
-  return urls;
-}
-
-/** Flipbook walk cycle from authored SVG frames. */
-async function mountWalkerFrameAnimation(container: HTMLElement): Promise<() => void> {
-  const urls = await preloadWalkerFrames();
-  container.replaceChildren();
-  container.style.cssText = 'position:relative;width:100%;height:100%;';
-
-  const images = urls.map((url, index) => {
-    const image = document.createElement('img');
-    image.src = url;
-    image.alt = '';
-    image.setAttribute('aria-hidden', 'true');
-    image.draggable = false;
-    image.style.cssText = [
-      'position:absolute',
-      'inset:0',
-      'width:100%',
-      'height:100%',
-      'object-fit:contain',
-      'object-position:center bottom',
-      `opacity:${index === 0 ? '1' : '0'}`,
-      'pointer-events:none',
-      'user-select:none',
-    ].join(';');
-    container.appendChild(image);
-    return image;
-  });
-
-  const frameMs = (WALKER_CYCLE_SEC * 1000) / images.length;
-  let frame = 0;
-  const timer = window.setInterval(() => {
-    images[frame].style.opacity = '0';
-    frame = (frame + 1) % images.length;
-    images[frame].style.opacity = '1';
-  }, frameMs);
-
-  return () => {
-    window.clearInterval(timer);
-    container.replaceChildren();
-  };
-}
-
 @ENGINE.GameClass()
 export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
   private overlay: HTMLDivElement | null = null;
   private styleEl: HTMLStyleElement | null = null;
   private titleEl: HTMLHeadingElement | null = null;
   private beginPromptEl: HTMLParagraphElement | null = null;
-  private messageStage: HTMLDivElement | null = null;
-  private messageLineEls: HTMLParagraphElement[] = [];
   private typingGeneration = 0;
   private started = false;
   private sequenceGeneration = 0;
   private earlyPreloadPromise: Promise<void> | null = null;
-  private walkerAnimCleanup: (() => void) | null = null;
   private beginGestureCleanup: (() => void) | null = null;
 
   constructor() {
@@ -291,6 +225,7 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
       return;
     }
 
+    // Title screen owns all preload work; click only unlocks after assets + physics are ready.
     const preloadPromise = (async (): Promise<void> => {
       await this.ensureEarlyAssetWarmup();
       try {
@@ -301,17 +236,18 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
       await waitForIntroPhysicsPrimed();
     })();
 
-    const copyPromise = (async (): Promise<void> => {
-      await this.runLoadingCopySequence(this.typingGeneration);
-      if (generation !== this.sequenceGeneration) {
-        return;
-      }
-      await new Promise<void>((resolve) => {
-        window.setTimeout(resolve, POST_MESSAGE_HOLD_MS);
-      });
-    })();
+    await this.runTitleSequence(this.typingGeneration);
+    if (generation !== this.sequenceGeneration) {
+      return;
+    }
 
-    await Promise.all([preloadPromise, copyPromise]);
+    await preloadPromise;
+    if (generation !== this.sequenceGeneration) {
+      return;
+    }
+
+    this.showBeginPrompt();
+    await this.waitForBeginGesture();
     if (generation !== this.sequenceGeneration) {
       this.teardownUi();
       return;
@@ -325,7 +261,7 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     finishLoading();
   }
 
-  /** Use the tear's first paper frame behind every loading-screen stage. */
+  /** Use the tear's first paper frame behind the title screen. */
   private async applyLoadingPaperBackground(): Promise<void> {
     try {
       const url = await resolveProjectAssetUrl(LOADING_PAPER_FRAME_PATH);
@@ -374,12 +310,6 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
       const style = document.createElement('style');
       style.id = 'startup-loading-style';
       style.textContent = [
-        '#startup-loading-style-root .startup-walker-stage {',
-        'will-change:opacity;',
-        '}',
-        '#startup-loading-style-root .startup-walker-frames img {',
-        '-webkit-user-drag:none;',
-        '}',
         '@keyframes startup-begin-pulse {',
         '0%,100% { opacity:0.55; transform:translateX(-50%) scale(0.97); }',
         '50% { opacity:1; transform:translateX(-50%) scale(1.04); }',
@@ -398,7 +328,7 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
 
     const overlay = document.createElement('div');
     overlay.id = 'startup-loading-style-root';
-    overlay.setAttribute('aria-label', 'Loading');
+    overlay.setAttribute('aria-label', 'Title');
     overlay.style.cssText = [
       'position:absolute',
       'inset:0',
@@ -414,20 +344,15 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     ].join(';');
 
     const contentShell = document.createElement('div');
-    const messageBlockHeight = WALKER_STAGE_HEIGHT_PX
-      + 28
-      + LOADING_MESSAGE_LINES.length * LOADING_MESSAGE_FONT_PX * LOADING_MESSAGE_LINE_HEIGHT;
-    const contentHeight = Math.max(
-      Math.ceil(LOADING_TITLE_FONT_PX * 1.15),
-      messageBlockHeight,
-    );
     contentShell.style.cssText = [
       'position:relative',
       'width:100%',
-      `height:${contentHeight}px`,
+      `height:${Math.ceil(LOADING_TITLE_FONT_PX * 1.15)}px`,
     ].join(';');
 
-    const centeredStageStyle = [
+    const title = document.createElement('h1');
+    title.textContent = '';
+    title.style.cssText = [
       'position:absolute',
       'left:50%',
       'top:50%',
@@ -437,12 +362,6 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
       'flex-direction:column',
       'align-items:center',
       'justify-content:center',
-    ].join(';');
-
-    const title = document.createElement('h1');
-    title.textContent = '';
-    title.style.cssText = [
-      centeredStageStyle,
       'margin:0',
       'max-width:min(720px,92vw)',
       `color:${TEXT_CSS}`,
@@ -472,92 +391,18 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
       'user-select:none',
     ].join(';');
 
-    const messageStage = document.createElement('div');
-    messageStage.style.cssText = [
-      centeredStageStyle,
-      'display:none',
-      'gap:28px',
-      'max-width:min(520px,86vw)',
-    ].join(';');
-
-    const walkerStage = document.createElement('div');
-    walkerStage.className = 'startup-walker-stage';
-    walkerStage.style.cssText = [
-      'width:min(200px,48vw)',
-      `height:min(${WALKER_STAGE_HEIGHT_PX}px,52vw)`,
-      `flex:0 0 min(${WALKER_STAGE_HEIGHT_PX}px,52vw)`,
-      'display:flex',
-      'align-items:flex-end',
-      'justify-content:center',
-    ].join(';');
-    const walkerFrames = document.createElement('div');
-    walkerFrames.className = 'startup-walker-frames';
-    walkerFrames.style.cssText = 'width:100%;height:100%;';
-    walkerStage.appendChild(walkerFrames);
-    void mountWalkerFrameAnimation(walkerFrames)
-      .then((cleanup) => {
-        if (!walkerStage.isConnected) {
-          cleanup();
-          return;
-        }
-        this.walkerAnimCleanup = cleanup;
-      })
-      .catch((error) => {
-        console.warn('[StartupLoading] Walker frames failed to load', error);
-      });
-
-    const messageCopy = document.createElement('div');
-    messageCopy.style.cssText = [
-      'display:flex',
-      'flex-direction:column',
-      'align-items:center',
-      'gap:0',
-      'width:100%',
-      `min-height:${LOADING_MESSAGE_LINES.length * LOADING_MESSAGE_FONT_PX * LOADING_MESSAGE_LINE_HEIGHT}px`,
-    ].join(';');
-
-    const messageLineEls: HTMLParagraphElement[] = [];
-    const lineHeightPx = LOADING_MESSAGE_FONT_PX * LOADING_MESSAGE_LINE_HEIGHT;
-    for (let lineIndex = 0; lineIndex < LOADING_MESSAGE_LINES.length; lineIndex += 1) {
-      const line = document.createElement('p');
-      line.textContent = '';
-      line.style.cssText = [
-        'margin:0',
-        `color:${TEXT_CSS}`,
-        `font:700 ${LOADING_MESSAGE_FONT_PX}px/${LOADING_MESSAGE_LINE_HEIGHT} "Overgrown Averia","Segoe UI",sans-serif`,
-        'text-align:center',
-        'padding:0 16px',
-        `min-height:${lineHeightPx}px`,
-        'width:100%',
-        'box-sizing:border-box',
-      ].join(';');
-      messageCopy.appendChild(line);
-      messageLineEls.push(line);
-    }
-
-    messageStage.appendChild(walkerStage);
-    messageStage.appendChild(messageCopy);
-
     contentShell.appendChild(title);
     contentShell.appendChild(beginPrompt);
-    contentShell.appendChild(messageStage);
     overlay.appendChild(contentShell);
     container.appendChild(overlay);
 
     this.overlay = overlay;
     this.titleEl = title;
     this.beginPromptEl = beginPrompt;
-    this.messageStage = messageStage;
-    this.messageLineEls = messageLineEls;
   }
 
-  private async runLoadingCopySequence(typingGeneration: number): Promise<void> {
-    if (
-      !this.titleEl
-      || !this.beginPromptEl
-      || !this.messageStage
-      || this.messageLineEls.length === 0
-    ) {
+  private async runTitleSequence(typingGeneration: number): Promise<void> {
+    if (!this.titleEl || !this.beginPromptEl) {
       return;
     }
 
@@ -565,10 +410,6 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     this.titleEl.style.display = 'flex';
     this.beginPromptEl.textContent = '';
     this.beginPromptEl.style.display = 'none';
-    this.messageStage.style.display = 'none';
-    for (const lineEl of this.messageLineEls) {
-      lineEl.textContent = '';
-    }
 
     for (let charIndex = 0; charIndex < LOADING_TITLE.length; charIndex += 1) {
       if (typingGeneration !== this.typingGeneration || !this.titleEl) {
@@ -579,45 +420,14 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
         window.setTimeout(resolve, TYPEWRITER_CHAR_INTERVAL_MS);
       });
     }
+  }
 
-    const titleCompletedAt = performance.now();
-    this.beginPromptEl.textContent = BEGIN_PROMPT_TEXT;
-    this.beginPromptEl.style.display = 'block';
-
-    await this.waitForBeginGesture();
-    const remainingTitleHold = Math.max(
-      0,
-      POST_TITLE_HOLD_MS - (performance.now() - titleCompletedAt),
-    );
-    if (remainingTitleHold > 0) {
-      await new Promise<void>((resolve) => {
-        window.setTimeout(resolve, remainingTitleHold);
-      });
-    }
-    if (typingGeneration !== this.typingGeneration || !this.messageStage) {
+  private showBeginPrompt(): void {
+    if (!this.beginPromptEl) {
       return;
     }
-
-    this.titleEl.style.display = 'none';
-    this.beginPromptEl.style.display = 'none';
-    this.messageStage.style.display = 'flex';
-
-    for (let lineIndex = 0; lineIndex < LOADING_MESSAGE_LINES.length; lineIndex += 1) {
-      const lineText = LOADING_MESSAGE_LINES[lineIndex];
-      const lineEl = this.messageLineEls[lineIndex];
-      if (!lineEl) {
-        continue;
-      }
-      for (let charIndex = 0; charIndex < lineText.length; charIndex += 1) {
-        if (typingGeneration !== this.typingGeneration) {
-          return;
-        }
-        lineEl.textContent = lineText.slice(0, charIndex + 1);
-        await new Promise<void>((resolve) => {
-          window.setTimeout(resolve, TYPEWRITER_CHAR_INTERVAL_MS);
-        });
-      }
-    }
+    this.beginPromptEl.textContent = BEGIN_PROMPT_TEXT;
+    this.beginPromptEl.style.display = 'block';
   }
 
   /** Wait for a trusted gesture; synthetic clicks cannot unlock browser audio. */
@@ -672,31 +482,24 @@ export class StartupLoadingScreenSystem extends ENGINE.SceneNode {
     this.typingGeneration += 1;
     this.beginGestureCleanup?.();
     this.beginGestureCleanup = null;
-    this.walkerAnimCleanup?.();
-    this.walkerAnimCleanup = null;
     this.styleEl?.remove();
     this.styleEl = null;
     this.overlay?.remove();
     this.overlay = null;
     this.titleEl = null;
     this.beginPromptEl = null;
-    this.messageStage = null;
-    this.messageLineEls = [];
   }
 
   private async waitForContainer(): Promise<HTMLElement | null> {
     for (let attempt = 0; attempt < 180; attempt += 1) {
       const container = this.getWorld()?.gameContainer ?? null;
       if (container) {
-        container.style.background = CREAM_CSS;
         return container;
       }
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve());
+      });
     }
-    const fallback = this.getWorld()?.gameContainer ?? null;
-    if (fallback) {
-      fallback.style.background = CREAM_CSS;
-    }
-    return fallback;
+    return this.getWorld()?.gameContainer ?? null;
   }
 }

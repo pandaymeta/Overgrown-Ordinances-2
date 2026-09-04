@@ -718,8 +718,7 @@
         "name": "Pavement Tile 8 A 9742",
         "nodeId": 23937,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -744,8 +743,7 @@
         "name": "Pavement Tile 8 A 9746",
         "nodeId": 39686,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -770,8 +768,7 @@
         "name": "Pavement Tile 8 A 9747",
         "nodeId": 50269,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -796,8 +793,7 @@
         "name": "Pavement Tile 8 A 9748",
         "nodeId": 64026,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -822,8 +818,7 @@
         "name": "Pavement Tile 8 A 9749",
         "nodeId": 42939,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -848,8 +843,7 @@
         "name": "Pavement Tile 8 A 9767",
         "nodeId": 4596,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -874,8 +868,7 @@
         "name": "Pavement Tile 8 A 9768",
         "nodeId": 57649,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -900,8 +893,7 @@
         "name": "Pavement Tile 8 A 9769",
         "nodeId": 36,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -926,8 +918,7 @@
         "name": "Pavement Tile 8 A 9778",
         "nodeId": 27408,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -952,8 +943,7 @@
         "name": "Pavement Tile 8 A 9770",
         "nodeId": 48757,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -978,8 +968,7 @@
         "name": "Pavement Tile 8 A 9777",
         "nodeId": 6760,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1004,8 +993,7 @@
         "name": "Pavement Tile 8 A 9771",
         "nodeId": 7702,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1030,8 +1018,7 @@
         "name": "Pavement Tile 8 A 9776",
         "nodeId": 49200,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1056,8 +1043,7 @@
         "name": "Pavement Tile 8 A 9772",
         "nodeId": 20917,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1082,8 +1068,7 @@
         "name": "Pavement Tile 8 A 9775",
         "nodeId": 65515,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1108,8 +1093,7 @@
         "name": "Pavement Tile 8 A 9773",
         "nodeId": 18962,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1134,8 +1118,7 @@
         "name": "Pavement Tile 8 A 9774",
         "nodeId": 30260,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1160,8 +1143,7 @@
         "name": "Pavement Tile 8 A 9750",
         "nodeId": 14412,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1186,8 +1168,7 @@
         "name": "Pavement Tile 8 A 9751",
         "nodeId": 58602,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1212,8 +1193,7 @@
         "name": "Pavement Tile 8 A 9753",
         "nodeId": 48768,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1238,8 +1218,7 @@
         "name": "Pavement Tile 8 A 9766",
         "nodeId": 21665,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1264,8 +1243,7 @@
         "name": "Pavement Tile 8 A 9754",
         "nodeId": 14132,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1290,8 +1268,7 @@
         "name": "Pavement Tile 8 A 9765",
         "nodeId": 58172,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1316,8 +1293,7 @@
         "name": "Pavement Tile 8 A 9755",
         "nodeId": 15820,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1342,8 +1318,7 @@
         "name": "Pavement Tile 8 A 9764",
         "nodeId": 46744,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1368,8 +1343,7 @@
         "name": "Pavement Tile 8 A 9756",
         "nodeId": 37849,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1394,8 +1368,7 @@
         "name": "Pavement Tile 8 A 9763",
         "nodeId": 42667,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1420,8 +1393,7 @@
         "name": "Pavement Tile 8 A 9757",
         "nodeId": 40045,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1446,8 +1418,7 @@
         "name": "Pavement Tile 8 A 9762",
         "nodeId": 27816,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1472,8 +1443,7 @@
         "name": "Pavement Tile 8 A 9758",
         "nodeId": 23790,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1498,8 +1468,7 @@
         "name": "Pavement Tile 8 A 9761",
         "nodeId": 59885,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1524,8 +1493,7 @@
         "name": "Pavement Tile 8 A 9759",
         "nodeId": 2041,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1550,8 +1518,7 @@
         "name": "Pavement Tile 8 A 9760",
         "nodeId": 52687,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1576,8 +1543,7 @@
         "name": "Pavement Tile 8 A 9752",
         "nodeId": 17871,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1602,8 +1568,7 @@
         "name": "Pavement Tile 8 A 9779",
         "nodeId": 108,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1628,8 +1593,7 @@
         "name": "LeftSideRoad Asphalt Road Tile Straight Both 07",
         "nodeId": 1892,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1669,8 +1633,7 @@
         "name": "LeftSideRoad Asphalt Road Tile Straight Both 08",
         "nodeId": 34271,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1710,8 +1673,7 @@
         "name": "LeftSideRoad Asphalt Road Tile Straight Both 06",
         "nodeId": 57762,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1751,8 +1713,7 @@
         "name": "MainRoad Asphalt Road Tile Straight Both 03",
         "nodeId": 21979,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1792,8 +1753,7 @@
         "name": "MainRoad Asphalt Road Tile Straight Both 04",
         "nodeId": 6451,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1833,8 +1793,7 @@
         "name": "Asphalt Road Tile Corner None 19",
         "nodeId": 22391,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1874,8 +1833,7 @@
         "name": "Asphalt Road Tile Corner None 21",
         "nodeId": 35095,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1915,8 +1873,7 @@
         "name": "Asphalt Road Tile Corner None 22",
         "nodeId": 11378,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1956,8 +1913,7 @@
         "name": "RightSideRoad Corner Both 01",
         "nodeId": 1452,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -1997,8 +1953,7 @@
         "name": "Asphalt Road Tile Corner None 23",
         "nodeId": 47437,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -2038,8 +1993,7 @@
         "name": "Asphalt Road Tile Corner None 20",
         "nodeId": 65109,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -2080,8 +2034,7 @@
         "name": "Two Storey Shophouse 183791",
         "nodeId": 39145,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -2123,8 +2076,7 @@
         "name": "Wide Shophouse 089 F 20",
         "nodeId": 38870,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -2158,15 +2110,14 @@
         "name": "Corner Shophouse Ad 15 C 2",
         "nodeId": 11193,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
           "_": [
             13,
             -0.8,
-            -4.483333
+            -4.483
           ]
         },
         "receiveShadow": true,
@@ -2200,8 +2151,7 @@
         "name": "MainRoad Asphalt Road Tile",
         "nodeId": 42125,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -2241,8 +2191,7 @@
         "name": "Mailbox 8 E 36 E 8",
         "nodeId": 10087,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -2275,8 +2224,7 @@
         "name": "Three Storey Shophouse 2 F 6378",
         "nodeId": 48376,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -2317,8 +2265,7 @@
         "name": "Guardrail Section 68 C 3 C 05",
         "nodeId": 21575,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -2349,8 +2296,7 @@
         "name": "Guardrail Section 68 C 3 C 07",
         "nodeId": 19204,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -2381,8 +2327,7 @@
         "name": "Guardrail Section 68 C 3 C 11",
         "nodeId": 83,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -2421,8 +2366,7 @@
         "name": "Guardrail Section 68 C 3 C 12",
         "nodeId": 18930,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -2461,8 +2405,7 @@
         "name": "Guardrail Section 68 C 3 C 13",
         "nodeId": 55186,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -2501,8 +2444,7 @@
         "name": "Guardrail Section 68 C 3 C 08",
         "nodeId": 51500,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -2533,8 +2475,7 @@
         "name": "Guardrail Section 68 C 3 C 09",
         "nodeId": 59415,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -2565,8 +2506,7 @@
         "name": "Guardrail Section 68 C 3 C 06",
         "nodeId": 1004,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -2597,8 +2537,7 @@
         "name": "Guardrail Section 68 C 3 C 10",
         "nodeId": 24769,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -2629,8 +2568,7 @@
         "name": "Guardrail Section 68 C 3 C 14",
         "nodeId": 34618,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -2661,8 +2599,7 @@
         "name": "Dirt Ground Tile Da 4 A 61",
         "nodeId": 59907,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -2694,8 +2631,7 @@
         "name": "Dirt Ground Tile Da 4 A 65",
         "nodeId": 11237,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -2727,8 +2663,7 @@
         "name": "Dirt Ground Tile Da 4 A 63",
         "nodeId": 39457,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -2760,8 +2695,7 @@
         "name": "Dirt Ground Tile Da 4 A 64",
         "nodeId": 49192,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -2793,8 +2727,7 @@
         "name": "Dirt Ground Tile Da 4 A 62",
         "nodeId": 3902,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -2826,8 +2759,7 @@
         "name": "Grass Ground Tile 131 Ec 0",
         "nodeId": 11055,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -2860,8 +2792,7 @@
         "name": "Grass Ground Tile 131 Ec 01",
         "nodeId": 22977,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -2894,8 +2825,7 @@
         "name": "Grass Ground Tile 131 Ec 02",
         "nodeId": 33530,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -2928,8 +2858,7 @@
         "name": "Grass Ground Tile 131 Ec 07",
         "nodeId": 46279,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -2962,8 +2891,7 @@
         "name": "Grass Ground Tile 131 Ec 03",
         "nodeId": 46524,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -2996,8 +2924,7 @@
         "name": "Grass Ground Tile 131 Ec 06",
         "nodeId": 52256,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -3030,8 +2957,7 @@
         "name": "Grass Ground Tile 131 Ec 04",
         "nodeId": 48660,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -3064,8 +2990,7 @@
         "name": "Grass Ground Tile 131 Ec 05",
         "nodeId": 54799,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -3176,7 +3101,6 @@
             "name": "Trees Cutting 02",
             "nodeId": 24763,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -3313,7 +3237,6 @@
             "name": "Trees Cutting",
             "nodeId": 20655,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -3528,7 +3451,6 @@
             "name": "Street Lights Destroy 05",
             "nodeId": 60288,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -3589,7 +3511,6 @@
             "name": "Street Lights Destroy 06",
             "nodeId": 23826,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -3641,7 +3562,6 @@
             "name": "Street Lights Climb 05",
             "nodeId": 45649,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -3702,7 +3622,6 @@
             "name": "Street Lights Climb 06",
             "nodeId": 45045,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -3916,7 +3835,6 @@
             "name": "Street Lights Destroy 07",
             "nodeId": 60288,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -3977,7 +3895,6 @@
             "name": "Street Lights Destroy 08",
             "nodeId": 23826,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -4029,7 +3946,6 @@
             "name": "Street Lights Climb 07",
             "nodeId": 45649,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -4090,7 +4006,6 @@
             "name": "Street Lights Climb 08",
             "nodeId": 45045,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -4215,7 +4130,6 @@
             "name": "Street Lights Destroy",
             "nodeId": 41081,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -4268,7 +4182,6 @@
             "name": "Street Lights Destroy 02",
             "nodeId": 65416,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -4328,7 +4241,6 @@
             "name": "Street Lights Climb",
             "nodeId": 55986,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -4388,7 +4300,6 @@
             "name": "Street Lights Climb 02",
             "nodeId": 47126,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -4568,7 +4479,6 @@
             "name": "Street Lights Destroy 03",
             "nodeId": 60651,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -4620,7 +4530,6 @@
             "name": "Street Lights Destroy 04",
             "nodeId": 56471,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -4681,7 +4590,6 @@
             "name": "Street Lights Climb 03",
             "nodeId": 37181,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -4741,7 +4649,6 @@
             "name": "Street Lights Climb 04",
             "nodeId": 32030,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -4921,7 +4828,6 @@
             "name": "Street Lights Destroy 09",
             "nodeId": 62974,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -4974,7 +4880,6 @@
             "name": "Street Lights Destroy 10",
             "nodeId": 2936,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -5034,7 +4939,6 @@
             "name": "Street Lights Climb 09",
             "nodeId": 6662,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -5094,7 +4998,6 @@
             "name": "Street Lights Climb 10",
             "nodeId": 220,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -5168,8 +5071,7 @@
         "name": "Tram Track Tile Straight",
         "nodeId": 8771,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -5209,8 +5111,7 @@
         "name": "Tram Track Tile Straight 04",
         "nodeId": 15706,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -5250,8 +5151,7 @@
         "name": "Tram Track Tile Straight 05",
         "nodeId": 40493,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -5291,8 +5191,7 @@
         "name": "Tram Track Tile Straight 06",
         "nodeId": 20292,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -5332,8 +5231,7 @@
         "name": "Tram Track Tile Straight 02",
         "nodeId": 59431,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -5467,8 +5365,7 @@
         "name": "Fire Hydrant B 68 B 17",
         "nodeId": 45223,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -5500,8 +5397,7 @@
         "name": "Fire Hydrant B 68 B 18",
         "nodeId": 54182,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -5534,8 +5430,7 @@
         "name": "Fuel Tank 3 A 0111",
         "nodeId": 29768,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -5567,8 +5462,7 @@
         "name": "Guardrail D 3 Bd 43",
         "nodeId": 348,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -5599,8 +5493,7 @@
         "name": "Guardrail D 3 Bd 44",
         "nodeId": 14526,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -5631,8 +5524,7 @@
         "name": "Guardrail D 3 Bd 45",
         "nodeId": 12776,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -5663,8 +5555,7 @@
         "name": "Guardrail D 3 Bd 46",
         "nodeId": 64686,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -5886,9 +5777,6 @@
         "modelUrl": "@project/assets/PolyforkAssets/vending-machine-471c29.glb",
         "name": "Vending Machine 471 C 29",
         "nodeId": 6722,
-        "physicsOptions": {
-          "generateCollisionEvents": false
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -5968,8 +5856,7 @@
         "nodeId": 31522,
         "physicsOptions": {
           "collisionMeshType": "trimesh",
-          "collisionProfile": "IgnoreOnlyPawns",
-          "generateCollisionEvents": false
+          "collisionProfile": "IgnoreOnlyPawns"
         },
         "position": {
           "$bc": "v3",
@@ -6010,8 +5897,7 @@
         "nodeId": 37871,
         "physicsOptions": {
           "collisionMeshType": "trimesh",
-          "collisionProfile": "IgnoreOnlyPawns",
-          "generateCollisionEvents": false
+          "collisionProfile": "IgnoreOnlyPawns"
         },
         "position": {
           "$bc": "v3",
@@ -6052,8 +5938,7 @@
         "nodeId": 3741,
         "physicsOptions": {
           "collisionMeshType": "trimesh",
-          "collisionProfile": "IgnoreOnlyPawns",
-          "generateCollisionEvents": false
+          "collisionProfile": "IgnoreOnlyPawns"
         },
         "position": {
           "$bc": "v3",
@@ -6094,8 +5979,7 @@
         "nodeId": 31128,
         "physicsOptions": {
           "collisionMeshType": "trimesh",
-          "collisionProfile": "IgnoreOnlyPawns",
-          "generateCollisionEvents": false
+          "collisionProfile": "IgnoreOnlyPawns"
         },
         "position": {
           "$bc": "v3",
@@ -6136,8 +6020,7 @@
         "name": "Access Stair Fde 618",
         "nodeId": 47802,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -6169,8 +6052,7 @@
         "name": "Trail Map Kiosk Be 8618",
         "nodeId": 54698,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -6210,8 +6092,7 @@
         "name": "Asphalt Road Triangle Gap Filler",
         "nodeId": 34270,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -6236,8 +6117,7 @@
         "name": "Asphalt Road Triangle Gap Filler 02",
         "nodeId": 9587,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -6270,8 +6150,7 @@
         "name": "Asphalt Road Triangle Gap Filler 03",
         "nodeId": 56734,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -6304,8 +6183,7 @@
         "name": "Asphalt Road Triangle Gap Filler 04",
         "nodeId": 30097,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -6338,8 +6216,7 @@
         "name": "Asphalt Road Triangle Gap Filler 05",
         "nodeId": 42525,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -6372,8 +6249,7 @@
         "name": "RightSideRoad Corner Both",
         "nodeId": 35956,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -6438,8 +6314,7 @@
         "name": "Yellow Cab 8 Df 4 A 0",
         "nodeId": 49622,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -6471,8 +6346,7 @@
         "name": "Cat",
         "nodeId": 35440,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -6671,7 +6545,6 @@
             "name": "Pole Cut 02",
             "nodeId": 36724,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -6735,7 +6608,6 @@
             "name": "High Voltage",
             "nodeId": 13191,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -6799,7 +6671,6 @@
             "name": "High Voltage 02",
             "nodeId": 22637,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -6904,7 +6775,6 @@
             "name": "Pole Cut",
             "nodeId": 997,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -6968,7 +6838,6 @@
             "name": "High Voltage 03",
             "nodeId": 7383,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -7032,7 +6901,6 @@
             "name": "High Voltage 04",
             "nodeId": 30325,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -7137,7 +7005,6 @@
             "name": "Pole Cut 03",
             "nodeId": 11638,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -7201,7 +7068,6 @@
             "name": "High Voltage 05",
             "nodeId": 9428,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -7265,7 +7131,6 @@
             "name": "High Voltage 06",
             "nodeId": 34254,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -7370,7 +7235,6 @@
             "name": "Pole Cut 04",
             "nodeId": 36894,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -7434,7 +7298,6 @@
             "name": "High Voltage 07",
             "nodeId": 59787,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -7490,7 +7353,6 @@
             "name": "High Voltage 08",
             "nodeId": 40670,
             "physicsOptions": {
-              "generateCollisionEvents": false,
               "ignoreForInputCollision": true
             },
             "position": {
@@ -7547,8 +7409,7 @@
         "name": "Stone Lantern D 56 D 0 A",
         "nodeId": 62748,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -7581,8 +7442,7 @@
         "name": "Stone Lantern D 56 D 0 A 02",
         "nodeId": 14651,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -10844,9 +10704,6 @@
         "modelUrl": "@project/assets/PolyforkAssets/tiled-roof-section-6f1121.glb",
         "name": "Tiled Roof Section 6 F 1121",
         "nodeId": 59571,
-        "physicsOptions": {
-          "generateCollisionEvents": false
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -10869,9 +10726,6 @@
         "modelUrl": "@project/assets/PolyforkAssets/tiled-roof-section-6f1121.glb",
         "name": "Tiled Roof Section 6 F 1122",
         "nodeId": 40997,
-        "physicsOptions": {
-          "generateCollisionEvents": false
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -10894,9 +10748,6 @@
         "modelUrl": "@project/assets/PolyforkAssets/tiled-roof-section-6f1121.glb",
         "name": "Tiled Roof Section 6 F 1123",
         "nodeId": 22401,
-        "physicsOptions": {
-          "generateCollisionEvents": false
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -11047,8 +10898,7 @@
         "name": "Fabric Awning 4 D 6 Acc",
         "nodeId": 10542,
         "physicsOptions": {
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -11090,8 +10940,7 @@
         "nodeId": 35654,
         "physicsOptions": {
           "collisionData": null,
-          "collisionMeshType": "trimesh",
-          "generateCollisionEvents": false
+          "collisionMeshType": "trimesh"
         },
         "position": {
           "$bc": "v3",
@@ -11256,8 +11105,7 @@
         "name": "RightSideRoad Asphalt Road Tile Straight Both 02",
         "nodeId": 25279,
         "physicsOptions": {
-          "collisionMeshType": "boundingBox",
-          "generateCollisionEvents": false
+          "collisionMeshType": "boundingBox"
         },
         "position": {
           "$bc": "v3",
@@ -11846,9 +11694,6 @@
         "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
         "name": "Mesh Fense Pane",
         "nodeId": 16542,
-        "physicsOptions": {
-          "generateCollisionEvents": false
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -11885,9 +11730,6 @@
         "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
         "name": "Mesh Fense Pane 07",
         "nodeId": 17064,
-        "physicsOptions": {
-          "generateCollisionEvents": false
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -11924,9 +11766,6 @@
         "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
         "name": "Mesh Fense Pane 08",
         "nodeId": 45911,
-        "physicsOptions": {
-          "generateCollisionEvents": false
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -11963,9 +11802,6 @@
         "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
         "name": "Mesh Fense Pane 09",
         "nodeId": 55816,
-        "physicsOptions": {
-          "generateCollisionEvents": false
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -12002,9 +11838,6 @@
         "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
         "name": "Mesh Fense Pane 10",
         "nodeId": 35858,
-        "physicsOptions": {
-          "generateCollisionEvents": false
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -12041,9 +11874,6 @@
         "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
         "name": "Mesh Fense Pane 02",
         "nodeId": 59256,
-        "physicsOptions": {
-          "generateCollisionEvents": false
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -12080,9 +11910,6 @@
         "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
         "name": "Mesh Fense Pane 03",
         "nodeId": 8634,
-        "physicsOptions": {
-          "generateCollisionEvents": false
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -12119,9 +11946,6 @@
         "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
         "name": "Mesh Fense Pane 04",
         "nodeId": 50566,
-        "physicsOptions": {
-          "generateCollisionEvents": false
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -12158,9 +11982,6 @@
         "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
         "name": "Mesh Fense Pane 05",
         "nodeId": 42169,
-        "physicsOptions": {
-          "generateCollisionEvents": false
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -12197,9 +12018,6 @@
         "modelUrl": "@project/assets/PolyforkAssets/mesh-fense-pane.glb",
         "name": "Mesh Fense Pane 06",
         "nodeId": 25833,
-        "physicsOptions": {
-          "generateCollisionEvents": false
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -12349,9 +12167,6 @@
         "modelUrl": "@project/assets/branding/overgrown-logo.glb",
         "name": "Overgrown Logo",
         "nodeId": 17712,
-        "physicsOptions": {
-          "generateCollisionEvents": false
-        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -12388,9 +12203,6 @@
         "modelUrl": "@project/assets/branding/by-entenium.glb",
         "name": "By Entenium Logo",
         "nodeId": 23623,
-        "physicsOptions": {
-          "generateCollisionEvents": false
-        },
         "position": {
           "$bc": "v3",
           "_": [

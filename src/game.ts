@@ -65,8 +65,11 @@ class ThirdPersonGameMode extends ENGINE.GameMode {
     // locked, this arms the first input gesture instead of waiting for reveal.
     startGoldenHourAudio(this.getWorld());
     this.ensureStartupBrushReveal();
-    this.attachAccessStairWalkRamp();
-    this.attachClimbableLadders();
+    // Ladder/stair volumes must not be parented during GameMode.beginPlay.
+    // World is already Playing, so root.add() would beginPlay those volumes
+    // before their host roots finish beginPlaySubtree — then the host's
+    // Object3D.beginPlay hits SceneNode ensure (playState !== NotStarted).
+    this.schedulePostWorldBeginPlayAttachments();
     this.ensureStreetLampGroundLights();
     this.ensureMailDeliveryFlow();
     this.ensureShophouseCameraOcclusion();
@@ -75,6 +78,19 @@ class ThirdPersonGameMode extends ENGINE.GameMode {
     this.ensureDeliveryProgressHud();
     this.ensureGameCursor();
     return true;
+  }
+
+  private schedulePostWorldBeginPlayAttachments(): void {
+    const world = this.getWorld();
+    if (!world) {
+      return;
+    }
+    const onAfterBeginPlay = (_world: ENGINE.World): void => {
+      world.afterBeginPlay.remove(onAfterBeginPlay);
+      this.attachAccessStairWalkRamp();
+      this.attachClimbableLadders();
+    };
+    world.afterBeginPlay.add(onAfterBeginPlay);
   }
 
   private ensureTutorialKeysGuide(): void {

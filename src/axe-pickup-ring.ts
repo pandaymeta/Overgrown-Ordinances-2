@@ -157,13 +157,17 @@ export class AxePickupRingSystem extends ENGINE.SceneNode {
     this.guideUnlocked = true;
     const world = this.getWorld();
     if (world) {
+      this.axe = null;
       this.initializePreview(world);
     }
+    this.syncRingToAxe();
     this.ring.visible = true;
     this.ring.scale.setScalar(1);
     this.pulseElapsed = 0;
     this.pulseRemaining = openEnded ? Number.POSITIVE_INFINITY : PULSE_HINT_DURATION_SEC;
-    this.setRingOpacity(PULSE_OPACITY_MIN);
+    // Start fully visible — opacity 0 made the first ~0.6s look like "no pulse"
+    // during the short morning speech window.
+    this.setRingOpacity(PULSE_OPACITY_MAX);
   }
 
   /** Keep pulsing for this many seconds after the morning speech bubble closes. */
@@ -171,9 +175,11 @@ export class AxePickupRingSystem extends ENGINE.SceneNode {
     if (this.everPickedUp || !this.ring) {
       return;
     }
+    this.syncRingToAxe();
     this.pulseRemaining = Math.max(0, seconds);
     if (this.pulseRemaining > 0) {
       this.ring.visible = true;
+      this.setRingOpacity(PULSE_OPACITY_MAX);
     }
   }
 
@@ -218,6 +224,7 @@ export class AxePickupRingSystem extends ENGINE.SceneNode {
     if (this.pulseRemaining <= 0 || !this.ring) {
       return;
     }
+    this.syncRingToAxe();
     this.pulseRemaining = Math.max(0, this.pulseRemaining - deltaTime);
     this.pulseElapsed += deltaTime;
     // Transparent → opaque → transparent (same envelope as tutorial keys).
@@ -436,9 +443,28 @@ export class AxePickupRingSystem extends ENGINE.SceneNode {
       (node) => AXE_NAME.test(node.name ?? ''),
     ) ?? null;
     if (this.axe && !this.pickedUp && !this.everPickedUp && this.guideUnlocked && this.ring) {
-      // The authored scene transform keeps this ring flush with the pavement.
+      this.syncRingToAxe();
       this.ring.visible = true;
     }
+  }
+
+  /** Keep the guide flush with the axe feet even if the system was authored off-target. */
+  private syncRingToAxe(): void {
+    if (!this.ring || !this.axe) {
+      return;
+    }
+    this.axeBounds.setFromObject(this.axe);
+    if (this.axeBounds.isEmpty()) {
+      this.axe.getWorldPosition(this.axeAnchor);
+    } else {
+      this.axeBounds.getCenter(this.axeAnchor);
+      this.axeAnchor.y = this.axeBounds.min.y + 0.04;
+    }
+    // Ring visual uses a large authored local offset — zero it and drive world pose
+    // from this system root so the pulse always sits under the live axe.
+    this.ring.position.set(0, 0, 0);
+    this.position.copy(this.axeAnchor);
+    this.updateMatrixWorld(true);
   }
 
   private destroyRing(): void {
